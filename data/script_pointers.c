@@ -702,6 +702,10 @@ void PopulateMapScriptTable(void) {
     entry(VIOLET_MART, 1, VioletMartGrannyScript);
     entry(VIOLET_MART, 2, VioletMartCooltrainerMScript);
 
+    entry(VIOLET_NICKNAME_SPEECH_HOUSE, 0, VioletNicknameSpeechHouseTeacherScript);
+    entry(VIOLET_NICKNAME_SPEECH_HOUSE, 1, VioletNicknameSpeechHouseLassScript);
+    entry(VIOLET_NICKNAME_SPEECH_HOUSE, 2, VioletNicknameSpeechHouseBirdScript);
+
     entry(VIOLET_KYLES_HOUSE, 0, VioletKylesHousePokefanMScript);
     entry(VIOLET_KYLES_HOUSE, 1, Kyle);
 

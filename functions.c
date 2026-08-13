@@ -5566,6 +5566,11 @@ void init_function_pointers(void) {
     CONVERTED_SCRIPT(VioletMartGrannyScript);
     CONVERTED_SCRIPT(VioletMartCooltrainerMScript);
 
+    // maps/VioletNicknameSpeechHouse.c
+    CONVERTED_SCRIPT(VioletNicknameSpeechHouseTeacherScript);
+    CONVERTED_SCRIPT(VioletNicknameSpeechHouseLassScript);
+    CONVERTED_SCRIPT(VioletNicknameSpeechHouseBirdScript);
+
     // maps/VioletKylesHouse.c
     CONVERTED_SCRIPT(VioletKylesHousePokefanMScript);
     CONVERTED_SCRIPT(Kyle);
