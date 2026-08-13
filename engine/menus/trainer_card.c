@@ -679,7 +679,8 @@ void TrainerCard_Page1_PrintGameTime(void){
     // LD_DE(wGameTimeHours);
     // LD_BC((2 << 8) | 4);
     // CALL(aPrintNum);
-    hl = PrintNum(hl, &gPlayer.gameTimeHours, 2, 4);
+    uint16_t hours = NativeToBigEndian16(gPlayer.gameTimeHours);
+    hl = PrintNum(hl, &hours, 2, 4);
     // INC_HL;
     // LD_DE(wGameTimeMinutes);
     // LD_BC((PRINTNUM_LEADINGZEROS | 1 << 8) | 2);

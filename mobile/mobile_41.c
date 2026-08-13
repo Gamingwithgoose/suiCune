@@ -22,7 +22,8 @@ void StubbedTrainerRankings_HallOfFame2(void){
     uint8_t* time = GBToRAMAddr(sTrainerRankingGameTimeHOF);
     // LD_BC(4);
     // CALL(aCopyBytes);
-    CopyBytes(time, &gPlayer.gameTimeHours, 2);
+    uint16_t hours = NativeToBigEndian16(gPlayer.gameTimeHours);
+    CopyBytes(time, &hours, 2);
     time[2] = gPlayer.gameTimeMinutes;
     time[3] = gPlayer.gameTimeSeconds;
 

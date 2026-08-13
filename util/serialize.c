@@ -294,7 +294,7 @@ const struct SerialField Struc_PlayerData[] = {
     // used only for BANK(wGameTime)
     //union wGameTime
     FLD(TY_U8, gameTimeCap),
-    FLD(TY_U16LE, gameTimeHours),
+    FLD(TY_U16BE, gameTimeHours),
     FLD(TY_U8, gameTimeMinutes),
     FLD(TY_U8, gameTimeSeconds),
     FLD(TY_U8, gameTimeFrames),

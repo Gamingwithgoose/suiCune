@@ -1061,10 +1061,11 @@ static void Continue_DisplayGameTime(tile_t* hl) {
     // LD_DE(wGameTimeHours);
     // LD_BC((2 << 8) | 3);
     // CALL(aPrintNum);
-    hl = PrintNum(hl, &gPlayer.gameTimeHours, 2, 3);
+    uint16_t hours = NativeToBigEndian16(gPlayer.gameTimeHours);
+    hl = PrintNum(hl, &hours, 2, 3);
     // LD_hl(0x6d);
     // INC_HL;
-    *(hl++) = 0x6d;
+    *(hl++) = CHAR_COLON;
     // LD_DE(wGameTimeMinutes);
     // LD_BC((PRINTNUM_LEADINGZEROS | 1 << 8) | 2);
     // JP(mPrintNum);

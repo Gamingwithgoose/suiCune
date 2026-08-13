@@ -92,7 +92,8 @@ void PrintDiplomaPage2(void){
     // LD_DE(wGameTimeHours);
     // LD_BC((2 << 8) | 4);
     // CALL(aPrintNum);
-    tile_t* hl = PrintNum(coord(12, 15, wram->wTilemap), &gPlayer.gameTimeHours, 2, 4);
+    uint16_t hours = NativeToBigEndian16(gPlayer.gameTimeHours);
+    tile_t* hl = PrintNum(coord(12, 15, wram->wTilemap), &hours, 2, 4);
     // LD_hl(0x67);  // colon
     *(hl++) = 0x67;
     // INC_HL;

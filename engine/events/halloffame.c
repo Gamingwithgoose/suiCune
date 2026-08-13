@@ -882,7 +882,8 @@ void HOF_AnimatePlayerPic(void){
     // LD_DE(wGameTimeHours);
     // LD_BC((2 << 8) | 3);
     // CALL(aPrintNum);
-    uint8_t* hl = PrintNum(coord(3, 9, wram->wTilemap), &gPlayer.gameTimeHours, 2, 3);
+    uint16_t hours = NativeToBigEndian16(gPlayer.gameTimeHours);
+    uint8_t* hl = PrintNum(coord(3, 9, wram->wTilemap), &hours, 2, 3);
     // LD_hl(HALLOFFAME_COLON);
     // INC_HL;
     *(hl++) = HALLOFFAME_COLON;
