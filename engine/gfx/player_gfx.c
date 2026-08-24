@@ -41,7 +41,7 @@ void BetaLoadPlayerTrainerClass(void){
 // got_class:
     // LD_A_C;
     // LD_addr_A(wTrainerClass);
-    wram->wTrainerClass = (bit_test(wram->wPlayerGender, PLAYERGENDER_FEMALE_F)? JODI: CAL);
+    wram->wTrainerClass = (bit_test(gCrystal.playerGender, PLAYERGENDER_FEMALE_F)? JODI: CAL);
     // RET;
 }
 

@@ -426,45 +426,43 @@ uint8_t MobileMenuJoypad(void){
     return GetMenuJoypad();
 }
 
-void Function241d5(void){
 //  //  unreferenced
-    CALL(aPlace2DMenuCursor);
+void Function241d5(void){
+    // CALL(aPlace2DMenuCursor);
 
-loop:
-    CALL(aMove2DMenuCursor);
-    CALL(aHDMATransferTilemapToWRAMBank3);  // BUG: This function is in another bank.
-    CALL(aFunction241d5_loop2);
-    IF_NC goto done;
-    CALL(av_2DMenuInterpretJoypad);
-    IF_C goto done;
-    LD_A_addr(w2DMenuFlags1);
-    BIT_A(7);
-    IF_NZ goto done;
-    CALL(aGetMenuJoypad);
-    LD_C_A;
-    LD_A_addr(wMenuJoypadFilter);
-    AND_A_C;
-    IF_Z goto loop;
+// loop:
+    // CALL(aMove2DMenuCursor);
+    // CALL(aHDMATransferTilemapToWRAMBank3);  // BUG: This function is in another bank.
+    // CALL(aFunction241d5_loop2);
+    // IF_NC goto done;
+    // CALL(av_2DMenuInterpretJoypad);
+    // IF_C goto done;
+    // LD_A_addr(w2DMenuFlags1);
+    // BIT_A(7);
+    // IF_NZ goto done;
+    // CALL(aGetMenuJoypad);
+    // LD_C_A;
+    // LD_A_addr(wMenuJoypadFilter);
+    // AND_A_C;
+    // IF_Z goto loop;
 
+// done:
+    // RET;
 
-done:
-    RET;
-
-
-loop2:
-    CALL(aMenu_WasButtonPressed);
-    RET_C ;
-    LD_C(1);
-    LD_B(3);
-    CALL(aAdvanceMobileInactivityTimerAndCheckExpired);  // BUG: This function is in another bank.
-    RET_C ;
-    FARCALL(aFunction100337);
-    RET_C ;
-    LD_A_addr(w2DMenuFlags1);
-    BIT_A(7);
-    IF_Z goto loop2;
-    AND_A_A;
-    RET;
+// loop2:
+    // CALL(aMenu_WasButtonPressed);
+    // RET_C ;
+    // LD_C(1);
+    // LD_B(3);
+    // CALL(aAdvanceMobileInactivityTimerAndCheckExpired);  // BUG: This function is in another bank.
+    // RET_C ;
+    // FARCALL(aFunction100337);
+    // RET_C ;
+    // LD_A_addr(w2DMenuFlags1);
+    // BIT_A(7);
+    // IF_Z goto loop2;
+    // AND_A_A;
+    // RET;
 
 }
 
@@ -1047,41 +1045,40 @@ void v_ExitMenu(void){
     // RET;
 }
 
-void RestoreOverworldMapTiles(void){
 //  //  unreferenced
-    LD_A_addr(wVramState);
-    BIT_A(0);
-    RET_Z ;
-    XOR_A_A;  // sScratch
-    CALL(aOpenSRAM);
-    hlcoord(0, 0, wTilemap);
-    LD_DE(sScratch);
-    LD_BC(SCREEN_WIDTH * SCREEN_HEIGHT);
-    CALL(aCopyBytes);
-    CALL(aCloseSRAM);
-    CALL(aOverworldTextModeSwitch);
-    XOR_A_A;  // sScratch
-    CALL(aOpenSRAM);
-    LD_HL(sScratch);
-    decoord(0, 0, wTilemap);
-    LD_BC(SCREEN_WIDTH * SCREEN_HEIGHT);
+void RestoreOverworldMapTiles(void){
+    // LD_A_addr(wVramState);
+    // BIT_A(0);
+    // RET_Z ;
+    // XOR_A_A;  // sScratch
+    // CALL(aOpenSRAM);
+    // hlcoord(0, 0, wTilemap);
+    // LD_DE(sScratch);
+    // LD_BC(SCREEN_WIDTH * SCREEN_HEIGHT);
+    // CALL(aCopyBytes);
+    // CALL(aCloseSRAM);
+    // CALL(aOverworldTextModeSwitch);
+    // XOR_A_A;  // sScratch
+    // CALL(aOpenSRAM);
+    // LD_HL(sScratch);
+    // decoord(0, 0, wTilemap);
+    // LD_BC(SCREEN_WIDTH * SCREEN_HEIGHT);
 
-loop:
-    LD_A_hl;
-    CP_A(0x61);
-    IF_C goto next;
-    LD_de_A;
+// loop:
+    // LD_A_hl;
+    // CP_A(0x61);
+    // IF_C goto next;
+    // LD_de_A;
 
-next:
-    INC_HL;
-    INC_DE;
-    DEC_BC;
-    LD_A_C;
-    OR_A_B;
-    IF_NZ goto loop;
-    CALL(aCloseSRAM);
-    RET;
-
+// next:
+    // INC_HL;
+    // INC_DE;
+    // DEC_BC;
+    // LD_A_C;
+    // OR_A_B;
+    // IF_NZ goto loop;
+    // CALL(aCloseSRAM);
+    // RET;
 }
 
 void Error_Cant_ExitMenu(void){

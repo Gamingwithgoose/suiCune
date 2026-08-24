@@ -660,6 +660,7 @@ void LearnLevelMoves(struct PartyMon* mon, uint8_t level, species_t species){
     // learn:
         // LD_A_D;
         // LD_addr_A(wPutativeTMHMMove);
+        wram->wPutativeTMHMMove = to_learn;
         // LD_addr_A(wNamedObjectIndex);
         // CALL(aGetMoveName);
         // CALL(aCopyName1);

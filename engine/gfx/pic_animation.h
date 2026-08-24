@@ -3,7 +3,7 @@ void AnimateMon_Menu(uint8_t* hl);
 void AnimateMon_Trade(uint8_t* hl);
 void AnimateMon_Evolve(uint8_t* hl);
 void AnimateMon_Hatch(uint8_t* hl);
-void AnimateMon_HOF(void);
+void AnimateMon_HOF(uint8_t* hl);
 // void PokeAnims(void);
 void AnimateFrontpic(uint8_t* hl, uint8_t d, uint8_t e);
 void LoadMonAnimation(uint8_t* hl, uint8_t d, uint8_t e);

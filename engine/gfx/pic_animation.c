@@ -140,11 +140,12 @@ void AnimateMon_Hatch(uint8_t* hl){
     return AnimateFrontpic(hl, 0x0, ANIM_MON_HATCH);
 }
 
-void AnimateMon_HOF(void){
-    LD_E(ANIM_MON_HOF);
-    LD_D(0x0);
-    CALL(aAnimateFrontpic);
-    RET;
+void AnimateMon_HOF(uint8_t* hl){
+    // LD_E(ANIM_MON_HOF);
+    // LD_D(0x0);
+    // CALL(aAnimateFrontpic);
+    // RET;
+    return AnimateFrontpic(hl, 0x0, ANIM_MON_HOF);
 }
 
 #define setup_command(_x) _x##_SetupCommand

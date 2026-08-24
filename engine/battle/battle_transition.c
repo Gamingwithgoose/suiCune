@@ -182,33 +182,31 @@ void LoadTrainerBattlePokeballTiles(void){
 }
 
 void ConvertTrainerBattlePokeballTilesTo2bpp(void){
-    LDH_A_addr(rSVBK);
-    PUSH_AF;
-    LD_A(MBANK(awDecompressScratch));
-    LDH_addr_A(rSVBK);
-    PUSH_HL;
-    LD_HL(wDecompressScratch);
-    LD_BC(0x28 * LEN_2BPP_TILE);
+    // LDH_A_addr(rSVBK);
+    // PUSH_AF;
+    // LD_A(MBANK(awDecompressScratch));
+    // LDH_addr_A(rSVBK);
+    // PUSH_HL;
+    // LD_HL(wDecompressScratch);
+    // LD_BC(0x28 * LEN_2BPP_TILE);
 
+// loop:
+    // LD_hl(-1);
+    // INC_HL;
+    // DEC_BC;
+    // LD_A_C;
+    // OR_A_B;
+    // IF_NZ goto loop;
 
-loop:
-    LD_hl(-1);
-    INC_HL;
-    DEC_BC;
-    LD_A_C;
-    OR_A_B;
-    IF_NZ goto loop;
-
-    POP_HL;
-    LD_DE(wDecompressScratch);
-    //LD_B(BANK(@));
-    LD_B(BANK(aConvertTrainerBattlePokeballTilesTo2bpp));
-    LD_C(0x28);
-    CALL(aRequest2bpp);
-    POP_AF;
-    LDH_addr_A(rSVBK);
-    RET;
-
+    // POP_HL;
+    // LD_DE(wDecompressScratch);
+    // //LD_B(BANK(@));
+    // LD_B(BANK(aConvertTrainerBattlePokeballTilesTo2bpp));
+    // LD_C(0x28);
+    // CALL(aRequest2bpp);
+    // POP_AF;
+    // LDH_addr_A(rSVBK);
+    // RET;
 }
 
 void BattleTransitionJumptable(void){

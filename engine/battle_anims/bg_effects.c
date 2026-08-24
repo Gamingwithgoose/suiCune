@@ -3961,7 +3961,7 @@ static void BattleBGEffect_SetLCDStatCustoms1(struct BattleBGEffect* bc, uint8_t
 
 // player_turn:
     // LD_DE((0x2f << 8) | 0x5e);
-    uint16_t de = (BGEffect_CheckBattleTurn(bc) == 0)? (0x00 << 8) | 0x36 : (0x2f << 8) | 0x5e;
+    uint16_t de = (BGEffect_CheckBattleTurn(bc) == 0)? (0x00 << 8) | 0x36 : (0x2f << 8) | 0x5f;
 
 // okay:
     // LD_A_D;

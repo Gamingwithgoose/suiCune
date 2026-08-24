@@ -13,6 +13,7 @@
 #include "../items/tmhm2.h"
 #include "../pokemon/knows_move.h"
 #include "../pokemon/learn.h"
+#include "happiness_egg.h"
 
 static move_t MoveTutor_GetMoveTutorMove(void){
     // LD_A_addr(wScriptVar);
@@ -135,6 +136,7 @@ bool CheckCanLearnMoveTutorMove(uint8_t curMon, move_t move){
         if(!KnowsMove(&gPokemon.partyMon[curMon].mon, move) && LearnMove(move)) {
             // LD_C(HAPPINESS_LEARNMOVE);
             // CALLFAR(aChangeHappiness);
+            ChangeHappiness(HAPPINESS_LEARNMOVE);
             // goto learned;
         // learned:
             // CALL(aExitMenu);

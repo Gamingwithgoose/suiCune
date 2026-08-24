@@ -954,9 +954,14 @@ static const uint8_t Frameset_80[] = {
 
 static const uint8_t Frameset_81[] = {
     frame(BATTLEANIMOAMSET_A0,  1), // fallthrough
+    frame(BATTLEANIMOAMSET_A1,  1), // fallthrough
+    frame(BATTLEANIMOAMSET_A2,  1),
+    delanim
 };
 static const uint8_t Frameset_82[] = {
     frame(BATTLEANIMOAMSET_A1,  1), // fallthrough
+    frame(BATTLEANIMOAMSET_A2,  1),
+    delanim
 };
 static const uint8_t Frameset_83[] = {
     frame(BATTLEANIMOAMSET_A2,  1),

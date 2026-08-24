@@ -520,16 +520,16 @@ void WaitDMATransfer(void) {
 // }
 
 void v_LoadHDMAParameters(void) {
-    LD_A_H;
-    LDH_addr_A(rHDMA1);
-    LD_A_L;
-    LDH_addr_A(rHDMA2);
-    LDH_A_addr(hBGMapAddress + 1);
-    AND_A(0x1f);
-    LDH_addr_A(rHDMA3);
-    LDH_A_addr(hBGMapAddress);
-    LDH_addr_A(rHDMA4);
-    RET;
+    // LD_A_H;
+    // LDH_addr_A(rHDMA1);
+    // LD_A_L;
+    // LDH_addr_A(rHDMA2);
+    // LDH_A_addr(hBGMapAddress + 1);
+    // AND_A(0x1f);
+    // LDH_addr_A(rHDMA3);
+    // LDH_A_addr(hBGMapAddress);
+    // LDH_addr_A(rHDMA4);
+    // RET;
 }
 
 static void PadTilemapForHDMATransfer(uint8_t* hl, const uint8_t* de) {

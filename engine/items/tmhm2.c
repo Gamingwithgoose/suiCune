@@ -25,7 +25,7 @@ uint8_t CanLearnTMHMMove(species_t species, move_t move){
         move_t a = *(hl++);
         // AND_A_A;
         // IF_Z goto end;
-        if(a == 0) {
+        if(a == NO_MOVE) {
         // end:
             // POP_HL;
             // LD_C(0);

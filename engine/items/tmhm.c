@@ -572,37 +572,37 @@ bool TMHM_ExitPocket(void){
     return false;
 }
 
+// DEPRECATED: Inlined
 void TMHM_ScrollPocket(void){
-    LD_A_B;
-    BIT_A(7);
-    IF_NZ goto skip;
-    LD_HL(wTMHMPocketScrollPosition);
-    LD_A_hl;
-    AND_A_A;
-    JP_Z (mTMHM_JoypadLoop);
-    DEC_hl;
-    CALL(aTMHM_DisplayPocketItems);
-    JP(mTMHM_ShowTMMoveDescription);
+    // LD_A_B;
+    // BIT_A(7);
+    // IF_NZ goto skip;
+    // LD_HL(wTMHMPocketScrollPosition);
+    // LD_A_hl;
+    // AND_A_A;
+    // JP_Z (mTMHM_JoypadLoop);
+    // DEC_hl;
+    // CALL(aTMHM_DisplayPocketItems);
+    // JP(mTMHM_ShowTMMoveDescription);
 
+// skip:
+    // CALL(aTMHM_GetCurrentPocketPosition);
+    // LD_B(5);
 
-skip:
-    CALL(aTMHM_GetCurrentPocketPosition);
-    LD_B(5);
-
-loop:
-    INC_C;
-    LD_A_C;
-    CP_A(NUM_TMS + NUM_HMS + 1);
-    JP_NC (mTMHM_JoypadLoop);
-    LD_A_hli;
-    AND_A_A;
-    IF_Z goto loop;
-    DEC_B;
-    IF_NZ goto loop;
-    LD_HL(wTMHMPocketScrollPosition);
-    INC_hl;
-    CALL(aTMHM_DisplayPocketItems);
-    JP(mTMHM_ShowTMMoveDescription);
+// loop:
+    // INC_C;
+    // LD_A_C;
+    // CP_A(NUM_TMS + NUM_HMS + 1);
+    // JP_NC (mTMHM_JoypadLoop);
+    // LD_A_hli;
+    // AND_A_A;
+    // IF_Z goto loop;
+    // DEC_B;
+    // IF_NZ goto loop;
+    // LD_HL(wTMHMPocketScrollPosition);
+    // INC_hl;
+    // CALL(aTMHM_DisplayPocketItems);
+    // JP(mTMHM_ShowTMMoveDescription);
 
 }
 

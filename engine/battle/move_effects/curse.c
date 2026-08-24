@@ -88,7 +88,7 @@ void BattleCommand_Curse(void){
 
                 // LD_B(ABILITY + 1);
                 // CALL(aGetStatName);
-                GetStatName(ABILITY + 1);
+                GetStatName(ABILITY);
                 // CALL(aAnimateFailedMove);
                 AnimateFailedMove();
                 // LD_HL(mWontRiseAnymoreText);

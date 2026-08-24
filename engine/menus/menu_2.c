@@ -9,6 +9,7 @@
 #include "../../home/item.h"
 #include "../../data/items/apricorn_balls.h"
 #include "../items/items.h"
+#include "../../charmap.h"
 
 void PlaceMenuItemName(const struct MenuData* data, uint8_t* de){
     (void)data;
@@ -37,7 +38,7 @@ void PlaceMenuItemQuantity(const struct MenuData* data, tile_t* de){
         // LD_DE(0x15);
         // ADD_HL_DE;
         // LD_hl(0xf1);
-        de[0x15] = 0xf1;
+        de[0x15] = CHAR_TIMES;
         // INC_HL;
         // LD_DE(wMenuSelectionQuantity);
         // LD_BC((1 << 8) | 2);
@@ -160,33 +161,33 @@ const char MoneyString[] = "MONEY@";
 const char CoinString[] = "COIN@";
 const char ShowMoney_TerminatorString[] = "@";
 
-void StartMenu_PrintSafariGameStatus(void){
 //  //  unreferenced
-    LD_HL(wOptions);
-    LD_A_hl;
-    PUSH_AF;
-    SET_hl(NO_TEXT_SCROLL);
-    hlcoord(0, 0, wTilemap);
-    LD_B(3);
-    LD_C(7);
-    CALL(aTextbox);
-    hlcoord(1, 1, wTilemap);
-    LD_DE(wSafariTimeRemaining);
-    LD_BC((2 << 8) | 3);
-    CALL(aPrintNum);
-    hlcoord(4, 1, wTilemap);
-    LD_DE(mStartMenu_PrintSafariGameStatus_slash_500);
-    CALL(aPlaceString);
-    hlcoord(1, 3, wTilemap);
-    LD_DE(mStartMenu_PrintSafariGameStatus_booru_ko);
-    CALL(aPlaceString);
-    hlcoord(5, 3, wTilemap);
-    LD_DE(wSafariBallsRemaining);
-    LD_BC((1 << 8) | 2);
-    CALL(aPrintNum);
-    POP_AF;
-    LD_addr_A(wOptions);
-    RET;
+void StartMenu_PrintSafariGameStatus(void){
+    // LD_HL(wOptions);
+    // LD_A_hl;
+    // PUSH_AF;
+    // SET_hl(NO_TEXT_SCROLL);
+    // hlcoord(0, 0, wTilemap);
+    // LD_B(3);
+    // LD_C(7);
+    // CALL(aTextbox);
+    // hlcoord(1, 1, wTilemap);
+    // LD_DE(wSafariTimeRemaining);
+    // LD_BC((2 << 8) | 3);
+    // CALL(aPrintNum);
+    // hlcoord(4, 1, wTilemap);
+    // LD_DE(mStartMenu_PrintSafariGameStatus_slash_500);
+    // CALL(aPlaceString);
+    // hlcoord(1, 3, wTilemap);
+    // LD_DE(mStartMenu_PrintSafariGameStatus_booru_ko);
+    // CALL(aPlaceString);
+    // hlcoord(5, 3, wTilemap);
+    // LD_DE(wSafariBallsRemaining);
+    // LD_BC((1 << 8) | 2);
+    // CALL(aPrintNum);
+    // POP_AF;
+    // LD_addr_A(wOptions);
+    // RET;
 
 
 //slash_500:

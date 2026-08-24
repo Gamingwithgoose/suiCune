@@ -763,38 +763,34 @@ void TossMenu(void){
     // RET;
 }
 
-void ResetPocketCursorPositions(void){
 //  //  unreferenced
-    LD_A_addr(wCurPocket);
-    AND_A_A;  // ITEM_POCKET
-    IF_Z goto items;
-    DEC_A;  // BALL_POCKET
-    IF_Z goto balls;
-    DEC_A;  // KEY_ITEM_POCKET
-    IF_Z goto key;
-    RET;
+void ResetPocketCursorPositions(void){
+    // LD_A_addr(wCurPocket);
+    // AND_A_A;  // ITEM_POCKET
+    // IF_Z goto items;
+    // DEC_A;  // BALL_POCKET
+    // IF_Z goto balls;
+    // DEC_A;  // KEY_ITEM_POCKET
+    // IF_Z goto key;
+    // RET;
 
+// balls:
+    // XOR_A_A;
+    // LD_addr_A(wBallsPocketCursor);
+    // LD_addr_A(wBallsPocketScrollPosition);
+    // RET;
 
-balls:
-    XOR_A_A;
-    LD_addr_A(wBallsPocketCursor);
-    LD_addr_A(wBallsPocketScrollPosition);
-    RET;
+// items:
+    // XOR_A_A;
+    // LD_addr_A(wItemsPocketCursor);
+    // LD_addr_A(wItemsPocketScrollPosition);
+    // RET;
 
-
-items:
-    XOR_A_A;
-    LD_addr_A(wItemsPocketCursor);
-    LD_addr_A(wItemsPocketScrollPosition);
-    RET;
-
-
-key:
-    XOR_A_A;
-    LD_addr_A(wKeyItemsPocketCursor);
-    LD_addr_A(wKeyItemsPocketScrollPosition);
-    RET;
-
+// key:
+    // XOR_A_A;
+    // LD_addr_A(wKeyItemsPocketCursor);
+    // LD_addr_A(wKeyItemsPocketScrollPosition);
+    // RET;
 }
 
 void RegisterItem(void){

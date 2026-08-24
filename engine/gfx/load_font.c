@@ -8,22 +8,20 @@
 
 // static const uint8_t EnableHDMAForGraphics = FALSE;
 
-void Get1bppOptionalHDMA(void){
 //  //  unreferenced
-    LD_A_addr(mEnableHDMAForGraphics);
-    AND_A_A;
-    JP_NZ (mGet1bppViaHDMA);
-    JP(mGet1bpp);
-
+void Get1bppOptionalHDMA(void){
+    // LD_A_addr(mEnableHDMAForGraphics);
+    // AND_A_A;
+    // JP_NZ (mGet1bppViaHDMA);
+    // JP(mGet1bpp);
 }
 
-void Get2bppOptionalHDMA(void){
 //  //  unreferenced
-    LD_A_addr(mEnableHDMAForGraphics);
-    AND_A_A;
-    JP_NZ (mGet2bppViaHDMA);
-    JP(mGet2bpp);
-
+void Get2bppOptionalHDMA(void){
+    // LD_A_addr(mEnableHDMAForGraphics);
+    // AND_A_A;
+    // JP_NZ (mGet2bppViaHDMA);
+    // JP(mGet2bpp);
 }
 
 void v_LoadStandardFont(void){

@@ -2674,7 +2674,7 @@ struct wram_s
                     uint8_t wMoveSelectionMenuType;
                     // corresponds to the data/pokemon/base_stats/*.asm contents
                     //union wCurBaseData
-                    uint8_t wBaseDexNo;
+                    species_t wBaseDexNo;
                     union {
                         uint8_t wBaseStats[6];
                         struct {
@@ -2696,8 +2696,8 @@ struct wram_s
                     uint8_t wBaseCatchRate;
                     uint8_t wBaseExp;
                     //union wBaseItems
-                    uint8_t wBaseItem1;
-                    uint8_t wBaseItem2;
+                    item_t wBaseItem1;
+                    item_t wBaseItem2;
                     uint8_t wBaseGender;
                     uint8_t wBaseUnknown1;
                     uint8_t wBaseEggSteps;

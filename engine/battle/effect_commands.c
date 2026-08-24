@@ -1178,7 +1178,7 @@ void BattleCommand_CheckObedience(void){
 
             // CP_A_B;
             // IF_NC goto RandomMove;
-            if(a < b)
+            if(a >= b)
                 continue;
 
         //  Not the move we were trying to use.
@@ -5736,7 +5736,7 @@ void SapHealth(void){
         // INC_DE;
         // SBC_A_B;
         // IF_NC goto finish;
-        if(wram->wHPBuffer1 >= wram->wHPBuffer2) 
+        if(wram->wHPBuffer2 >= wram->wHPBuffer1) 
             goto finish;
     }
 
@@ -6854,7 +6854,7 @@ void BattleCommand_StatUpFailText(void){
         // LD_B_A;
         // INC_B;
         // CALL(aGetStatName);
-        GetStatName((wram->wLoweredStat & 0xf) + 1);
+        GetStatName(wram->wLoweredStat & 0xf);
         // LD_HL(mWontRiseAnymoreText);
         // JP(mStdBattleTextbox);
         return StdBattleTextbox(WontRiseAnymoreText);
@@ -6889,7 +6889,7 @@ void BattleCommand_StatDownFailText(void){
         // LD_B_A;
         // INC_B;
         // CALL(aGetStatName);
-        GetStatName((wram->wLoweredStat & 0xf) + 1);
+        GetStatName(wram->wLoweredStat & 0xf);
         // LD_HL(mWontDropAnymoreText);
         // JP(mStdBattleTextbox);
         return StdBattleTextbox(WontDropAnymoreText);

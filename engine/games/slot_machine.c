@@ -1329,17 +1329,17 @@ void GetUnknownSlotReelData(void){
 //  //  unreferenced
 //  Used to get OAM attribute values for slot reels?
 //  (final Slots_UpdateReelPositionAndOAM above reuses tile IDs as OAM palettes)
-    PUSH_HL;
-    SRL_A;
-    SRL_A;
-    ADD_A(LOW(aGetUnknownSlotReelData_data));
-    LD_L_A;
-    LD_A(0);
-    ADC_A(HIGH(aGetUnknownSlotReelData_data));
-    LD_H_A;
-    LD_A_hl;
-    POP_HL;
-    RET;
+    // PUSH_HL;
+    // SRL_A;
+    // SRL_A;
+    // ADD_A(LOW(aGetUnknownSlotReelData_data));
+    // LD_L_A;
+    // LD_A(0);
+    // ADC_A(HIGH(aGetUnknownSlotReelData_data));
+    // LD_H_A;
+    // LD_A_hl;
+    // POP_HL;
+    // RET;
 
 
 //data:

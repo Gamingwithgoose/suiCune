@@ -6734,7 +6734,7 @@ void HandleHPHealingItem(void){
     // LD_A_B;
     // CP_A(HELD_BERRY);
     // RET_NZ ;
-    if(itemEffect != HELD_BERRY)
+    if(HIGH(itemEffect) != HELD_BERRY)
         return;
     // LD_DE(wEnemyMonHP + 1);
     // LD_HL(wEnemyMonMaxHP);
@@ -6796,14 +6796,14 @@ void HandleHPHealingItem(void){
     // LD_A_de;
     // ADC_A(0);
     // LD_addr_A(wHPBuffer3 + 1);
-    wram->wHPBuffer3 = hp;
+    wram->wHPBuffer3 = hp + LOW(itemEffect);
     // LD_B_A;
     // LD_A_hld;
     // CP_A_C;
     // LD_A_hl;
     // SBC_A_B;
     // IF_NC goto okay;
-    if(hp >= maxhp){
+    if(wram->wHPBuffer3 >= maxhp){
         // LD_A_hli;
         // LD_addr_A(wHPBuffer3 + 1);
         // LD_A_hl;
@@ -8322,48 +8322,49 @@ void Battle_StatsScreen(void){
     // RET;
 }
 
+// DEPRECATED: Inlined
 void TryPlayerSwitch(void){
-    LD_A_addr(wCurBattleMon);
-    LD_D_A;
-    LD_A_addr(wCurPartyMon);
-    CP_A_D;
-    IF_NZ goto check_trapped;
-    LD_HL(mBattleText_MonIsAlreadyOut);
-    CALL(aStdBattleTextbox);
-    JP(mBattleMenuPKMN_Loop);
+    // LD_A_addr(wCurBattleMon);
+    // LD_D_A;
+    // LD_A_addr(wCurPartyMon);
+    // CP_A_D;
+    // IF_NZ goto check_trapped;
+    // LD_HL(mBattleText_MonIsAlreadyOut);
+    // CALL(aStdBattleTextbox);
+    // JP(mBattleMenuPKMN_Loop);
 
 
-check_trapped:
-    LD_A_addr(wPlayerWrapCount);
-    AND_A_A;
-    IF_NZ goto trapped;
-    LD_A_addr(wEnemySubStatus5);
-    BIT_A(SUBSTATUS_CANT_RUN);
-    IF_Z goto try_switch;
+// check_trapped:
+    // LD_A_addr(wPlayerWrapCount);
+    // AND_A_A;
+    // IF_NZ goto trapped;
+    // LD_A_addr(wEnemySubStatus5);
+    // BIT_A(SUBSTATUS_CANT_RUN);
+    // IF_Z goto try_switch;
 
 
-trapped:
-    LD_HL(mBattleText_MonCantBeRecalled);
-    CALL(aStdBattleTextbox);
-    JP(mBattleMenuPKMN_Loop);
+// trapped:
+    // LD_HL(mBattleText_MonCantBeRecalled);
+    // CALL(aStdBattleTextbox);
+    // JP(mBattleMenuPKMN_Loop);
 
 
-try_switch:
-    CALL(aCheckIfCurPartyMonIsFitToFight);
-    JP_Z (mBattleMenuPKMN_Loop);
-    LD_A_addr(wCurBattleMon);
-    LD_addr_A(wLastPlayerMon);
-    LD_A(BATTLEPLAYERACTION_SWITCH);
-    LD_addr_A(wBattlePlayerAction);
-    CALL(aClearPalettes);
-    CALL(aDelayFrame);
-    CALL(aClearSprites);
-    CALL(av_LoadHPBar);
-    CALL(aCloseWindow);
-    CALL(aGetMemSGBLayout);
-    CALL(aSetPalettes);
-    LD_A_addr(wCurPartyMon);
-    LD_addr_A(wCurBattleMon);
+// try_switch:
+    // CALL(aCheckIfCurPartyMonIsFitToFight);
+    // JP_Z (mBattleMenuPKMN_Loop);
+    // LD_A_addr(wCurBattleMon);
+    // LD_addr_A(wLastPlayerMon);
+    // LD_A(BATTLEPLAYERACTION_SWITCH);
+    // LD_addr_A(wBattlePlayerAction);
+    // CALL(aClearPalettes);
+    // CALL(aDelayFrame);
+    // CALL(aClearSprites);
+    // CALL(av_LoadHPBar);
+    // CALL(aCloseWindow);
+    // CALL(aGetMemSGBLayout);
+    // CALL(aSetPalettes);
+    // LD_A_addr(wCurPartyMon);
+    // LD_addr_A(wCurBattleMon);
     // return PlayerSwitch();
 }
 
@@ -10734,20 +10735,20 @@ static void v_LoadHPBar(void){
     return LoadHPBar();
 }
 
-void LoadHPExpBarGFX(void){
 //  //  unreferenced
-    LD_DE(mEnemyHPBarBorderGFX);
-    LD_HL(vTiles2 + LEN_2BPP_TILE * 0x6c);
-    LD_BC((BANK(aEnemyHPBarBorderGFX) << 8) | 4);
-    CALL(aGet1bpp);
-    LD_DE(mHPExpBarBorderGFX);
-    LD_HL(vTiles2 + LEN_2BPP_TILE * 0x73);
-    LD_BC((BANK(aHPExpBarBorderGFX) << 8) | 6);
-    CALL(aGet1bpp);
-    LD_DE(mExpBarGFX);
-    LD_HL(vTiles2 + LEN_2BPP_TILE * 0x55);
-    LD_BC((BANK(aExpBarGFX) << 8) | 8);
-    JP(mGet2bpp);
+void LoadHPExpBarGFX(void){
+    // LD_DE(mEnemyHPBarBorderGFX);
+    // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x6c);
+    // LD_BC((BANK(aEnemyHPBarBorderGFX) << 8) | 4);
+    // CALL(aGet1bpp);
+    // LD_DE(mHPExpBarBorderGFX);
+    // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x73);
+    // LD_BC((BANK(aHPExpBarBorderGFX) << 8) | 6);
+    // CALL(aGet1bpp);
+    // LD_DE(mExpBarGFX);
+    // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x55);
+    // LD_BC((BANK(aExpBarGFX) << 8) | 8);
+    // JP(mGet2bpp);
 
 }
 
@@ -11413,7 +11414,7 @@ void GiveExperiencePoints(void){
                 wram->wCurPartyLevel = ++b;
                 // PUSH_BC;
                 // PREDEF(pLearnLevelMoves);
-                LearnLevelMoves(bc, wram->wCurPartyLevel, wram->wCurPartySpecies);
+                LearnLevelMoves(bc, wram->wCurPartyLevel, wram->wCurSpecies);
                 // POP_BC;
                 // LD_A_B;
                 // CP_A_C;
@@ -12006,41 +12007,53 @@ const txt_cmd_s ComeBackText[] = {
     text_end
 };
 
-void HandleSafariAngerEatingStatus(void){
 //  //  unreferenced
-    LD_HL(wSafariMonEating);
-    LD_A_hl;
-    AND_A_A;
-    IF_Z goto angry;
-    DEC_hl;
-    LD_HL(mBattleText_WildMonIsEating);
-    goto finish;
+void HandleSafariAngerEatingStatus(void){
+    // LD_HL(wSafariMonEating);
+    // LD_A_hl;
+    // AND_A_A;
+    // IF_Z goto angry;
+    if(wram->wSafariMonEating != 0) {
+        // DEC_hl;
+        wram->wSafariMonEating--;
+        // LD_HL(mBattleText_WildMonIsEating);
+        // goto finish;
+        SafeLoadTempTilemapToTilemap();
+        return StdBattleTextbox(BattleText_WildMonIsEating);
+    }
+    else {
+    // angry:
+        // DEC_HL;
+        //assert ['wSafariMonEating - 1 == wSafariMonAngerCount'];
+        // LD_A_hl;
+        // AND_A_A;
+        // RET_Z ;
+        if(wram->wSafariMonAngerCount == 0)
+            return;
+        // DEC_hl;
+        // LD_HL(mBattleText_WildMonIsAngry);
+        // IF_NZ goto finish;
+        if(--wram->wSafariMonAngerCount == 0) {
+            // PUSH_HL;
+            // LD_A_addr(wEnemyMonSpecies);
+            // LD_addr_A(wCurSpecies);
+            wram->wCurSpecies = wram->wEnemyMon.species;
+            // CALL(aGetBaseData);
+            GetBaseData(wram->wCurSpecies);
+            // LD_A_addr(wBaseCatchRate);
+            // LD_addr_A(wEnemyMonCatchRate);
+            wram->wEnemyMonCatchRate = wram->wBaseCatchRate;
+            // POP_HL;
+        }
 
-
-angry:
-    DEC_HL;
-    //assert ['wSafariMonEating - 1 == wSafariMonAngerCount'];
-    LD_A_hl;
-    AND_A_A;
-    RET_Z ;
-    DEC_hl;
-    LD_HL(mBattleText_WildMonIsAngry);
-    IF_NZ goto finish;
-    PUSH_HL;
-    LD_A_addr(wEnemyMonSpecies);
-    LD_addr_A(wCurSpecies);
-    CALL(aGetBaseData);
-    LD_A_addr(wBaseCatchRate);
-    LD_addr_A(wEnemyMonCatchRate);
-    POP_HL;
-
-
-finish:
-    PUSH_HL;
-    CALL(aSafeLoadTempTilemapToTilemap);
-    POP_HL;
-    JP(mStdBattleTextbox);
-
+    // finish:
+        // PUSH_HL;
+        // CALL(aSafeLoadTempTilemapToTilemap);
+        // POP_HL;
+        // JP(mStdBattleTextbox);
+        SafeLoadTempTilemapToTilemap();
+        return StdBattleTextbox(BattleText_WildMonIsAngry);
+    }
 }
 
 void FillInExpBar(uint8_t* hl, uint8_t b, const uint8_t* de) {

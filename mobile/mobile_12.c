@@ -1127,36 +1127,33 @@ void Function483e8(const struct MenuData* data, tile_t* de){
     // RET;
 }
 
+// Inlined
 void Function4840c(void){
     // CALL(aFunction48187);
-    Function48187();
     // CALL(aFunction48283);
-    Function48283();
     // hlcoord(1, 16, wTilemap);
     // LD_DE(mMobileString_PersonalInfo);
     // CALL(aPlaceString);
-    PlaceStringSimple(U82C(MobileString_PersonalInfo), coord(1, 16, wram->wTilemap));
     // CALL(aFunction486bf);
-    Function486bf();
-    POP_BC;
-    LD_HL(wMenuCursorY);
-    LD_hl_B;
-    LD_A_addr(wd002);
-    BIT_A(6);
-    IF_NZ goto narrower_box;
-    LD_B(9);
-    LD_C(1);
-    hlcoord(1, 4, wTilemap);
-    CALL(aClearBox);
-    JP(mFunction48157);
+    // POP_BC;
+    // LD_HL(wMenuCursorY);
+    // LD_hl_B;
+    // LD_A_addr(wd002);
+    // BIT_A(6);
+    // IF_NZ goto narrower_box;
+    // LD_B(9);
+    // LD_C(1);
+    // hlcoord(1, 4, wTilemap);
+    // CALL(aClearBox);
+    // JP(mFunction48157);
 
 
-narrower_box:
-    LD_B(7);
-    LD_C(1);
-    hlcoord(1, 6, wTilemap);
-    CALL(aClearBox);
-    JP(mFunction48157);
+// narrower_box:
+    // LD_B(7);
+    // LD_C(1);
+    // hlcoord(1, 6, wTilemap);
+    // CALL(aClearBox);
+    // JP(mFunction48157);
 
 }
 

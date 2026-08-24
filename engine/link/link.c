@@ -2994,28 +2994,25 @@ void ExitLinkCommunications(void){
     // RET;
 }
 
-void GSPlaceTradeScreenFooter(void){
 //  //  unreferenced
+void GSPlaceTradeScreenFooter(void){
 //  Fill the screen footer with pattern tile
-    hlcoord(0, 16, wTilemap);
-    LD_A(0x7e);
-    LD_BC(2 * SCREEN_WIDTH);
-    CALL(aByteFill);
+    // hlcoord(0, 16, wTilemap);
+    // LD_A(0x7e);
+    // LD_BC(2 * SCREEN_WIDTH);
+    // CALL(aByteFill);
 //  Clear out area for cancel string
-    hlcoord(1, 16, wTilemap);
-    LD_A(0x7f);
-    LD_BC(SCREEN_WIDTH - 2);
-    CALL(aByteFill);
+    // hlcoord(1, 16, wTilemap);
+    // LD_A(0x7f);
+    // LD_BC(SCREEN_WIDTH - 2);
+    // CALL(aByteFill);
 //  Place the string
-    hlcoord(2, 16, wTilemap);
-    LD_DE(mGSPlaceTradeScreenFooter_CancelString);
-    JP(mPlaceString);
+    // hlcoord(2, 16, wTilemap);
+    // LD_DE(mGSPlaceTradeScreenFooter_CancelString);
+    // JP(mPlaceString);
 
-
-CancelString:
+// CancelString:
     //db ['"CANCEL@"'];
-
-    return LinkTradePlaceArrow();
 }
 
 //  Indicates which pokemon the other player has selected to trade
