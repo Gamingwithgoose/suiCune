@@ -405,9 +405,11 @@ static struct SpriteLoadData GetMonSprite(uint8_t a){
 //  Checks to see whether we can apply a facing to a sprite.
 //  Returns true unless the sprite is a Pokemon or a Still Sprite.
 bool v_DoesSpriteHaveFacings(uint8_t a){
+    if(a >= SPRITE_VARS)
+        return v_DoesSpriteHaveFacings(gPlayer.variableSprites[a - SPRITE_VARS]);
     // CP_A(SPRITE_POKEMON);
     // IF_NC goto only_down;
-    if(a >= SPRITE_POKEMON)
+    if(a >= SPRITE_POKEMON || a == 0)
         return false;
 
     // PUSH_HL;
