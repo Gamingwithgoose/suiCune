@@ -3,6 +3,7 @@
 #include "../../home/pokemon.h"
 #include "../smallflag.h"
 #include "../../data/moves/tmhm_moves.h"
+#include "../../data/moves/names.h"
 
 uint8_t CanLearnTMHMMove(species_t species, move_t move){
     // LD_A_addr(wCurPartySpecies);
@@ -30,6 +31,8 @@ uint8_t CanLearnTMHMMove(species_t species, move_t move){
             // POP_HL;
             // LD_C(0);
             // RET;
+            const char* move_name = (move == NO_MOVE)? "NO_MOVE": MoveNames[move-1];
+            log_warn("Move %s is not a valid TMHM move\n", move_name);
             return 0;
         }
         // CP_A_B;
@@ -48,10 +51,10 @@ uint8_t CanLearnTMHMMove(species_t species, move_t move){
     // PUSH_DE;
     // LD_D(0);
     // PREDEF(pSmallFarFlagAction);
-    return SmallFarFlagAction(wram->wBaseTMHM, c, CHECK_FLAG);
+    uint8_t res = SmallFarFlagAction(wram->wBaseTMHM, c, CHECK_FLAG);
     // POP_DE;
     // RET;
-
+    return res;
 }
 
 move_t GetTMHMMove(uint8_t tmhm){

@@ -198,7 +198,7 @@ u8_flag_s ChooseMonToLearnTMHM_NoRefresh(void){
 
 void TeachTMHM(void){
     // PREDEF(pCanLearnTMHMMove);
-    uint8_t c = CanLearnTMHMMove(wram->wCurSpecies, wram->wPutativeTMHMMove);
+    uint8_t c = CanLearnTMHMMove(wram->wCurPartySpecies, wram->wPutativeTMHMMove);
 
     // PUSH_BC;
     // LD_A_addr(wCurPartyMon);
@@ -681,7 +681,7 @@ uint8_t TMHM_DisplayPocketItems(void){
             // LD_DE(wTempTMHM);
             // LD_BC((PRINTNUM_LEFTALIGN | 1 << 8) | 2);
             // CALL(aPrintNum);
-            PrintNum(lineCoord + 1, &tm, PRINTNUM_LEADINGZEROS | 1, 2);
+            PrintNum(lineCoord + 1, &tm, PRINTNUM_LEFTALIGN | 1, 2);
             // POP_AF;
             // LD_addr_A(wTempTMHM);
         }

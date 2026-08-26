@@ -31,6 +31,13 @@ struct StringIDPair *constant_strings = NULL;
 #define hm_entry(hmNum, hmName)       do {  \
         entry(hmNum);                       \
         entry(HM_##hmName);                 \
+        entry(hmName##_TMNUM);              \
+    } while(0)
+
+#define mt_entry(mtNum, mtName)       do {  \
+        entry(mtNum);                       \
+        entry(MT_##mtName);                 \
+        entry(mtName##_TMNUM);              \
     } while(0)
 
 #define map_entry(map)                                do {\
@@ -242,6 +249,7 @@ void PopulateConstantsHashtable(void) {
 
     entry(TM01);
     entry(TM_DYNAMICPUNCH);
+    entry(DYNAMICPUNCH_TMNUM);
     tm_entry(TM02, HEADBUTT);
     tm_entry(TM03, CURSE);
     tm_entry(TM04, ROLLOUT);
@@ -294,12 +302,16 @@ void PopulateConstantsHashtable(void) {
     tm_entry(TM50, NIGHTMARE);
     entry(HM01);
     entry(HM_CUT);
+    entry(CUT_TMNUM);
     hm_entry(HM02, FLY);
     hm_entry(HM03, SURF);
     hm_entry(HM04, STRENGTH);
     hm_entry(HM05, FLASH);
     hm_entry(HM06, WHIRLPOOL);
     hm_entry(HM07, WATERFALL);
+    mt_entry(MT01, FLAMETHROWER);
+    mt_entry(MT02, THUNDERBOLT);
+    mt_entry(MT03, ICE_BEAM);
 
 // Species
     entry(BULBASAUR);
