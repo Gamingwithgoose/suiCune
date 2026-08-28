@@ -281,7 +281,7 @@ void PlaceApricornQuantity(void){
     PrintNum(hl + 1, &wram->wItemQuantityChange, PRINTNUM_LEADINGZEROS | 1, 2);
 }
 
-uint8_t Kurt_GetQuantityOfApricorn(item_t apricorn){
+uint8_t Kurt_GetQuantityOfApricorn(ItemId apricorn){
     // PUSH_BC;
     // LD_HL(wNumItems);
     item_quantity_pocket_s* hl = &GetItemPocket(ITEM_POCKET)->quantity_pocket;
@@ -290,7 +290,7 @@ uint8_t Kurt_GetQuantityOfApricorn(item_t apricorn){
     // LD_B(0);
     uint8_t b = 0;
 
-    for(uint32_t i = 0; hl->pocket[i].item != (item_t)-1; ++i) {
+    for(uint32_t i = 0; hl->pocket[i].item != ITEM_LIST_END; ++i) {
     // loop:
         // INC_HL;
         // LD_A_hli;
@@ -344,7 +344,7 @@ void Kurt_GiveUpSelectedQuantityOfSelectedApricorn(void){
     item_quantity_pocket_s* hl = &GetItemPocket(ITEM_POCKET)->quantity_pocket;
     // LD_A_addr(wCurItem);
     // LD_C_A;
-    item_t c = wram->wCurItem;
+    ItemId c = wram->wCurItem;
     // LD_E(0x0);
     uint8_t e = 0x0;
     // XOR_A_A;
@@ -355,7 +355,7 @@ void Kurt_GiveUpSelectedQuantityOfSelectedApricorn(void){
     wram->wApricorns = 0xff;
 
 //  Search for [wCurItem] in the bag.
-    item_t a;
+    ItemId a;
     uint32_t i = 0;
     while(1) {
     // loop1:
@@ -372,7 +372,7 @@ void Kurt_GiveUpSelectedQuantityOfSelectedApricorn(void){
         //  If we've reached the end of the pocket, break.
             // CP_A(-1);
             // IF_Z goto okay1;
-            if(a == (item_t)-1)
+            if(a == ITEM_LIST_END)
                 goto okay1;
         //  If we haven't found what we're looking for, continue.
             // CP_A_C;

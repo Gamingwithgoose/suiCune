@@ -4,7 +4,7 @@
 
 //  Perform action b on bit c in flag array hl.
 //  If checking a flag, check flag array d:hl unless d is 0.
-uint8_t SmallFarFlagAction(uint8_t* hl, uint8_t c, uint8_t b){
+uint8_t SmallFarFlagAction(uint8_t* hl, uint16_t c, uint8_t b){
 //  For longer flag arrays, see FlagAction.
     // PUSH_HL;
     // PUSH_BC;

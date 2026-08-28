@@ -56,7 +56,7 @@ uint8_t GetWeekday(void){
     return day % 7;
 }
 
-void SetSeenAndCaughtMon(dex_t c){
+void SetSeenAndCaughtMon(DexId c){
     // PUSH_AF;
     // LD_C_A;
     // LD_HL(wPokedexCaught);
@@ -69,7 +69,7 @@ void SetSeenAndCaughtMon(dex_t c){
     return SetSeenMon(c);
 }
 
-void SetSeenMon(dex_t c){
+void SetSeenMon(DexId c){
     // LD_C_A;
     // LD_HL(wPokedexSeen);
     // LD_B(SET_FLAG);
@@ -77,7 +77,7 @@ void SetSeenMon(dex_t c){
     PokedexFlagAction(gPokemon.pokedexSeen, c, SET_FLAG);
 }
 
-bool CheckCaughtMon(dex_t c){
+bool CheckCaughtMon(DexId c){
     // LD_C_A;
     // LD_HL(wPokedexCaught);
     // LD_B(CHECK_FLAG);
@@ -85,7 +85,7 @@ bool CheckCaughtMon(dex_t c){
     return PokedexFlagAction(gPokemon.pokedexCaught, c, CHECK_FLAG);
 }
 
-bool CheckSeenMon(dex_t c){
+bool CheckSeenMon(DexId c){
     // LD_C_A;
     // LD_HL(wPokedexSeen);
     // LD_B(CHECK_FLAG);
@@ -93,11 +93,11 @@ bool CheckSeenMon(dex_t c){
     return PokedexFlagAction(gPokemon.pokedexSeen, c, CHECK_FLAG);
 }
 
-bool PokedexFlagAction(uint8_t* hl, dex_t c, uint8_t b){
+bool PokedexFlagAction(uint8_t* hl, DexId c, uint8_t b){
     // LD_D(0);
     // PREDEF(pSmallFarFlagAction);
     // LD_A_C;
     // AND_A_A;
     // RET;
-    return SmallFarFlagAction(hl, (uint8_t)c, b) != 0;
+    return SmallFarFlagAction(hl, c, b) != 0;
 }

@@ -21,6 +21,23 @@
 #include "../../data/pokemon/evos_attacks_pointers.h"
 #include "../../data/moves/moves.h"
 #include <stddef.h>
+#include <stdlib.h>
+
+static LegacySpeciesId EvolutionSpeciesToLegacy(SpeciesId species) {
+    if(species > UINT8_MAX) {
+        log_err("Evolution species ID %u cannot enter the legacy Pokemon record.\n", species);
+        abort();
+    }
+    return (LegacySpeciesId)species;
+}
+
+static LegacyMoveId LearnsetMoveToLegacy(MoveId move) {
+    if(move > UINT8_MAX) {
+        log_err("Learnset move ID %u cannot enter the legacy Pokemon record.\n", move);
+        abort();
+    }
+    return (LegacyMoveId)move;
+}
 
 void EvolvePokemon(void){
     // LD_HL(wEvolvableFlags);
@@ -317,7 +334,8 @@ MasterLoop:
 
         // LD_A_hl;
         // LD_addr_A(wEvolutionNewSpecies);
-        wram->wEvolutionNewSpecies = evos->species;
+        LegacySpeciesId newSpecies = EvolutionSpeciesToLegacy(evos->species);
+        wram->wEvolutionNewSpecies = newSpecies;
         // LD_A_addr(wCurPartyMon);
         // LD_HL(wPartyMonNicknames);
         // CALL(aGetNickname);
@@ -372,11 +390,11 @@ MasterLoop:
 
         // LD_A_hl;
         // LD_addr_A(wCurSpecies);
-        wram->wCurSpecies = evos->species;
+        wram->wCurSpecies = newSpecies;
         // LD_addr_A(wTempMonSpecies);
-        wram->wTempMon.mon.species = evos->species;
+        wram->wTempMon.mon.species = newSpecies;
         // LD_addr_A(wEvolutionNewSpecies);
-        wram->wEvolutionNewSpecies = evos->species;
+        wram->wEvolutionNewSpecies = newSpecies;
         // LD_addr_A(wNamedObjectIndex);
         // CALL(aGetPokemonName);
         GetPokemonName(evos->species);
@@ -629,7 +647,8 @@ void LearnLevelMoves(struct PartyMon* mon, uint8_t level, species_t species){
 
         // PUSH_HL;
         // LD_D_A;
-        move_t to_learn = hl->move;
+        MoveId to_learn = hl->move;
+        LegacyMoveId legacyMove = LearnsetMoveToLegacy(to_learn);
         // LD_HL(wPartyMon1Moves);
         // LD_A_addr(wCurPartyMon);
         // LD_BC(PARTYMON_STRUCT_LENGTH);
@@ -644,7 +663,7 @@ void LearnLevelMoves(struct PartyMon* mon, uint8_t level, species_t species){
             // LD_A_hli;
             // CP_A_D;
             // IF_Z goto has_move;
-            if(*moves == to_learn) {
+            if(*moves == legacyMove) {
                 hl++;
                 goto find_move;
             }
@@ -660,13 +679,13 @@ void LearnLevelMoves(struct PartyMon* mon, uint8_t level, species_t species){
     // learn:
         // LD_A_D;
         // LD_addr_A(wPutativeTMHMMove);
-        wram->wPutativeTMHMMove = to_learn;
+        wram->wPutativeTMHMMove = legacyMove;
         // LD_addr_A(wNamedObjectIndex);
         // CALL(aGetMoveName);
         // CALL(aCopyName1);
         CopyName1(GetMoveName(to_learn));
         // PREDEF(pLearnMove);
-        LearnMove(to_learn);
+        LearnMove(legacyMove);
         // POP_HL;
         hl++;
         // goto find_move;
@@ -793,7 +812,7 @@ void FillMoves(move_t* de, uint8_t* pp, species_t species, uint8_t level){
     LearnMove:
         // LD_A_hl;
         // LD_de_A;
-        de[c] = moves[i].move;
+        de[c] = LearnsetMoveToLegacy(moves[i].move);
         log_debug("Filled move #%d with move %02X\n", c, de[c]);
         // LD_A_addr(wEvolutionOldSpecies);
         // AND_A_A;
@@ -917,4 +936,3 @@ species_t GetPreEvolution(species_t species){
     // RET;
     return species;
 }
-

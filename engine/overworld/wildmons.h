@@ -21,7 +21,7 @@ void UpdateRoamMons(void);
 void JumpRoamMons(void);
 struct MapId JumpRoamMon(void);
 void v_BackUpMapIndices(void);
-bool ValidateTempWildMonSpecies(species_t a);
+bool ValidateTempWildMonSpecies(SpeciesId a);
 void RandomUnseenWildMon(void);
 void RandomPhoneWildMon(void);
 void RandomPhoneMon(void);

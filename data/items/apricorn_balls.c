@@ -8,5 +8,5 @@ const struct U8Item ApricornBalls[] = {
     {WHT_APRICORN, FAST_BALL},
     {BLK_APRICORN, HEAVY_BALL},
     {PNK_APRICORN, LOVE_BALL},
-    {0xff, (item_t)-1},
+    {0xff, ITEM_LIST_END},
 };

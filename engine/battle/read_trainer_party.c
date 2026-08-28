@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include <stdlib.h>
 #include "read_trainer_party.h"
 #include "../../home/sram.h"
 #include "../../home/copy.h"
@@ -10,6 +11,30 @@ static void TrainerType1(const struct TrainerParty* de);
 static void TrainerType2(const struct TrainerParty* de);
 static void TrainerType3(const struct TrainerParty* de);
 static void TrainerType4(const struct TrainerParty* de);
+
+static LegacySpeciesId TrainerSpeciesToLegacy(SpeciesId species) {
+    if(species > UINT8_MAX) {
+        log_err("Trainer species ID %u cannot enter the legacy party record.\n", species);
+        abort();
+    }
+    return (LegacySpeciesId)species;
+}
+
+static LegacyMoveId TrainerMoveToLegacy(MoveId move) {
+    if(move > UINT8_MAX) {
+        log_err("Trainer move ID %u cannot enter the legacy party record.\n", move);
+        abort();
+    }
+    return (LegacyMoveId)move;
+}
+
+static LegacyItemId TrainerItemToLegacy(ItemId item) {
+    if(item > UINT8_MAX) {
+        log_err("Trainer item ID %u cannot enter the legacy party record.\n", item);
+        abort();
+    }
+    return (LegacyItemId)item;
+}
 
 void ReadTrainerParty(void){
     PEEK("");
@@ -59,9 +84,15 @@ void ReadTrainerParty(void){
         // CALL(aTrainerType2);
         // REG_DE = sMysteryGiftTrainer;
         // TrainerType2();
-        struct TrainerPartyMoves* moves = GBToRAMAddr(sMysteryGiftTrainer);
+        const struct LegacyTrainerPartyMoves* legacyMoves = GBToRAMAddr(sMysteryGiftTrainer);
+        struct TrainerPartyMoves moves[PARTY_LENGTH];
         uint8_t size = 0;
-        for(; size < 6 && moves[size].species != 0xff && moves[size].level != 0xff; size++) {}
+        for(; size < PARTY_LENGTH && legacyMoves[size].species != UINT8_MAX && legacyMoves[size].level != UINT8_MAX; size++) {
+            moves[size].level = legacyMoves[size].level;
+            moves[size].species = legacyMoves[size].species;
+            for(uint8_t move = 0; move < NUM_MOVES; move++)
+                moves[size].moves[move] = legacyMoves[size].moves[move];
+        }
         struct TrainerParty p = {.pmoves = moves, .size = size};
         TrainerType2(&p);
         // CALL(aCloseSRAM);
@@ -159,14 +190,15 @@ void TrainerType1(const struct TrainerParty* de){
         log_debug("level=%d ", wram->wCurPartyLevel);
         // LD_A_hli;
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = de->pnormal[i].species;
+        LegacySpeciesId species = TrainerSpeciesToLegacy(de->pnormal[i].species);
+        wram->wCurPartySpecies = species;
         log_debug("species=%d\n", wram->wCurPartySpecies);
         // LD_A(OTPARTYMON);
         // LD_addr_A(wMonType);
         wram->wMonType = OTPARTYMON;
         // PUSH_HL;
         // PREDEF(pTryAddMonToParty);
-        TryAddMonToParty(de->pnormal[i].species, de->pnormal[i].level);
+        TryAddMonToParty(species, de->pnormal[i].level);
         // POP_HL;
         // goto loop;
     }
@@ -189,14 +221,15 @@ void TrainerType2(const struct TrainerParty* de){
         wram->wCurPartyLevel = de->pmoves[i].level;
         // LD_A_hli;
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = de->pmoves[i].species;
+        LegacySpeciesId species = TrainerSpeciesToLegacy(de->pmoves[i].species);
+        wram->wCurPartySpecies = species;
         // LD_A(OTPARTYMON);
         // LD_addr_A(wMonType);
         wram->wMonType = OTPARTYMON;
 
         // PUSH_HL;
         // PREDEF(pTryAddMonToParty);
-        TryAddMonToParty(de->pmoves[i].species, de->pmoves[i].level);
+        TryAddMonToParty(species, de->pmoves[i].level);
         // LD_A_addr(wOTPartyCount);
         // DEC_A;
         // LD_HL(wOTPartyMon1Moves);
@@ -215,7 +248,7 @@ void TrainerType2(const struct TrainerParty* de){
             // INC_DE;
             // DEC_B;
             // IF_NZ goto copy_moves;
-            wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.moves[j] = de->pmoves[i].moves[j];
+            wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.moves[j] = TrainerMoveToLegacy(de->pmoves[i].moves[j]);
         }
 
         // PUSH_HL;
@@ -245,7 +278,7 @@ void TrainerType2(const struct TrainerParty* de){
             // PUSH_HL;
             // PUSH_BC;
             // DEC_A;
-            move_t a = de->pmoves[i].moves[j];
+            MoveId a = de->pmoves[i].moves[j];
             // LD_HL(mMoves + MOVE_PP);
             // LD_BC(MOVE_LENGTH);
             // CALL(aAddNTimes);
@@ -285,13 +318,14 @@ void TrainerType3(const struct TrainerParty* de){
         // LD_A_hli;
         wram->wCurPartyLevel = de->pitem[i].level;
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = de->pitem[i].species;
+        LegacySpeciesId species = TrainerSpeciesToLegacy(de->pitem[i].species);
+        wram->wCurPartySpecies = species;
         // LD_A(OTPARTYMON);
         // LD_addr_A(wMonType);
         wram->wMonType = OTPARTYMON;
         // PUSH_HL;
         // PREDEF(pTryAddMonToParty);
-        TryAddMonToParty(de->pitem[i].species, de->pitem[i].level);
+        TryAddMonToParty(species, de->pitem[i].level);
         // LD_A_addr(wOTPartyCount);
         // DEC_A;
         // LD_HL(wOTPartyMon1Item);
@@ -302,7 +336,7 @@ void TrainerType3(const struct TrainerParty* de){
         // POP_HL;
         // LD_A_hli;
         // LD_de_A;
-        wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.item = de->pitem[i].item;
+        wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.item = TrainerItemToLegacy(de->pitem[i].item);
         // goto loop;
     }
 
@@ -324,7 +358,8 @@ void TrainerType4(const struct TrainerParty* de){
         // LD_A_hli;
         wram->wCurPartyLevel = de->pitemmoves[i].level;
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = de->pitemmoves[i].species;
+        LegacySpeciesId species = TrainerSpeciesToLegacy(de->pitemmoves[i].species);
+        wram->wCurPartySpecies = species;
 
         // LD_A(OTPARTYMON);
         // LD_addr_A(wMonType);
@@ -332,7 +367,7 @@ void TrainerType4(const struct TrainerParty* de){
 
         // PUSH_HL;
         // PREDEF(pTryAddMonToParty);
-        TryAddMonToParty(de->pitemmoves[i].species, de->pitemmoves[i].level);
+        TryAddMonToParty(species, de->pitemmoves[i].level);
         // LD_A_addr(wOTPartyCount);
         // DEC_A;
         // LD_HL(wOTPartyMon1Item);
@@ -344,7 +379,7 @@ void TrainerType4(const struct TrainerParty* de){
 
         // LD_A_hli;
         // LD_de_A;
-        wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.item = de->pitemmoves[i].item;
+        wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.item = TrainerItemToLegacy(de->pitemmoves[i].item);
 
         // PUSH_HL;
         // LD_A_addr(wOTPartyCount);
@@ -365,7 +400,7 @@ void TrainerType4(const struct TrainerParty* de){
             // INC_DE;
             // DEC_B;
             // IF_NZ goto copy_moves;
-            wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.moves[j] = de->pitemmoves[i].moves[j];
+            wram->wOTPartyMon[wram->wOTPartyCount - 1].mon.moves[j] = TrainerMoveToLegacy(de->pitemmoves[i].moves[j]);
         }
 
         // PUSH_HL;
@@ -397,7 +432,7 @@ void TrainerType4(const struct TrainerParty* de){
             // PUSH_HL;
             // PUSH_BC;
             // DEC_A;
-            move_t a = de->pitemmoves[i].moves[j];
+            MoveId a = de->pitemmoves[i].moves[j];
             // LD_HL(mMoves + MOVE_PP);
             // LD_BC(MOVE_LENGTH);
             // CALL(aAddNTimes);

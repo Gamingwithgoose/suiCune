@@ -4,10 +4,10 @@ uint8_t* GetName(uint8_t type, uint16_t index);
 void GetName_GB(void);
 void GetNthString(void);
 uint16_t GetNthString_GB(uint16_t hl, uint8_t a);
-uint8_t* GetBasePokemonName(species_t a);
-uint8_t* GetPokemonName(species_t index);
+uint8_t* GetBasePokemonName(SpeciesId a);
+uint8_t* GetPokemonName(SpeciesId index);
 void GetPokemonName_GB(void);
-uint8_t* GetItemName(item_t a);
-uint8_t* GetTMHMName(item_t a);
-uint8_t* GetMoveName(move_t move);
+uint8_t* GetItemName(ItemId a);
+uint8_t* GetTMHMName(ItemId a);
+uint8_t* GetMoveName(MoveId move);
 #include "hm_moves.h"

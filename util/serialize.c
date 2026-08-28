@@ -6,6 +6,9 @@
 #include <memory.h>
 #include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // Serialization functions
 // Serializes runtime structs so that they match the layout of sram structs.
@@ -23,6 +26,9 @@ enum FieldType {
     TY_SPECIES,
     TY_ITEM,
     TY_MOVE,
+    TY_LEGACY_SPECIES,
+    TY_LEGACY_ITEM,
+    TY_LEGACY_MOVE,
     TY_MAPID,
     TY_ITEMQUANTITY,
     TY_SKIP,
@@ -62,7 +68,6 @@ enum {
 #define FLD_STR(struc, fld) {.type=TY_STRUCT | struc, .offset=offsetof(FLD_TYPE, fld), .count = 1}
 #define FLD_STR_ARR(struc, fld, cnt) {.type=TY_STRUCT | struc, .offset=offsetof(FLD_TYPE, fld), .count = cnt}
 #define FLD_STR_ARR_(struc, fld) {.type=TY_STRUCT | struc, .offset=offsetof(FLD_TYPE, fld), .count = lengthof(((FLD_TYPE*)0)->fld)}
-#define FLD_OFFSET(ty, fld, off) {.type=ty, .offset=offsetof(FLD_TYPE, fld) + off, .count = 1}
 const struct SerialField Struc_U8Item[] = {
     FLD(TY_U8, value),
     FLD(TY_ITEM, item),
@@ -71,9 +76,9 @@ const struct SerialField Struc_U8Item[] = {
 
 #define FLD_TYPE struct BoxMon
 const struct SerialField Struc_BoxMon[] = {
-    FLD(TY_SPECIES, species),
-    FLD(TY_ITEM, item),
-    FLD_ARR_(TY_MOVE, moves),
+    FLD(TY_LEGACY_SPECIES, species),
+    FLD(TY_LEGACY_ITEM, item),
+    FLD_ARR_(TY_LEGACY_MOVE, moves),
     FLD(TY_U16LE, id),
     FLD_ARR_(TY_U8, exp),
     FLD_ARR_(TY_U16LE, statExp),
@@ -107,7 +112,7 @@ const struct SerialField Struc_NicknamedMon[] = {
 
 #define FLD_TYPE struct TradeMon
 const struct SerialField Struc_TradeMon[] = {
-    FLD(TY_SPECIES, species),
+    FLD(TY_LEGACY_SPECIES, species),
     FLD_ARR_(TY_U8, speciesName),
     FLD_ARR_(TY_U8, nickname),
     FLD_ARR_(TY_U8, senderName),
@@ -205,7 +210,7 @@ const struct SerialField Struc_MapObject[] = {
 #define FLD_TYPE struct Box
 const struct SerialField Struc_Box[] = {
     FLD(TY_U8, count),
-    FLD_ARR_(TY_SPECIES, species),
+    FLD_ARR_(TY_LEGACY_SPECIES, species),
     FLD_STR_ARR_(STRUC_BOXMON, mons),
     FLD_ARR(TY_U8, monOT, MONS_PER_BOX * NAME_LENGTH),
     FLD_ARR(TY_U8, monNicknames, MONS_PER_BOX * MON_NAME_LENGTH),
@@ -218,7 +223,7 @@ const struct SerialField Struc_MailMsg[] = {
     FLD_ARR_(TY_U8, author),
     FLD(TY_U16LE, nationality),
     FLD(TY_U16LE, authorID),
-    FLD(TY_SPECIES, species),
+    FLD(TY_LEGACY_SPECIES, species),
     FLD(TY_U8, type),
 };
 #undef FLD_TYPE
@@ -229,9 +234,9 @@ const struct SerialField Struc_OfferMon[] = {
     FLD(TY_U16LE, trainerID),
     FLD(TY_U16LE, secretID),
     FLD(TY_U8, gender),
-    FLD(TY_SPECIES, species),
+    FLD(TY_LEGACY_SPECIES, species),
     FLD(TY_U8, reqGender),
-    FLD(TY_SPECIES, reqSpecies),
+    FLD(TY_LEGACY_SPECIES, reqSpecies),
     FLD_ARR_(TY_U8, sender),
     FLD_STR(STRUC_PARTYMON, mon),
     FLD_ARR_(TY_U8, OT),
@@ -340,38 +345,23 @@ const struct SerialField Struc_PlayerData[] = {
     FLD_ARR_(TY_U8, badges),
     FLD_ARR_(TY_U8, TMsHMs),
     FLD(TY_U8, numItems),
-    // for(int i = 0; i < MAX_ITEMS * 2; i += 2) {
-    //     dest = Serialize_Item(dest, data->items[i]);
-    //     *(dest++) = (uint8_t)data->items[i + 1];
-    // }
     FLD_ARR(TY_ITEMQUANTITY, items, MAX_ITEMS),
-    // dest = Serialize_Item(dest, data->items[MAX_ITEMS * 2]);
-    FLD_OFFSET(TY_ITEM, items, MAX_ITEMS * 2),
+    FLD(TY_ITEM, itemsEnd),
     FLD(TY_U8, numKeyItems),
     FLD_ARR_(TY_ITEM, keyItems),
     FLD(TY_U8, numBalls),
-    // for(int i = 0; i < MAX_BALLS * 2; i += 2) {
-    //     dest = Serialize_Item(dest, data->balls[i]);
-    //     *(dest++) = (uint8_t)data->balls[i + 1];
-    // }
     FLD_ARR(TY_ITEMQUANTITY, balls, MAX_BALLS),
-    // dest = Serialize_Item(dest, data->balls[MAX_BALLS * 2]);
-    FLD_OFFSET(TY_ITEM, balls, MAX_BALLS * 2),
+    FLD(TY_ITEM, ballsEnd),
     FLD(TY_U8, numPCItems),
-    // for(int i = 0; i < MAX_PC_ITEMS * 2; i += 2) {
-    //     dest = Serialize_Item(dest, data->PCItems[i]);
-    //     *(dest++) = (uint8_t)data->PCItems[i + 1];
-    // }
     FLD_ARR(TY_ITEMQUANTITY, PCItems, MAX_PC_ITEMS),
-    // dest = Serialize_Item(dest, data->PCItems[MAX_PC_ITEMS * 2]);
-    FLD_OFFSET(TY_ITEM, PCItems, MAX_PC_ITEMS * 2),
+    FLD(TY_ITEM, PCItemsEnd),
     FLD(TY_U8, pokegearFlags),
     FLD(TY_U8, radioTuningKnob),
     FLD(TY_U8, lastDexMode),
     // uint8_t skip_111[1];
     FLD_ARR_(TY_SKIP, skip_111),
     FLD(TY_U8, whichRegisteredItem),
-    FLD(TY_U8, registeredItem),
+    FLD(TY_ITEM, registeredItem),
     FLD(TY_U8, playerState),
     FLD(TY_U8, hallOfFameCount),
     // uint8_t skip_112[1];
@@ -608,7 +598,7 @@ const struct SerialField Struc_PlayerData[] = {
 #define FLD_TYPE struct PokemonData
 const struct SerialField Struc_PokemonData[] = {
     FLD(TY_U8, partyCount),
-    FLD_ARR_(TY_SPECIES, partySpecies),
+    FLD_ARR_(TY_LEGACY_SPECIES, partySpecies),
     FLD(TY_U8, partyEnd), // unused
     // older code doesn't check wPartyCount
     // wPartyMon1 - wPartyMon6
@@ -652,7 +642,7 @@ const struct SerialField Struc_PokemonData[] = {
     FLD_ARR_(TY_U8, eggMonNickname),
     FLD_ARR_(TY_U8, eggMonOT),
     FLD_STR(STRUC_BOXMON, eggMon),
-    FLD(TY_SPECIES, bugContestSecondPartySpecies),
+    FLD(TY_LEGACY_SPECIES, bugContestSecondPartySpecies),
     FLD_STR(STRUC_PARTYMON, contestMon),
     FLD(TY_U8, dunsparceMapGroup),
     FLD(TY_U8, dunsparceMapNumber),
@@ -722,16 +712,22 @@ uint8_t* Serialize_Field(uint8_t* dst, const struct SerialField* fld, const void
             return dst;
         case TY_SPECIES: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                dst = Serialize_Species(dst, *FLD_PTR_IDX(data, fld->offset, i, species_t)); 
+                dst = Serialize_Species(dst, *FLD_PTR_IDX(data, fld->offset, i, SpeciesId));
             return dst;
         case TY_ITEM: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                dst = Serialize_Item(dst, *FLD_PTR_IDX(data, fld->offset, i, item_t)); 
+                dst = Serialize_Item(dst, *FLD_PTR_IDX(data, fld->offset, i, ItemId));
             return dst;
         case TY_MOVE: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                dst = Serialize_Move(dst, *FLD_PTR_IDX(data, fld->offset, i, move_t)); 
+                dst = Serialize_Move(dst, *FLD_PTR_IDX(data, fld->offset, i, MoveId));
             return dst;
+        case TY_LEGACY_SPECIES:
+            return Serialize_ByteBuffer(dst, FLD_PTR(data, fld->offset, LegacySpeciesId), fld->count);
+        case TY_LEGACY_ITEM:
+            return Serialize_ByteBuffer(dst, FLD_PTR(data, fld->offset, LegacyItemId), fld->count);
+        case TY_LEGACY_MOVE:
+            return Serialize_ByteBuffer(dst, FLD_PTR(data, fld->offset, LegacyMoveId), fld->count);
         case TY_MAPID: 
             for(uint32_t i = 0; i < fld->count; ++i) 
                 dst = Serialize_MapId(dst, *FLD_PTR_IDX(data, fld->offset, i, struct MapId)); 
@@ -770,18 +766,30 @@ uint8_t* Serialize_U16_Native(uint8_t* dest, uint16_t value) {
     return Serialize_U16_BE(dest, value);
 }
 
-uint8_t* Serialize_Species(uint8_t* dest, species_t src) {
-    dest[0] = src;
+static uint8_t NarrowLegacyContentId(uint16_t value, const char* kind) {
+    if(value > UINT8_MAX) {
+        fprintf(stderr, "Cannot serialize native %s ID %u into a Crystal byte field.\n", kind, value);
+        abort();
+    }
+    return (uint8_t)value;
+}
+
+uint8_t* Serialize_Species(uint8_t* dest, SpeciesId src) {
+    dest[0] = NarrowLegacyContentId(src, "species");
     return dest + 1;
 }
 
-uint8_t* Serialize_Item(uint8_t* dest, item_t itm) {
-    dest[0] = itm;
+uint8_t* Serialize_Item(uint8_t* dest, ItemId itm) {
+    if(itm == ITEM_LIST_END) {
+        dest[0] = UINT8_MAX;
+        return dest + 1;
+    }
+    dest[0] = NarrowLegacyContentId(itm, "item");
     return dest + 1;
 }
 
-uint8_t* Serialize_Move(uint8_t* dest, move_t move) {
-    dest[0] = move;
+uint8_t* Serialize_Move(uint8_t* dest, MoveId move) {
+    dest[0] = NarrowLegacyContentId(move, "move");
     return dest + 1;
 }
 
@@ -898,16 +906,20 @@ const uint8_t* Deserialize_Field(void* data, const struct SerialField* fld, cons
             return src;
         case TY_SPECIES: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                src = Deserialize_Species(FLD_PTR_IDX(data, fld->offset, i, species_t), src); 
+                src = Deserialize_Species(FLD_PTR_IDX(data, fld->offset, i, SpeciesId), src);
             return src;
         case TY_ITEM: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                src = Deserialize_Item(FLD_PTR_IDX(data, fld->offset, i, item_t), src); 
+                src = Deserialize_Item(FLD_PTR_IDX(data, fld->offset, i, ItemId), src);
             return src;
         case TY_MOVE: 
             for(uint32_t i = 0; i < fld->count; ++i) 
-                src = Deserialize_Move(FLD_PTR_IDX(data, fld->offset, i, move_t), src); 
+                src = Deserialize_Move(FLD_PTR_IDX(data, fld->offset, i, MoveId), src);
             return src;
+        case TY_LEGACY_SPECIES:
+        case TY_LEGACY_ITEM:
+        case TY_LEGACY_MOVE:
+            return Deserialize_ByteBuffer(FLD_PTR(data, fld->offset, uint8_t), src, fld->count);
         case TY_MAPID: 
             for(uint32_t i = 0; i < fld->count; ++i) 
                 src = Deserialize_MapId(FLD_PTR_IDX(data, fld->offset, i, struct MapId), src); 
@@ -953,17 +965,22 @@ const uint8_t* Deserialize_U16_Native(uint16_t* dest, const uint8_t* src) {
     return Deserialize_U16_BE(dest, src);
 }
 
-const uint8_t* Deserialize_Species(species_t* dest, const uint8_t* src) {
+const uint8_t* Deserialize_Species(SpeciesId* dest, const uint8_t* src) {
     *dest = *src;
     return src + 1;
 }
 
-const uint8_t* Deserialize_Item(item_t* dest, const uint8_t* src) {
+const uint8_t* Deserialize_Item(ItemId* dest, const uint8_t* src) {
+    *dest = (*src == UINT8_MAX)? ITEM_LIST_END: *src;
+    return src + 1;
+}
+
+const uint8_t* Deserialize_Move(MoveId* dest, const uint8_t* src) {
     *dest = *src;
     return src + 1;
 }
 
-const uint8_t* Deserialize_Move(move_t* dest, const uint8_t* src) {
+const uint8_t* Deserialize_LegacySpecies(LegacySpeciesId* dest, const uint8_t* src) {
     *dest = *src;
     return src + 1;
 }
@@ -1315,5 +1332,3 @@ int Test_Serialization(void) {
         return FALSE;
     return TRUE;
 }
-
-

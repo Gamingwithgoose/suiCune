@@ -902,7 +902,7 @@ void GetCallerClassAndName(uint8_t* de, uint8_t b){
     // LD_L_E;
     // LD_A_B;
     // CALL(aGetCallerTrainerClass);
-    struct TrainerId tid = GetCallerTrainerClass(b);
+    struct LegacyTrainerIdentity tid = GetCallerTrainerClass(b);
     // CALL(aGetCallerName);
     // RET;
     return GetCallerName(de, tid);
@@ -911,7 +911,7 @@ void GetCallerClassAndName(uint8_t* de, uint8_t b){
 bool CheckCanDeletePhoneNumber(uint8_t c){
     // LD_A_C;
     // CALL(aGetCallerTrainerClass);
-    struct TrainerId tid = GetCallerTrainerClass(c);
+    struct LegacyTrainerIdentity tid = GetCallerTrainerClass(c);
     // LD_A_C;
 // and a
     // RET_NZ ;
@@ -929,7 +929,7 @@ bool CheckCanDeletePhoneNumber(uint8_t c){
     return true;
 }
 
-struct TrainerId GetCallerTrainerClass(uint8_t caller){
+struct LegacyTrainerIdentity GetCallerTrainerClass(uint8_t caller){
     // PUSH_HL;
     // LD_HL(mPhoneContacts + PHONE_CONTACT_TRAINER_CLASS);
     // LD_BC(PHONE_CONTACT_SIZE);
@@ -939,10 +939,10 @@ struct TrainerId GetCallerTrainerClass(uint8_t caller){
     // LD_C_A;
     // POP_HL;
     // RET;
-    return (struct TrainerId){.trainerClass=PhoneContacts[caller].trainerClass, .trainerId=PhoneContacts[caller].trainerId};
+    return (struct LegacyTrainerIdentity){.trainerClass=PhoneContacts[caller].trainerClass, .trainerId=PhoneContacts[caller].trainerId};
 }
 
-void GetCallerName(uint8_t* hl, struct TrainerId c){
+void GetCallerName(uint8_t* hl, struct LegacyTrainerIdentity c){
     // LD_A_C;
     // AND_A_A;
     // IF_Z goto NotTrainer;
@@ -1008,7 +1008,7 @@ void GetCallerName(uint8_t* hl, struct TrainerId c){
 struct CallerLocation GetCallerLocation(void){
     // LD_A_addr(wCurCaller);
     // CALL(aGetCallerTrainerClass);
-    struct TrainerId tr = GetCallerTrainerClass(gPlayer.curCaller);
+    struct LegacyTrainerIdentity tr = GetCallerTrainerClass(gPlayer.curCaller);
     // LD_D_C;
     // LD_E_B;
     // PUSH_DE;
@@ -1073,4 +1073,3 @@ const txt_cmd_s PhoneThankYouText[] = {
     text_far(v_PhoneThankYouText)
     text_end
 };
-

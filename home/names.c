@@ -218,7 +218,7 @@ uint16_t GetNthString_GB(uint16_t hl, uint8_t a){
 }
 
 //  Discards gender (Nidoran).
-uint8_t* GetBasePokemonName(species_t a){
+uint8_t* GetBasePokemonName(SpeciesId a){
     // PUSH_HL;
     // CALL(aGetPokemonName);
     uint8_t* hl = GetPokemonName(a);
@@ -298,7 +298,7 @@ void GetBasePokemonName_GB(void){
 }
 
 //  Get Pokemon name for wNamedObjectIndex.
-uint8_t* GetPokemonName(species_t index){
+uint8_t* GetPokemonName(SpeciesId index){
     if(index == 0 || index > NUM_POKEMON) {
         // Just in case...
         U82CB(wram->wStringBuffer1, MON_NAME_LENGTH, "?@");
@@ -406,7 +406,7 @@ void GetPokemonName_GB(void){
 }
 
 //  Get item name for a.
-uint8_t* GetItemName(item_t a){
+uint8_t* GetItemName(ItemId a){
     // PUSH_HL;
     // PUSH_BC;
     // LD_A_addr(wNamedObjectIndex);
@@ -422,7 +422,8 @@ uint8_t* GetItemName(item_t a){
     else 
     {
         // LD_addr_A(wCurSpecies);
-        wram->wCurSpecies = a;
+        if(a <= UINT8_MAX)
+            wram->wCurSpecies = (LegacyItemId)a;
 
         // LD_A(ITEM_NAME);
         // LD_addr_A(wNamedObjectType);
@@ -439,7 +440,7 @@ uint8_t* GetItemName(item_t a){
 }
 
 //  Get TM/HM name for item a.
-uint8_t* GetTMHMName(item_t a){
+uint8_t* GetTMHMName(ItemId a){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;
@@ -541,7 +542,7 @@ uint8_t* GetTMHMName(item_t a){
 // INCLUDE "home/hm_moves.asm"
 }
 
-uint8_t* GetMoveName(move_t move){
+uint8_t* GetMoveName(MoveId move){
     // PUSH_HL;
 
     // LD_A(MOVE_NAME);

@@ -59,7 +59,7 @@ struct MapId {
     uint8_t mapNumber;
 };
 
-struct TrainerId {
+struct LegacyTrainerIdentity {
     uint8_t trainerClass;
     uint8_t trainerId;
 };
@@ -69,13 +69,55 @@ struct ItemEffect {
     uint8_t effect;
 };
 
-// Configurable types
+// Native semantic content identifiers. Legacy Crystal byte-oriented formats
+// use the explicit Legacy*Id types below instead of constraining runtime IDs.
+typedef uint16_t SpeciesId;
+typedef uint16_t DexId;
+typedef uint16_t MoveId;
+typedef uint16_t ItemId;
+typedef uint16_t FormId;
+typedef uint16_t AbilityId;
+typedef uint16_t SpriteId;
+typedef uint16_t TrainerClassId;
+typedef uint16_t TrainerId;
+typedef uint8_t NatureId;
+typedef uint8_t TypeId;
+typedef uint32_t PersonalityValue;
+typedef uint32_t NetPlayerId;
 
-typedef uint8_t species_t;      // Mon species type
+static_assert(sizeof(SpeciesId) == 2, "SpeciesId must remain 16-bit");
+static_assert(sizeof(DexId) == 2, "DexId must remain 16-bit");
+static_assert(sizeof(MoveId) == 2, "MoveId must remain 16-bit");
+static_assert(sizeof(ItemId) == 2, "ItemId must remain 16-bit");
+static_assert(sizeof(FormId) == 2, "FormId must remain 16-bit");
+static_assert(sizeof(AbilityId) == 2, "AbilityId must remain 16-bit");
+static_assert(sizeof(SpriteId) == 2, "SpriteId must remain 16-bit");
+static_assert(sizeof(TrainerClassId) == 2, "TrainerClassId must remain 16-bit");
+static_assert(sizeof(TrainerId) == 2, "TrainerId must remain 16-bit");
+static_assert(sizeof(NatureId) == 1, "NatureId must remain 8-bit");
+static_assert(sizeof(TypeId) == 1, "TypeId must remain 8-bit");
+static_assert(sizeof(PersonalityValue) == 4, "PersonalityValue must remain 32-bit");
+static_assert(sizeof(NetPlayerId) == 4, "NetPlayerId must remain 32-bit");
+
+typedef uint8_t LegacySpeciesId;
+typedef uint8_t LegacyDexId;
+typedef uint8_t LegacyMoveId;
+typedef uint8_t LegacyItemId;
+
+#define SPECIES_LIST_END ((SpeciesId)UINT16_MAX)
+#define ITEM_LIST_END ((ItemId)UINT16_MAX)
+#define MOVE_LIST_END ((MoveId)UINT16_MAX)
+#define LEGACY_SPECIES_LIST_END ((LegacySpeciesId)UINT8_MAX)
+#define LEGACY_ITEM_LIST_END ((LegacyItemId)UINT8_MAX)
+#define LEGACY_MOVE_LIST_END ((LegacyMoveId)UINT8_MAX)
+
+// Byte-oriented compatibility aliases retained for legacy WRAM, battle, link,
+// and script paths that have not yet been separated from Crystal layouts.
+typedef LegacySpeciesId species_t;
 typedef uint8_t unown_letter_t; // Unown letter type
-typedef uint8_t dex_t;          // Dex number type
-typedef uint8_t item_t;         // Item id type
-typedef uint8_t move_t;         // Move id type
+typedef LegacyDexId dex_t;
+typedef LegacyItemId item_t;
+typedef LegacyMoveId move_t;
 
 typedef uint8_t tile_t;
 typedef uint16_t sfx_t;
@@ -258,7 +300,7 @@ struct BaseMon
 struct __attribute__((packed)) BaseMon
 #endif
 {
-    dex_t dexNo;
+    LegacyDexId dexNo;
     union
     {
         uint8_t stats[6];
@@ -321,7 +363,7 @@ struct __attribute__((packed)) SpriteData
 #pragma pack(push, 1)
 struct BaseData
 {
-    dex_t dexNo;
+    LegacyDexId dexNo;
     union {
         uint8_t stats[6];
         struct {
@@ -343,10 +385,10 @@ struct BaseData
     uint8_t catchRate;
     uint8_t exp;
     union {
-        item_t items[2];
+        LegacyItemId items[2];
         struct {
-            item_t item1;
-            item_t item2;
+            LegacyItemId item1;
+            LegacyItemId item2;
         };
     };
     uint8_t gender;
@@ -364,7 +406,7 @@ struct BaseData
 
 struct TrainerClassAttr
 {
-    item_t items[2];
+    ItemId items[2];
     uint8_t baseMoney;
     uint16_t aiMoveWeights;
     uint16_t aiItemSwitch;
@@ -379,9 +421,9 @@ struct __attribute__((packed))
 #endif
 BoxMon
 {
-    species_t species;
-    item_t item;
-    move_t moves[NUM_MOVES];
+    LegacySpeciesId species;
+    LegacyItemId item;
+    LegacyMoveId moves[NUM_MOVES];
     uint16_t id;
     uint8_t exp[3];
     union 
@@ -446,7 +488,7 @@ struct __attribute__((packed))
 #endif
 RedBoxMon
 {
-    species_t species;
+    LegacySpeciesId species;
     uint16_t HP;
     uint8_t boxLevel;
     uint8_t status;
@@ -459,7 +501,7 @@ RedBoxMon
         };
     };
     uint8_t catchRate;
-    move_t moves[NUM_MOVES];
+    LegacyMoveId moves[NUM_MOVES];
     uint16_t id;
     uint8_t exp[3];
     union 
@@ -508,9 +550,9 @@ struct __attribute__((packed))
 #endif
 BattleMon 
 {
-    species_t species;
-    item_t item;
-    move_t moves[NUM_MOVES];
+    LegacySpeciesId species;
+    LegacyItemId item;
+    LegacyMoveId moves[NUM_MOVES];
     uint16_t dvs;
     uint8_t pp[NUM_MOVES];
     uint8_t happiness;
@@ -729,7 +771,7 @@ MailMsg
     uint8_t author[PLAYER_NAME_LENGTH];
     uint16_t nationality;
     uint16_t authorID;
-    species_t species;
+    LegacySpeciesId species;
     uint8_t type;
 };
 static_assert(sizeof(struct MailMsg) == MAIL_STRUCT_LENGTH, "");
@@ -737,11 +779,11 @@ static_assert(sizeof(struct MailMsg) == MAIL_STRUCT_LENGTH, "");
 #if defined(__cplusplus) || defined(_MSC_VER)
 struct
 #else
-struct __attribute__((packed)) 
+struct __attribute__((packed))
 #endif
 Roamer
 {
-    species_t species;
+    SpeciesId species;
     uint8_t level;
     // uint8_t mapGroup;
     // uint8_t mapNumber;
@@ -753,13 +795,13 @@ Roamer
 struct BugContestWinner
 {
     uint8_t winnerID;
-    species_t mon;
+    LegacySpeciesId mon;
     uint16_t score;
 };
 
 struct HOFMon
 {
-    species_t species;
+    LegacySpeciesId species;
     uint16_t id;
     uint16_t DVs;
     uint8_t level;
@@ -788,7 +830,7 @@ struct __attribute__((packed))
 #endif
 TradeMon
 {
-    species_t species;
+    LegacySpeciesId species;
     uint8_t speciesName[MON_NAME_LENGTH];
     uint8_t nickname[MON_NAME_LENGTH];
     uint8_t senderName[NAME_LENGTH];
@@ -1039,33 +1081,33 @@ struct BattleBGEffect
 
 struct ItemPrice
 {
-    item_t id;
+    ItemId id;
     uint16_t price;
 };
 typedef struct ItemPrice item_price_s;
 
 struct ItemPal 
 {
-    item_t item;
+    ItemId item;
     uint8_t pal;
 };
 
 struct ItemStat
 {
-    item_t item;
+    ItemId item;
     uint8_t stat;
 };
 
 struct HealingAction
 {
-    item_t item;
+    ItemId item;
     uint8_t action_text;
     uint8_t status;
 };
 
 struct HealingHPEntry 
 {
-    item_t item;
+    ItemId item;
     uint16_t amount;
 };
 
@@ -1074,7 +1116,7 @@ struct WildGrassMons
     uint8_t mapGroup;
     uint8_t mapNumber;
     uint8_t encounterRates[3];
-    struct { uint8_t level; species_t species; } mons[3][7];
+    struct { uint8_t level; SpeciesId species; } mons[3][7];
 };
 
 struct WildWaterMons
@@ -1082,7 +1124,7 @@ struct WildWaterMons
     uint8_t mapGroup;
     uint8_t mapNumber;
     uint8_t encounterRate;
-    struct { uint8_t level; species_t species; } mons[3];
+    struct { uint8_t level; SpeciesId species; } mons[3];
 };
 
 struct WildMons
@@ -1096,16 +1138,16 @@ struct WildMons
 
 struct TimeFishGroup 
 {
-    species_t day_mon;
+    SpeciesId day_mon;
     uint8_t day_lvl;
-    species_t nite_mon;
+    SpeciesId nite_mon;
     uint8_t nite_lvl;
 };
 
 struct FishEncounter 
 {
     uint8_t chance;
-    species_t species;
+    SpeciesId species;
     uint8_t lvl;
 };
 
@@ -1120,29 +1162,37 @@ struct FishGroup
 struct TrainerPartyNormal 
 {
     uint8_t level;
-    species_t species;
+    SpeciesId species;
 };
 
 struct TrainerPartyMoves 
 {
     uint8_t level;
-    species_t species;
-    move_t moves[4];
+    SpeciesId species;
+    MoveId moves[4];
 };
+
+struct LegacyTrainerPartyMoves
+{
+    uint8_t level;
+    LegacySpeciesId species;
+    LegacyMoveId moves[4];
+};
+static_assert(sizeof(struct LegacyTrainerPartyMoves) == 6, "Legacy trainer party entry layout changed");
 
 struct TrainerPartyItem 
 {
     uint8_t level;
-    species_t species;
-    item_t item;
+    SpeciesId species;
+    ItemId item;
 };
 
 struct TrainerPartyItemMoves 
 {
     uint8_t level;
-    species_t species;
-    item_t item;
-    move_t moves[4];
+    SpeciesId species;
+    ItemId item;
+    MoveId moves[4];
 };
 
 struct TrainerParty
@@ -1185,15 +1235,15 @@ struct StdCollisionScript
 };
 
 struct BuenaMon {
-    species_t options[3];
+    SpeciesId options[3];
 };
 
 struct BuenaMove {
-    move_t options[3];
+    MoveId options[3];
 };
 
 struct BuenaItem {
-    item_t options[3];
+    ItemId options[3];
 };
 
 struct BuenaString {
@@ -1223,7 +1273,7 @@ struct BugContestant {
 };
 
 struct SpeciesLevel {
-    species_t species;
+    SpeciesId species;
     uint8_t level;
 };
 
@@ -1293,7 +1343,7 @@ struct CoordEvent
 
 struct HiddenItem 
 {
-    item_t item;
+    ItemId item;
     uint16_t eventFlag;
 };
 
@@ -1558,11 +1608,11 @@ struct CallerLocation {
 
 struct NPCTrade {
     uint8_t dialogSet;
-    species_t requestedMon;
-    species_t offeredMon;
+    SpeciesId requestedMon;
+    SpeciesId offeredMon;
     const char nickname[12];
     uint8_t dvs[2];
-    item_t item;
+    ItemId item;
     uint16_t OTID;
     const char OTName[12];
     uint8_t genderRequested;
@@ -1575,14 +1625,14 @@ struct DexEntry {
 };
 
 struct Pokemail {
-    item_t item;
+    ItemId item;
     const char* message;
 };
 
 struct MonMenuOption {
     uint8_t category;
     uint8_t item;
-    move_t value;
+    MoveId value;
 };
 
 struct PokemonCry 
@@ -1593,12 +1643,12 @@ struct PokemonCry
 };
 
 typedef struct ItemQuantityPocketEntry {
-    item_t item;
+    ItemId item;
     uint8_t quantity;
 } item_quantity_pocket_en_s;
 
 typedef struct ItemPocketEntry {
-    item_t item;
+    ItemId item;
 } item_pocket_en_s;
 
 typedef struct ItemPocket {
@@ -1618,7 +1668,7 @@ typedef union ItemPocketU {
 
 struct U8Item {
     uint8_t value;
-    item_t item;
+    ItemId item;
 };
 
 typedef struct MobileAPIData
@@ -1697,10 +1747,10 @@ struct EvoData {
             uint8_t level;
         } lvl;
         struct {
-            item_t useItem;
+            ItemId useItem;
         } item;
         struct {
-            item_t heldItem;
+            ItemId heldItem;
         } trade;
         struct {
             uint8_t timeOfDay;
@@ -1710,12 +1760,12 @@ struct EvoData {
             uint8_t atkDefCmp;
         } stat;
     };
-    species_t species;
+    SpeciesId species;
 };
 
 struct LevelMove {
     uint8_t level;
-    move_t move;
+    MoveId move;
 };
 
 struct EvoMoves {
@@ -1785,9 +1835,9 @@ struct OfferMon {
     uint16_t trainerID;
     uint16_t secretID;
     uint8_t gender;
-    species_t species;
+    LegacySpeciesId species;
     uint8_t reqGender;
-    species_t reqSpecies;
+    LegacySpeciesId reqSpecies;
     uint8_t sender[PLAYER_NAME_LENGTH - 1];
     struct PartyMon mon;
     uint8_t OT[PLAYER_NAME_LENGTH - 1];
@@ -1937,13 +1987,16 @@ struct PlayerData {
     };
     uint8_t TMsHMs[NUM_TMS + NUM_HMS];
     uint8_t numItems;
-    item_t items[MAX_ITEMS * 2 + 1];
+    item_quantity_pocket_en_s items[MAX_ITEMS];
+    ItemId itemsEnd;
     uint8_t numKeyItems;
-    item_t keyItems[MAX_KEY_ITEMS + 1];
+    ItemId keyItems[MAX_KEY_ITEMS + 1];
     uint8_t numBalls;
-    item_t balls[MAX_BALLS * 2 + 1];
+    item_quantity_pocket_en_s balls[MAX_BALLS];
+    ItemId ballsEnd;
     uint8_t numPCItems;
-    item_t PCItems[MAX_PC_ITEMS * 2 + 1];
+    item_quantity_pocket_en_s PCItems[MAX_PC_ITEMS];
+    ItemId PCItemsEnd;
     // bit 0: map
     // bit 1: radio
     // bit 2: phone
@@ -1954,7 +2007,7 @@ struct PlayerData {
     uint8_t lastDexMode;
     uint8_t skip_111[1];
     uint8_t whichRegisteredItem;
-    uint8_t registeredItem;
+    ItemId registeredItem;
     uint8_t playerState;
     uint8_t hallOfFameCount;
     uint8_t skip_112[1];
@@ -2178,7 +2231,7 @@ struct PlayerData {
 
 struct PokemonData {
     uint8_t partyCount;
-    species_t partySpecies[PARTY_LENGTH];
+    LegacySpeciesId partySpecies[PARTY_LENGTH];
     uint8_t partyEnd; // unused
     // older code doesn't check wPartyCount
     // wPartyMon1 - wPartyMon6
@@ -2223,7 +2276,7 @@ struct PokemonData {
     uint8_t eggMonNickname[MON_NAME_LENGTH];
     uint8_t eggMonOT[NAME_LENGTH];
     struct BoxMon eggMon;
-    uint8_t bugContestSecondPartySpecies;
+    LegacySpeciesId bugContestSecondPartySpecies;
     struct PartyMon contestMon;
     uint8_t dunsparceMapGroup;
     uint8_t dunsparceMapNumber;

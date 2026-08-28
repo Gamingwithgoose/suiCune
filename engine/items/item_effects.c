@@ -2309,14 +2309,14 @@ void HealStatus(uint8_t c){
     // RET;
 }
 
-uint16_t GetItemHealingAction(item_t item){
+uint16_t GetItemHealingAction(ItemId item){
     // PUSH_HL;
     // LD_A_addr(wCurItem);
     // LD_HL(mStatusHealingActions);
     const struct HealingAction* hl = StatusHealingActions;
     // LD_BC(3);
 
-    while(hl->item != item) {
+    while(hl->item != ITEM_LIST_END && hl->item != item) {
     // next:
         // CP_A_hl;
         // IF_Z goto found_it;
@@ -2336,7 +2336,7 @@ uint16_t GetItemHealingAction(item_t item){
     // RET;
 
 // INCLUDE "data/items/heal_status.asm"
-    return (hl->action_text << 8) | hl->status;
+    return (hl->item == ITEM_LIST_END)? 0: (hl->action_text << 8) | hl->status;
 }
 
 void StatusHealer_Jumptable(uint8_t a){
@@ -3012,14 +3012,14 @@ uint16_t GetOneFifthMaxHP(struct PartyMon* bc){
     return BigEndianToNative16(bc->maxHP) / 5;
 }
 
-uint16_t GetHealingItemAmount(item_t item){
+uint16_t GetHealingItemAmount(ItemId item){
     // PUSH_HL;
     // LD_A_addr(wCurItem);
     // LD_HL(mHealingHPAmounts);
     const struct HealingHPEntry* hl = HealingHPAmounts;
     // LD_D_A;
 
-    while(hl->item != (item_t)-1) {
+    while(hl->item != ITEM_LIST_END) {
     // next:
         // LD_A_hli;
         // CP_A(-1);

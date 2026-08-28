@@ -524,7 +524,7 @@ bool ChooseWildEncounter(void){
     }
     wram->wCurPartyLevel = level;
     // LD_B_hl;
-    species_t s = (hl.type == 1)? hl.waterMons->mons[i].species: hl.grassMons->mons[wram->wTimeOfDay][i].species;
+    SpeciesId s = (hl.type == 1)? hl.waterMons->mons[i].species: hl.grassMons->mons[wram->wTimeOfDay][i].species;
 // ld a, b
     // CALL(aValidateTempWildMonSpecies);
     // IF_C goto nowildbattle;
@@ -552,7 +552,11 @@ bool ChooseWildEncounter(void){
 // loadwildmon:
     // LD_A_B;
     // LD_addr_A(wTempWildMonSpecies);
-    wram->wTempWildMonSpecies = s;
+    if(s > UINT8_MAX) {
+        log_err("Wild species ID %u cannot enter the legacy battle record.\n", s);
+        return false;
+    }
+    wram->wTempWildMonSpecies = (LegacySpeciesId)s;
 
 
 // startwildbattle:
@@ -883,7 +887,11 @@ bool CheckEncounterRoamMon(void){
     // DEC_HL;
     // LD_A_hli;
     // LD_addr_A(wTempWildMonSpecies);
-    wram->wTempWildMonSpecies = roamer->species;
+    if(roamer->species > UINT8_MAX) {
+        log_err("Roaming species ID %u cannot enter the legacy battle record.\n", roamer->species);
+        return false;
+    }
+    wram->wTempWildMonSpecies = (LegacySpeciesId)roamer->species;
     // LD_A_hl;
     // LD_addr_A(wCurPartyLevel);
     wram->wCurPartyLevel = roamer->level;
@@ -1158,7 +1166,7 @@ void v_BackUpMapIndices(void){
 }
 
 //  Due to a development oversight, this function is called with the wild Pokemon's level, not its species, in a.
-bool ValidateTempWildMonSpecies(species_t a){
+bool ValidateTempWildMonSpecies(SpeciesId a){
     // AND_A_A;
     // IF_Z goto nowildmon;  // = 0
     if(a == 0)
@@ -1226,7 +1234,7 @@ void RandomUnseenWildMon(void){
 //  We now have the pointer to one of the last (rarest) three wild Pokemon found in that area.
     // INC_HL;
     // LD_C_hl;  // Contains the species index of this rare Pokemon
-    species_t rare = mons.grassMons->mons[wram->wTimeOfDay][idx].species;
+    SpeciesId rare = mons.grassMons->mons[wram->wTimeOfDay][idx].species;
     // POP_HL;
     // LD_DE(5 + 0 * 2);
     // ADD_HL_DE;
@@ -1323,7 +1331,7 @@ void RandomPhoneWildMon(void){
     // ADD_HL_BC;
     // INC_HL;
     // LD_A_hl;
-    species_t s = mons.grassMons->mons[wram->wTimeOfDay][Random() & 0b11].species;
+    SpeciesId s = mons.grassMons->mons[wram->wTimeOfDay][Random() & 0b11].species;
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetPokemonName);
     // LD_HL(wStringBuffer1);

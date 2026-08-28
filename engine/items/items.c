@@ -2,7 +2,7 @@
 #include "items.h"
 #include "../../data/items/attributes.h"
 
-bool v_ReceiveItem(item_pocket_u* hl, item_t a, uint8_t count){
+bool v_ReceiveItem(item_pocket_u* hl, ItemId a, uint8_t count){
     // CALL(aDoesHLEqualNumItems);
     // JP_NZ (mPutItemInPocket);
     if(hl != (item_pocket_u*)&gPlayer.numItems)
@@ -56,7 +56,7 @@ bool v_ReceiveItem(item_pocket_u* hl, item_t a, uint8_t count){
     return false;
 }
 
-bool v_TossItem(item_pocket_u* hl, item_t item, uint8_t count){
+bool v_TossItem(item_pocket_u* hl, ItemId item, uint8_t count){
     // CALL(aDoesHLEqualNumItems);
     // IF_NZ goto remove;
     if(hl != (item_pocket_u*)&gPlayer.numItems)
@@ -112,7 +112,7 @@ bool v_TossItem(item_pocket_u* hl, item_t item, uint8_t count){
     }
 }
 
-bool v_CheckItem(item_pocket_u* hl, item_t item){
+bool v_CheckItem(item_pocket_u* hl, ItemId item){
     // CALL(aDoesHLEqualNumItems);
     // IF_NZ goto nope;
     if(hl == (item_pocket_u*)&gPlayer.numItems) {
@@ -213,7 +213,7 @@ uint8_t GetPocketCapacity(item_quantity_pocket_s* pocket){
     return MAX_BALLS;
 }
 
-bool PutItemInPocket(item_quantity_pocket_s* pocket, item_t item, uint8_t count){
+bool PutItemInPocket(item_quantity_pocket_s* pocket, ItemId item, uint8_t count){
     // LD_D_H;
     // LD_E_L;
     // INC_HL;
@@ -227,7 +227,7 @@ bool PutItemInPocket(item_quantity_pocket_s* pocket, item_t item, uint8_t count)
         // LD_A_hli;
         // CP_A(-1);
         // IF_Z goto terminator;
-        if(pocket->pocket[c].item == 0xff) {
+        if(pocket->pocket[c].item == ITEM_LIST_END) {
         // terminator:
             // CALL(aGetPocketCapacity);
             uint8_t capacity = GetPocketCapacity(pocket);
@@ -276,10 +276,10 @@ bool PutItemInPocket(item_quantity_pocket_s* pocket, item_t item, uint8_t count)
     // loop2:
         // INC_HL;
         // LD_A_hli;
-        item_t a = hl->item;
+        ItemId a = hl->item;
         // CP_A(-1);
         // IF_Z goto terminator2;
-        if(a == 0xff) {
+        if(a == ITEM_LIST_END) {
         // terminator2:
             // DEC_HL;
             // LD_A_addr(wCurItem);
@@ -289,7 +289,7 @@ bool PutItemInPocket(item_quantity_pocket_s* pocket, item_t item, uint8_t count)
             // LD_hli_A;
             hl->quantity = wram->wItemQuantity;
             // LD_hl(-1);
-            hl[1].item = 0xff;
+            hl[1].item = ITEM_LIST_END;
             // LD_H_D;
             // LD_L_E;
             // INC_hl;
@@ -331,7 +331,7 @@ bool PutItemInPocket(item_quantity_pocket_s* pocket, item_t item, uint8_t count)
 
 }
 
-bool RemoveItemFromPocket(item_quantity_pocket_s* hl, item_t item, item_t count){
+bool RemoveItemFromPocket(item_quantity_pocket_s* hl, ItemId item, uint8_t count){
     // LD_D_H;
     // LD_E_L;
     // LD_A_hli;
@@ -372,7 +372,7 @@ bool RemoveItemFromPocket(item_quantity_pocket_s* hl, item_t item, item_t count)
             break;
         // CP_A(-1);
         // IF_Z goto nope;
-        if(hl->pocket[i].item == 0xff)
+        if(hl->pocket[i].item == ITEM_LIST_END)
             return false;
         // INC_HL;
         i++;
@@ -410,7 +410,7 @@ skip:
             // INC_BC;
             // CP_A(-1);
             // IF_NZ goto loop2;
-        } while(hl->pocket[bc - 1].item != 0xff);
+        } while(hl->pocket[bc - 1].item != ITEM_LIST_END);
         // LD_H_D;
         // LD_L_E;
         // DEC_hl;
@@ -428,11 +428,11 @@ skip:
     return false;
 }
 
-bool CheckTheItem(item_quantity_pocket_s* pocket, item_t item){
+bool CheckTheItem(item_quantity_pocket_s* pocket, ItemId item){
     // LD_A_addr(wCurItem);
     item_quantity_pocket_en_s* hl = pocket->pocket;
     // LD_C_A;
-    item_t a;
+    ItemId a;
 
     do {
     // loop:
@@ -442,7 +442,7 @@ bool CheckTheItem(item_quantity_pocket_s* pocket, item_t item){
         hl++;
         // CP_A(-1);
         // IF_Z goto done;
-        if(a == (item_t)-1)
+        if(a == ITEM_LIST_END)
             return false;
         // CP_A_C;
         // IF_NZ goto loop;
@@ -458,7 +458,7 @@ bool CheckTheItem(item_quantity_pocket_s* pocket, item_t item){
 
 }
 
-bool ReceiveKeyItem(item_t item){
+bool ReceiveKeyItem(ItemId item){
     // LD_HL(wNumKeyItems);
     // LD_A_hli;
     // CP_A(MAX_KEY_ITEMS);
@@ -472,7 +472,7 @@ bool ReceiveKeyItem(item_t item){
     // LD_hli_A;
     gPlayer.keyItems[gPlayer.numKeyItems++] = item;
     // LD_hl(-1);
-    gPlayer.keyItems[gPlayer.numKeyItems] = (item_t)-1;
+    gPlayer.keyItems[gPlayer.numKeyItems] = ITEM_LIST_END;
     // LD_HL(wNumKeyItems);
     // INC_hl;
     // SCF;
@@ -484,12 +484,12 @@ bool ReceiveKeyItem(item_t item){
     // RET;
 }
 
-static item_t* TossKeyItem_Toss(item_t item){
+static ItemId* TossKeyItem_Toss(ItemId item){
 // Toss:
     // LD_HL(wNumKeyItems);
-    item_t* hl = gPlayer.keyItems;
+    ItemId* hl = gPlayer.keyItems;
     // LD_A_addr(wCurItem);
-    item_t a;
+    ItemId a;
     // LD_C_A;
 
     do {
@@ -511,18 +511,18 @@ static item_t* TossKeyItem_Toss(item_t item){
         }
         // CP_A(-1);
         // IF_NZ goto loop3;
-    } while(a != (item_t)-1);
+    } while(a != ITEM_LIST_END);
     // XOR_A_A;
     // RET;
     return NULL;
 }
 
-bool TossKeyItem(item_t item, uint8_t index){
+bool TossKeyItem(ItemId item, uint8_t index){
     // LD_A_addr(wCurItemQuantity);
     // LD_E_A;
     // LD_D(0);
     // LD_HL(wNumKeyItems);
-    item_t* hl;
+    ItemId* hl;
     // LD_A_hl;
     // CP_A_E;
     // IF_NC goto ok;
@@ -547,10 +547,10 @@ bool TossKeyItem(item_t item, uint8_t index){
     // LD_D_H;
     // LD_E_L;
     // INC_HL;
-    item_t* de = hl;
+    ItemId* de = hl;
     hl++;
 
-    item_t a;
+    ItemId a;
     do {
     // loop:
         // LD_A_hli;
@@ -560,20 +560,20 @@ bool TossKeyItem(item_t item, uint8_t index){
         *(de++) = a;
         // CP_A(-1);
         // IF_NZ goto loop;
-    } while(a != (item_t)-1);
+    } while(a != ITEM_LIST_END);
     // SCF;
     // RET;
     return true;
 }
 
-bool CheckKeyItems(item_t c){
+bool CheckKeyItems(ItemId c){
     // LD_A_addr(wCurItem);
     // LD_C_A;
     // LD_HL(wKeyItems);
     
     // uint8_t c = wram->wCurItem;
-    item_t* hl = gPlayer.keyItems;
-    uint8_t a;
+    ItemId* hl = gPlayer.keyItems;
+    ItemId a;
 
     do {
     // loop:
@@ -585,7 +585,7 @@ bool CheckKeyItems(item_t c){
             return true;
         // CP_A(-1);
         // IF_NZ goto loop;
-    } while(a != 0xff);
+    } while(a != ITEM_LIST_END);
     // AND_A_A;
     // RET;
     return false;
@@ -677,7 +677,7 @@ bool CheckTMHM(uint8_t c){
 }
 
 //  Return the number of a TM/HM by item id c.
-uint8_t GetTMHMNumber(item_t c){
+uint8_t GetTMHMNumber(ItemId c){
     // LD_A_C;
 //  Skip any dummy items.
     // CP_A(ITEM_C3);  // TM04-05
@@ -703,7 +703,7 @@ uint8_t GetTMHMNumber(item_t c){
 }
 
 //  Return the item id of a TM/HM by number c.
-item_t GetNumberedTMHM(uint8_t tmhm){
+ItemId GetNumberedTMHM(uint8_t tmhm){
     // LD_A_C;
 //  Skip any gaps.
     // CP_A(ITEM_C3 - (TM01 - 1));
@@ -729,7 +729,7 @@ item_t GetNumberedTMHM(uint8_t tmhm){
 }
 
 //  Return false (carry) if wCurItem can't be removed from the bag.
-bool v_CheckTossableItem(item_t item){
+bool v_CheckTossableItem(ItemId item){
     // LD_A(ITEMATTR_PERMISSIONS);
     // CALL(aGetItemAttr);
     if(bit_test(ItemAttributes[item].permissions, CANT_TOSS_F))
@@ -742,7 +742,7 @@ bool v_CheckTossableItem(item_t item){
 }
 
 //  Return false (carry) if item can't be selected.
-bool CheckSelectableItem(item_t item){
+bool CheckSelectableItem(ItemId item){
     // LD_A(ITEMATTR_PERMISSIONS);
     // CALL(aGetItemAttr);
     // BIT_A(CANT_SELECT_F);
@@ -755,7 +755,7 @@ bool CheckSelectableItem(item_t item){
 }
 
 //  Return the pocket for wCurItem in wItemAttributeValue.
-uint8_t CheckItemPocket(item_t item){
+uint8_t CheckItemPocket(ItemId item){
     // LD_A(ITEMATTR_POCKET);
     // CALL(aGetItemAttr);
     // AND_A(0xf);
@@ -765,7 +765,7 @@ uint8_t CheckItemPocket(item_t item){
 }
 
 //  Return the context for wCurItem in wItemAttributeValue.
-uint8_t CheckItemContext(item_t item){
+uint8_t CheckItemContext(ItemId item){
     // LD_A(ITEMATTR_HELP);
     // CALL(aGetItemAttr);
     // AND_A(0xf);
@@ -775,7 +775,7 @@ uint8_t CheckItemContext(item_t item){
 }
 
 //  Return the menu for wCurItem in wItemAttributeValue.
-uint8_t CheckItemMenu(item_t item){
+uint8_t CheckItemMenu(ItemId item){
     // LD_A(ITEMATTR_HELP);
     // CALL(aGetItemAttr);
     // SWAP_A;
@@ -820,7 +820,7 @@ void ItemAttr_ReturnCarry(void){
 }
 
 //  Return the price of wCurItem in de.
-uint16_t GetItemPrice(item_t item) {
+uint16_t GetItemPrice(ItemId item) {
     // PUSH_HL;
     // PUSH_BC;
     // LD_A(ITEMATTR_PRICE_LO);

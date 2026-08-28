@@ -14,5 +14,5 @@ const struct ItemPal BallColors[] = {
     {FRIEND_BALL, PAL_BATTLE_OB_YELLOW},
     {MOON_BALL,   PAL_BATTLE_OB_GRAY},
     {LOVE_BALL,   PAL_BATTLE_OB_RED},
-    {(item_t)-1,  PAL_BATTLE_OB_GRAY},
+    {ITEM_LIST_END, PAL_BATTLE_OB_GRAY},
 };

@@ -10,5 +10,5 @@ const item_price_s BuenaPrizeItems[] = {
     {CARBOS,       5},
     {CALCIUM,      5},
     {HP_UP,        5},
-    {(item_t)-1,   0},
+    {ITEM_LIST_END, 0},
 };

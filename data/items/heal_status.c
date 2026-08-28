@@ -18,5 +18,5 @@ const struct HealingAction StatusHealingActions[] = {
     {ICE_BERRY,    PARTYMENUTEXT_HEAL_BRN, 1 << BRN},
     {MINT_BERRY,   PARTYMENUTEXT_HEAL_SLP, SLP},
     {MIRACLEBERRY, PARTYMENUTEXT_HEAL_ALL, 0b11111111},
-    {(item_t)-1,   0,                      0}, // end
+    {ITEM_LIST_END, 0,                     0}, // end
 };

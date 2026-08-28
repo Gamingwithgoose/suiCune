@@ -2093,7 +2093,11 @@ static uint8_t FishFunction_TryFish(void) {
         return 0x1;
     }
     // LD_addr_A(wTempWildMonSpecies);
-    wram->wTempWildMonSpecies = fishMon.species;
+    if(fishMon.species > UINT8_MAX) {
+        log_err("Fishing species ID %u cannot enter the legacy battle record.\n", fishMon.species);
+        return 0x1;
+    }
+    wram->wTempWildMonSpecies = (LegacySpeciesId)fishMon.species;
     // LD_A_E;
     // LD_addr_A(wCurPartyLevel);
     wram->wCurPartyLevel = fishMon.level;

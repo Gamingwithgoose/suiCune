@@ -6,7 +6,7 @@ void DoNPCTrade(void);
 const struct NPCTrade* GetTradeAttr(void);
 void Trade_GetAttributeOfCurrentPartymon(void);
 void Trade_GetAttributeOfLastPartymon(void);
-uint8_t* GetTradeMonName(species_t a);
+uint8_t* GetTradeMonName(SpeciesId a);
 void CopyTradeName(uint8_t* de, const uint8_t* hl);
 void Trade_CopyFourCharString(void);
 void Trade_CopyThreeCharString(void);

@@ -16,5 +16,5 @@ const struct HealingHPEntry HealingHPAmounts[] = {
     {ENERGY_ROOT,  200},
     {RAGECANDYBAR,  20},
     {BERRY_JUICE,   20},
-    {(item_t)-1,    0},
+    {ITEM_LIST_END, 0},
 };

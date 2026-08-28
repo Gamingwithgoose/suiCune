@@ -11609,9 +11609,9 @@ void Function11b920(void){
     src = Deserialize_U16_LE(&wram->wOfferTrainerID, src);
     src = Deserialize_U16_LE(&wram->wOfferSecretID, src);
     wram->wOfferGender = *(src++);
-    src = Deserialize_Species(&wram->wOfferSpecies, src);
+    src = Deserialize_LegacySpecies(&wram->wOfferSpecies, src);
     wram->wOfferReqGender = *(src++);
-    src = Deserialize_Species(&wram->wOfferReqSpecies, src);
+    src = Deserialize_LegacySpecies(&wram->wOfferReqSpecies, src);
     // CALL(aCloseSRAM);
     CloseSRAM();
     // CALL(aFunction118000);
@@ -11632,9 +11632,9 @@ void Function11b93b(void){
     // CALL(aCopyBytes);
     const uint8_t* src = GBToRAMAddr(s5_a800 + 0x23);
     wram->wOfferGender = *(src++);
-    src = Deserialize_Species(&wram->wOfferSpecies, src);
+    src = Deserialize_LegacySpecies(&wram->wOfferSpecies, src);
     wram->wOfferReqGender = *(src++);
-    src = Deserialize_Species(&wram->wOfferReqSpecies, src);
+    src = Deserialize_LegacySpecies(&wram->wOfferReqSpecies, src);
     src = Deserialize_ByteBuffer(wram->wOfferMonSender, src, PLAYER_NAME_LENGTH - 1);
     src = Deserialize_PartyMon(&wram->wOfferMon, src);
     src = Deserialize_ByteBuffer(wram->wOfferMonOT, src, PLAYER_NAME_LENGTH - 1);

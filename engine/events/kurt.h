@@ -4,7 +4,7 @@ void SelectApricornForKurt(void);
 uint8_t Kurt_SelectApricorn(void);
 bool Kurt_SelectQuantity(void);
 void PlaceApricornQuantity(void);
-uint8_t Kurt_GetQuantityOfApricorn(item_t apricorn);
+uint8_t Kurt_GetQuantityOfApricorn(ItemId apricorn);
 void Kurt_GiveUpSelectedQuantityOfSelectedApricorn(void);
 uint8_t Kurt_GetAddressOfApricornQuantity(uint8_t a);
 void Kurt_GetRidOfItem(void);

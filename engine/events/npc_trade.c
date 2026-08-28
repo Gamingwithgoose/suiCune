@@ -17,8 +17,25 @@
 #include "../movie/trade_animation.h"
 #include "../../data/events/npc_trades.h"
 #include "../../data/text/common.h"
+#include <stdlib.h>
 
 static void NPCTrade_TradeAnimation(void);
+
+static LegacySpeciesId NPCTradeSpeciesToLegacy(SpeciesId species) {
+    if(species > UINT8_MAX) {
+        log_err("NPC trade species ID %u cannot enter the legacy Pokemon record.\n", species);
+        abort();
+    }
+    return (LegacySpeciesId)species;
+}
+
+static LegacyItemId NPCTradeItemToLegacy(ItemId item) {
+    if(item > UINT8_MAX) {
+        log_err("NPC trade item ID %u cannot enter the legacy Pokemon record.\n", item);
+        abort();
+    }
+    return (LegacyItemId)item;
+}
 
 void NPCTrade(uint8_t e){
     // LD_A_E;
@@ -194,13 +211,13 @@ void DoNPCTrade(void){
     // CALL(aGetTradeAttr);
     // LD_A_hl;
     // LD_addr_A(wPlayerTrademonSpecies);
-    wram->wPlayerTrademon.species = GetTradeAttr()->requestedMon;
+    wram->wPlayerTrademon.species = NPCTradeSpeciesToLegacy(GetTradeAttr()->requestedMon);
 
     // LD_E(NPCTRADE_GETMON);
     // CALL(aGetTradeAttr);
     // LD_A_hl;
     // LD_addr_A(wOTTrademonSpecies);
-    wram->wOTTrademon.species = GetTradeAttr()->offeredMon;
+    wram->wOTTrademon.species = NPCTradeSpeciesToLegacy(GetTradeAttr()->offeredMon);
 
     // LD_A_addr(wPlayerTrademonSpecies);
     // LD_DE(wPlayerTrademonSpeciesName);
@@ -364,7 +381,7 @@ void DoNPCTrade(void){
     // POP_HL;
     // LD_A_hl;
     // LD_de_A;
-    gPokemon.partyMon[gPokemon.partyCount - 1].mon.item = GetTradeAttr()->item;
+    gPokemon.partyMon[gPokemon.partyCount - 1].mon.item = NPCTradeItemToLegacy(GetTradeAttr()->item);
 
     // PUSH_AF;
     // PUSH_BC;
@@ -422,7 +439,7 @@ void Trade_GetAttributeOfLastPartymon(void){
     // RET;
 }
 
-uint8_t* GetTradeMonName(species_t a){
+uint8_t* GetTradeMonName(SpeciesId a){
     // PUSH_DE;
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetBasePokemonName);

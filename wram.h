@@ -588,7 +588,7 @@ struct wram_s
                             };
                             struct {
                                 // mobile trade mon
-                                species_t wMobileMonSpeciesBuffer;
+                                LegacySpeciesId wMobileMonSpeciesBuffer;
                                 struct PartyMon wMobileMon;
                                 uint8_t wMobileMonName[MON_NAME_LENGTH];
                                 uint8_t wMobileMonOT[NAME_LENGTH];
@@ -599,9 +599,9 @@ struct wram_s
                                 uint16_t wOfferTrainerID;
                                 uint16_t wOfferSecretID;
                                 uint8_t wOfferGender;
-                                species_t wOfferSpecies;
+                                LegacySpeciesId wOfferSpecies;
                                 uint8_t wOfferReqGender;
-                                species_t wOfferReqSpecies;
+                                LegacySpeciesId wOfferReqSpecies;
                                 uint8_t wOfferMonSender[PLAYER_NAME_LENGTH - 1];
                                 struct PartyMon wOfferMon;
                                 uint8_t wOfferMonOT[PLAYER_NAME_LENGTH - 1];
@@ -2674,7 +2674,7 @@ struct wram_s
                     uint8_t wMoveSelectionMenuType;
                     // corresponds to the data/pokemon/base_stats/*.asm contents
                     //union wCurBaseData
-                    species_t wBaseDexNo;
+                    LegacyDexId wBaseDexNo;
                     union {
                         uint8_t wBaseStats[6];
                         struct {
@@ -2696,8 +2696,8 @@ struct wram_s
                     uint8_t wBaseCatchRate;
                     uint8_t wBaseExp;
                     //union wBaseItems
-                    item_t wBaseItem1;
-                    item_t wBaseItem2;
+                    LegacyItemId wBaseItem1;
+                    LegacyItemId wBaseItem2;
                     uint8_t wBaseGender;
                     uint8_t wBaseUnknown1;
                     uint8_t wBaseEggSteps;

@@ -2,6 +2,7 @@
 #include "../constants.h"
 #include "constant_strings.h"
 #include <assert.h>
+#include <stdlib.h>
 #include "json_load.h"
 #include "../engine/items/mart.h"
 #include "wild/johto_grass.h"
@@ -132,7 +133,9 @@ static void JSONLoadWildGrassEncounterTable(struct WildGrassMons** table, const 
                             }
                             else if(strcmp(encounter_obj_it->name->string, "species") == 0) {
                                 u32_flag_s species_res = JSONStringToConstant(encounter_obj_it->value);
-                                (*table)[i].mons[j][k].species = (species_t)species_res.a;
+                                if(!species_res.flag || species_res.a > UINT16_MAX)
+                                    abort();
+                                (*table)[i].mons[j][k].species = (SpeciesId)species_res.a;
                             }
                         }
                         k++;
@@ -185,7 +188,9 @@ static void JSONLoadWildWaterEncounterTable(struct WildWaterMons** table, const 
                         }
                         else if(strcmp(encounter_obj_it->name->string, "species") == 0) {
                             u32_flag_s species_res = JSONStringToConstant(encounter_obj_it->value);
-                            (*table)[i].mons[k].species = (species_t)species_res.a;
+                            if(!species_res.flag || species_res.a > UINT16_MAX)
+                                abort();
+                            (*table)[i].mons[k].species = (SpeciesId)species_res.a;
                         }
                     }
                     k++;
@@ -228,8 +233,11 @@ void JSONLoadPokemonBaseStats(struct BaseData* data) {
             const char* fkey = mon_field_it->name->string;
             if(strcmp(fkey, "dexNo") == 0) {
                 u32_flag_s res = JSONStringToConstant(mon_field_it->value);
-                if(res.flag)
-                    data[i].dexNo = (dex_t)res.a;
+                if(res.flag) {
+                    if(res.a > UINT8_MAX)
+                        abort();
+                    data[i].dexNo = (LegacyDexId)res.a;
+                }
             }
             else if(strcmp(fkey, "gender") == 0) {
                 u32_flag_s res = JSONStringToConstant(mon_field_it->value);

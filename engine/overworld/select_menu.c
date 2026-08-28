@@ -53,7 +53,7 @@ static bool CheckRegisteredItem_CheckRegisteredNo(uint8_t count) {
     return false;
 }
 
-static bool CheckRegisteredItem_IsSameItem(item_t hl) {
+static bool CheckRegisteredItem_IsSameItem(ItemId hl) {
     // LD_A_addr(wRegisteredItem);
     // CP_A_hl;
     // IF_NZ goto NotSameItem;
@@ -63,8 +63,10 @@ static bool CheckRegisteredItem_IsSameItem(item_t hl) {
         // RET;
         return false;
     }
+    if(hl > UINT8_MAX)
+        return false;
     // LD_addr_A(wCurItem);
-    wram->wCurItem = hl;
+    wram->wCurItem = (LegacyItemId)hl;
     // AND_A_A;
     // RET;
     return true;
@@ -102,7 +104,7 @@ bool CheckRegisteredItem(void){
                 // ADD_HL_DE;
                 // CALL(aCheckRegisteredItem_IsSameItem);
                 // IF_C goto NoRegisteredItem;
-                if(!CheckRegisteredItem_IsSameItem(gPlayer.items[wram->wCurItemQuantity * 2]))
+                if(!CheckRegisteredItem_IsSameItem(gPlayer.items[wram->wCurItemQuantity].item))
                     break;
                 // AND_A_A;
                 // RET;
@@ -122,7 +124,7 @@ bool CheckRegisteredItem(void){
                 // ADD_HL_DE;
                 // CALL(aCheckRegisteredItem_IsSameItem);
                 // IF_C goto NoRegisteredItem;
-                if(!CheckRegisteredItem_IsSameItem(gPlayer.balls[wram->wCurItemQuantity * 2]))
+                if(!CheckRegisteredItem_IsSameItem(gPlayer.balls[wram->wCurItemQuantity].item))
                     break;
                 // RET;
                 return true;
@@ -134,11 +136,13 @@ bool CheckRegisteredItem(void){
                 // LD_DE(1);
                 // CALL(aIsInArray);
                 // IF_NC goto NoRegisteredItem;
-                for(uint32_t i = 0; gPlayer.keyItems[i] != (item_t)-1; ++i) {
+                for(uint32_t i = 0; gPlayer.keyItems[i] != ITEM_LIST_END; ++i) {
                     if(gPlayer.keyItems[i] == gPlayer.registeredItem) {
                         // LD_A_addr(wRegisteredItem);
                         // LD_addr_A(wCurItem);
-                        wram->wCurItem = gPlayer.registeredItem;
+                        if(gPlayer.registeredItem > UINT8_MAX)
+                            break;
+                        wram->wCurItem = (LegacyItemId)gPlayer.registeredItem;
                         // AND_A_A;
                         // RET;
                         return true;

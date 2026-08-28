@@ -4,6 +4,7 @@
 #include "../../home/names.h"
 #include "../../data/trainers/attributes.h"
 #include "../../charmap.h"
+#include <stdlib.h>
 
 uint8_t* GetTrainerClassName(uint8_t c){
     // LD_HL(wRivalName);
@@ -80,14 +81,18 @@ void GetTrainerAttributes(uint8_t tclass){
     // LD_BC(NUM_TRAINER_ATTRIBUTES);
     // CALL(aAddNTimes);
     const struct TrainerClassAttr* const hl = &TrainerClassAttributes[tclass];
+    if(hl->items[0] > UINT8_MAX || hl->items[1] > UINT8_MAX) {
+        log_err("Trainer class %u has an item ID that cannot enter the legacy battle record.\n", tclass);
+        abort();
+    }
     // LD_DE(wEnemyTrainerItem1);
     // LD_A_hli;
     // LD_de_A;
-    wram->wEnemyTrainerItem1 = hl->items[0];
+    wram->wEnemyTrainerItem1 = (LegacyItemId)hl->items[0];
     // INC_DE;
     // LD_A_hli;
     // LD_de_A;
-    wram->wEnemyTrainerItem2 = hl->items[1];
+    wram->wEnemyTrainerItem2 = (LegacyItemId)hl->items[1];
     // LD_A_hl;
     // LD_addr_A(wEnemyTrainerBaseReward);
     wram->wEnemyTrainerBaseReward = hl->baseMoney;

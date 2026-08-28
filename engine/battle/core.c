@@ -172,7 +172,7 @@ static uint8_t* GetRoamMonMapGroup(species_t a);
 static uint8_t* GetRoamMonMapNumber(species_t a);
 static uint8_t* GetRoamMonHP(species_t a);
 static uint16_t* GetRoamMonDVs(species_t a);
-static species_t* GetRoamMonSpecies(species_t a);
+static SpeciesId* GetRoamMonSpecies(SpeciesId a);
 
 static void InitBattleDisplay(void);
 static void CopyBackpic(void);
@@ -13314,7 +13314,7 @@ static uint16_t* GetRoamMonDVs(species_t a){
     return (uint16_t*)(((uint8_t*)&gPokemon.roamMon3) + offsetof(struct Roamer, DVs));
 }
 
-static species_t* GetRoamMonSpecies(species_t a){
+static SpeciesId* GetRoamMonSpecies(SpeciesId a){
     // LD_A_addr(wTempEnemyMonSpecies);
     // LD_HL(wRoamMon1Species);
     // CP_A_hl;
