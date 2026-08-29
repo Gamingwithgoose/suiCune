@@ -34,7 +34,7 @@
 
 #define RANDY_OT_ID (1001)
 
-static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct BoxMon* de, uint8_t a);
+static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct NativeBoxMon* dest, uint8_t a);
 static void ShiftBoxMon(struct Box* box);
 static uint16_t CalcMonStat(const uint16_t* statExp, uint16_t dvs, uint8_t b,
                            uint8_t c, uint8_t baseStat, uint8_t level);
@@ -531,6 +531,23 @@ void FillPP(uint8_t* de, const move_t* hl){
     // RET;
 }
 
+void FillNativePP(uint8_t* de, const MoveId* moves){
+    for(size_t i = 0; i < NUM_MOVES; ++i) {
+        MoveId move = moves[i];
+        if(move == NO_MOVE) {
+            de[i] = 0;
+            continue;
+        }
+        if(move > NUM_ATTACKS) {
+            log_err("Move ID %u has no move-data entry for PP lookup.\n", move);
+            de[i] = 0;
+            continue;
+        }
+        de[i] = Moves[move].pp;
+    }
+}
+
+
 bool AddTempmonToParty(void){
     // LD_HL(wPartyCount);
     // LD_A_hl;
@@ -657,6 +674,7 @@ bool SendGetMonIntoFromBox(uint8_t param){
     species_t* species;
     struct PartyMon* pmon = NULL;
     struct BoxMon* bmon = NULL;
+    struct NativeBoxMon* nativeBmon = NULL;
     uint8_t* de_ot = NULL;
     if(param == PC_WITHDRAW || param == DAY_CARE_WITHDRAW) {
     // check_IfPartyIsFull:
@@ -675,7 +693,7 @@ bool SendGetMonIntoFromBox(uint8_t param){
     // LD_HL(wBreedMon1Species);
     // IF_Z goto breedmon;
     else if(param == DAY_CARE_DEPOSIT) {
-        bmon = &gPokemon.breedMon1;
+        nativeBmon = &gPokemon.breedMon1;
         goto breedmon;
     }
 
@@ -709,7 +727,15 @@ bool SendGetMonIntoFromBox(uint8_t param){
 
 // okay1:
     // LD_hli_A;
-    species[c-1] = (param == DAY_CARE_WITHDRAW)? gPokemon.breedMon1.species: wram->wCurPartySpecies;
+    if(param == DAY_CARE_WITHDRAW) {
+        LegacySpeciesId legacySpecies;
+        if(!TrySpeciesIdToLegacy(gPokemon.breedMon1.species, &legacySpecies))
+            return CloseSRAM_And_SetCarryFlag(&box);
+        species[c - 1] = legacySpecies;
+    }
+    else {
+        species[c - 1] = wram->wCurPartySpecies;
+    }
     // LD_hl(0xff);
     species[c] = (species_t)-1;
 
@@ -747,15 +773,18 @@ breedmon:
         CopyBytes(&pmon->mon, &box.mons[wram->wCurPartyMon], sizeof(pmon->mon));
         break;
     case DAY_CARE_WITHDRAW:
-        // CP_A(DAY_CARE_WITHDRAW);
-        // LD_HL(wBreedMon1Species);
-        // IF_Z goto okay4;
-        CopyBytes(bmon, &gPokemon.breedMon1, sizeof(*bmon));
+        // The player party is still a packed legacy owner. Convert only at this
+        // temporary boundary until party ownership becomes native.
+        if(!ConvertNativeBoxMonToLegacy(&pmon->mon, &gPokemon.breedMon1))
+            return CloseSRAM_And_SetCarryFlag(&box);
         break;
     case DAY_CARE_DEPOSIT:
+        if(!ConvertBoxMonToNative(nativeBmon, &gPokemon.partyMon[wram->wCurPartyMon].mon))
+            return CloseSRAM_And_SetCarryFlag(&box);
+        break;
     case PC_DEPOSIT:
         // LD_HL(wPartyMon1Species);
-        // LD_BC(PARTYMON_STRUCT_LENGTH);
+        // LD_BC(BOXMON_STRUCT_LENGTH);
         CopyBytes(bmon, &gPokemon.partyMon[wram->wCurPartyMon].mon, sizeof(*bmon));
         break;
 
@@ -1077,9 +1106,7 @@ void RestorePPOfDepositedPokemon(struct Box* box, uint8_t b){
 }
 
 bool RetrieveMonFromDayCareMan(void){
-    // LD_A_addr(wBreedMon1Species);
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.breedMon1.species;
+    // Day-Care ownership is native; no WRAM species staging is needed for level growth.
     // LD_DE(SFX_TRANSACTION);
     // CALL(aPlaySFX);
     PlaySFX(SFX_TRANSACTION);
@@ -1101,9 +1128,7 @@ bool RetrieveMonFromDayCareMan(void){
 }
 
 bool RetrieveMonFromDayCareLady(void){
-    // LD_A_addr(wBreedMon2Species);
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.breedMon2.species;
+    // Day-Care ownership is native; no WRAM species staging is needed for level growth.
     // LD_DE(SFX_TRANSACTION);
     // CALL(aPlaySFX);
     PlaySFX(SFX_TRANSACTION);
@@ -1125,133 +1150,57 @@ bool RetrieveMonFromDayCareLady(void){
 }
 
 bool RetrieveBreedmon(void){
-    // LD_HL(wPartyCount);
-    // LD_A_hl;
-    // CP_A(PARTY_LENGTH);
-    // IF_NZ goto room_in_party;
-    if(gPokemon.partyCount >= PARTY_LENGTH) {
-        // SCF;
-        // RET;
+    if(gPokemon.partyCount >= PARTY_LENGTH)
         return true;
-    }
 
-// room_in_party:
-    // INC_A;
-    // LD_hl_A;
-    uint8_t c = gPokemon.partyCount++;
-    // LD_C_A;
-    // LD_B(0);
-    // ADD_HL_BC;
-    species_t* sp = gPokemon.partySpecies + c;
-    // LD_A_addr(wPokemonWithdrawDepositParameter);
-    // AND_A_A;
-    struct BoxMon* breedmon;
-    uint8_t* nickname;
-    uint8_t* ot;
+    const struct NativeBoxMon* breedmon;
+    const uint8_t* nickname;
+    const uint8_t* ot;
     if(wram->wPokemonWithdrawDepositParameter == 0) {
-        // LD_A_addr(wBreedMon1Species);
         breedmon = &gPokemon.breedMon1;
-        // LD_DE(wBreedMon1Nickname);
         nickname = gPokemon.breedMon1Nickname;
         ot = gPokemon.breedMon1OT;
-        // IF_Z goto okay;
     }
     else {
-        // LD_A_addr(wBreedMon2Species);
         breedmon = &gPokemon.breedMon2;
-        // LD_DE(wBreedMon2Nickname);
         nickname = gPokemon.breedMon2Nickname;
         ot = gPokemon.breedMon2OT;
     }
 
-// okay:
-    // LD_hli_A;
-    *sp = breedmon->species;
-    // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = breedmon->species;
-    // LD_A(0xff);
-    // LD_hl_A;
-    sp[1] = 0xff;
-    // LD_HL(wPartyMonNicknames);
-    // LD_A_addr(wPartyCount);
-    // DEC_A;
-    // CALL(aSkipNames);
-    // PUSH_HL;
-    // LD_H_D;
-    // LD_L_E;
-    // POP_DE;
-    // CALL(aCopyBytes);
+    // The player party remains a packed Crystal record in this phase. Validate
+    // the complete projection before mutating party ownership.
+    struct BoxMon legacyBreedmon;
+    if(!ConvertNativeBoxMonToLegacy(&legacyBreedmon, breedmon)) {
+        log_err("Day-Care Pokemon cannot enter the temporary legacy party record.\n");
+        return true;
+    }
+
+    uint8_t c = gPokemon.partyCount;
+    gPokemon.partyCount++;
+    gPokemon.partySpecies[c] = legacyBreedmon.species;
+    if(c + 1 < PARTY_LENGTH)
+        gPokemon.partySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
+    else
+        gPokemon.partyEnd = LEGACY_SPECIES_LIST_END;
+
+    wram->wCurSpecies = legacyBreedmon.species;
+    wram->wCurPartySpecies = legacyBreedmon.species;
     CopyBytes(gPokemon.partyMonNickname[c], nickname, NAME_LENGTH);
-    // PUSH_HL;
-    // LD_HL(wPartyMonOTs);
-    // LD_A_addr(wPartyCount);
-    // DEC_A;
-    // CALL(aSkipNames);
-    // LD_D_H;
-    // LD_E_L;
-    // POP_HL;
-    // CALL(aCopyBytes);
     CopyBytes(gPokemon.partyMonOT[c], ot, NAME_LENGTH);
-    // PUSH_HL;
-    // CALL(aGetLastPartyMon);
-    // POP_HL;
-    // LD_BC(BOXMON_STRUCT_LENGTH);
-    // CALL(aCopyBytes);
-    CopyBytes(&gPokemon.partyMon[c].mon, breedmon, BOXMON_STRUCT_LENGTH);
-    // CALL(aGetLastPartyMon);
-    // LD_B_D;
-    // LD_C_E;
+    CopyBytes(&gPokemon.partyMon[c].mon, &legacyBreedmon, sizeof(legacyBreedmon));
+
     struct PartyMon* partymon = gPokemon.partyMon + c;
-    // LD_HL(MON_LEVEL);
-    // ADD_HL_BC;
-    // LD_A_addr(wCurPartyLevel);
-    // LD_hl_A;
     partymon->mon.level = wram->wCurPartyLevel;
-    // LD_HL(MON_MAXHP);
-    // ADD_HL_BC;
-    // LD_D_H;
-    // LD_E_L;
-    // LD_HL(0xa);
-    // ADD_HL_BC;
-    // PUSH_BC;
-    // LD_B(TRUE);
-    // CALL(aCalcMonStats);
     CalcMonStats_PartyMon(partymon, TRUE);
-    // LD_HL(wPartyMon1Moves);
-    // LD_A_addr(wPartyCount);
-    // DEC_A;
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // CALL(aAddNTimes);
-    // LD_D_H;
-    // LD_E_L;
-    // LD_A(TRUE);
-    // LD_addr_A(wSkipMovesBeforeLevelUp);
+
     wram->wSkipMovesBeforeLevelUp = TRUE;
-    // PREDEF(pFillMoves);
     FillMoves(partymon->mon.moves, partymon->mon.PP, partymon->mon.species, partymon->mon.level);
-    // LD_A_addr(wPartyCount);
-    // DEC_A;
-    // LD_addr_A(wCurPartyMon);
-    // FARCALL(aHealPartyMon);
     HealPartyMon(partymon);
-    // LD_A_addr(wCurPartyLevel);
-    // LD_D_A;
-    // CALLFAR(aCalcExpAtLevel);
-    uint32_t exp = CalcExpAtLevelForSpecies(partymon->mon.species, wram->wCurPartyLevel);
-    // POP_BC;
-    // LD_HL(0x8);
-    // ADD_HL_BC;
-    // LDH_A_addr(hMultiplicand);
-    // LD_hli_A;
-    partymon->mon.exp[0] = LOW(exp);
-    // LDH_A_addr(hMultiplicand + 1);
-    // LD_hli_A;
-    partymon->mon.exp[1] = HIGH(exp);
-    // LDH_A_addr(hMultiplicand + 2);
-    // LD_hl_A;
-    partymon->mon.exp[2] = (exp >> 16) & 0xff;
-    // AND_A_A;
-    // RET;
+
+    uint32_t exp = CalcExpAtLevelForSpecies(breedmon->species, wram->wCurPartyLevel);
+    partymon->mon.exp[0] = (uint8_t)(exp >> 16);
+    partymon->mon.exp[1] = (uint8_t)(exp >> 8);
+    partymon->mon.exp[2] = (uint8_t)exp;
     return false;
 }
 
@@ -1287,7 +1236,7 @@ void DepositMonWithDayCareLady(uint8_t a){
     RemoveMonFromPartyOrBox(REMOVE_PARTY);
 }
 
-static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct BoxMon* de, uint8_t a){
+static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct NativeBoxMon* dest, uint8_t a){
     // LD_A_addr(wCurPartyMon);
     // LD_HL(wPartyMonNicknames);
     // CALL(aSkipNames);
@@ -1304,7 +1253,10 @@ static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct BoxMon* de, u
     // CALL(aAddNTimes);
     // LD_BC(BOXMON_STRUCT_LENGTH);
     // JP(mCopyBytes);
-    CopyBytes(de, gPokemon.partyMon + a, BOXMON_STRUCT_LENGTH);
+    if(!ConvertBoxMonToNative(dest, &gPokemon.partyMon[a].mon)) {
+        log_err("Party Pokemon could not be converted into native Day-Care storage.\n");
+        abort();
+    }
 }
 
 //  Sends the mon into one of Bills Boxes

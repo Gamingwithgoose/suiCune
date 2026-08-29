@@ -5,6 +5,7 @@
 #include "../../home/pokemon.h"
 #include "../../home/copy.h"
 #include "../../home/sram.h"
+#include <stdlib.h>
 
 static void v_TempMonStatsCalculation(struct PartyMon* bc);
 static species_t GetMonSpecies(uint8_t e);
@@ -31,7 +32,15 @@ void CopyMonToTempMon(void){
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // CP_A(OTPARTYMON);
     // IF_Z goto copywholestruct;
-    if(wram->wMonType != PARTYMON && wram->wMonType != OTPARTYMON) {
+    if(wram->wMonType == TEMPMON) {
+        struct BoxMon legacyBreedmon;
+        if(!ConvertNativeBoxMonToLegacy(&legacyBreedmon, &gPokemon.breedMon1)) {
+            log_err("Native Day-Care Pokemon cannot enter the temporary WRAM Pokemon record.\n");
+            abort();
+        }
+        CopyBytes(&wram->wTempMon.mon, &legacyBreedmon, sizeof(legacyBreedmon));
+    }
+    else if(wram->wMonType != PARTYMON && wram->wMonType != OTPARTYMON) {
         // LD_BC(BOXMON_STRUCT_LENGTH);
         // CALLFAR(aCopyBoxmonToTempMon);
         CopyBoxmonToTempMon();
@@ -158,13 +167,17 @@ static species_t GetMonSpecies(uint8_t e) {
             CloseSRAM();
             // RET;
             return a;
-        case TEMPMON:
-        // breedmon:
-            // LD_A_addr(wBreedMon1Species);
-            // goto done2;
-            a = gPokemon.breedMon1.species;
+        case TEMPMON: {
+            LegacySpeciesId legacySpecies;
+            if(!TrySpeciesIdToLegacy(gPokemon.breedMon1.species, &legacySpecies)) {
+                log_err("Native Day-Care species ID %u cannot enter the temporary WRAM species field.\n",
+                        gPokemon.breedMon1.species);
+                abort();
+            }
+            a = legacySpecies;
             wram->wCurPartySpecies = a;
             return a;
+        }
     }
 
 

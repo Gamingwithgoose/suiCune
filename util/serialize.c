@@ -661,7 +661,7 @@ const struct SerialField Struc_PokemonData[] = {
     FLD(TY_U8, dayCareMan),
     FLD_ARR_(TY_U8, breedMon1Nickname),
     FLD_ARR_(TY_U8, breedMon1OT),
-    FLD_STR(STRUC_BOXMON, breedMon1),
+    FLD_STR(STRUC_NATIVEBOXMON, breedMon1),
     // bit 7: active
     // bit 0: monster 2 in day-care
     FLD(TY_U8, dayCareLady),
@@ -671,10 +671,10 @@ const struct SerialField Struc_PokemonData[] = {
     FLD(TY_U8, breedMotherOrNonDitto),
     FLD_ARR_(TY_U8, breedMon2Nickname),
     FLD_ARR_(TY_U8, breedMon2OT),
-    FLD_STR(STRUC_BOXMON, breedMon2),
+    FLD_STR(STRUC_NATIVEBOXMON, breedMon2),
     FLD_ARR_(TY_U8, eggMonNickname),
     FLD_ARR_(TY_U8, eggMonOT),
-    FLD_STR(STRUC_BOXMON, eggMon),
+    FLD_STR(STRUC_NATIVEBOXMON, eggMon),
     FLD(TY_SPECIES_OR_END, bugContestSecondPartySpecies),
     FLD_STR(STRUC_NATIVEPARTYMON, contestMon),
     FLD(TY_U8, dunsparceMapGroup),

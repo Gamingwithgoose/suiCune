@@ -27,14 +27,14 @@ static void GetMemIconGFX(void);
 static void GetIconGFX(uint8_t a);
 static uint8_t* GetIcon_a(uint8_t a);
 static uint8_t* GetIcon(uint16_t hl);
-static uint8_t ReadMonMenuIcon(species_t a);
+static uint8_t ReadMonMenuIcon(SpeciesId species);
 
 static const char *HeldItemIcons[] = {
     "gfx/icons/mail.png",
     "gfx/icons/item.png"
 };
 
-struct IconData LoadOverworldMonIcon(species_t e){
+struct IconData LoadOverworldMonIcon(SpeciesId species){
     // LD_A_E;
     // CALL(aReadMonMenuIcon);
     // LD_L_A;
@@ -48,7 +48,7 @@ struct IconData LoadOverworldMonIcon(species_t e){
     // LD_B(BANK(aIcons));
     // LD_C(8);
     // RET;
-    return (struct IconData){.path=IconPointers[ReadMonMenuIcon(e)], 8};
+    return (struct IconData){.path=IconPointers[ReadMonMenuIcon(species)], 8};
 }
 
 void LoadMenuMonIcon(uint8_t e){
@@ -619,21 +619,10 @@ void HoldSwitchmonIcon(void){
     // RET;
 }
 
-static uint8_t ReadMonMenuIcon(species_t a){
-    // CP_A(EGG);
-    // IF_Z goto egg;
-    if(a == EGG) {
-    // egg:
-        // LD_A(ICON_EGG);
-        // RET;
+static uint8_t ReadMonMenuIcon(SpeciesId species){
+    if(species == EGG)
         return ICON_EGG;
-    }
-    // DEC_A;
-    // LD_HL(mMonMenuIcons);
-    // LD_E_A;
-    // LD_D(0);
-    // ADD_HL_DE;
-    // LD_A_hl;
-    return MonMenuIcons[a - 1];
-    // RET;
+    if(species == 0 || species > NUM_POKEMON)
+        return ICON_NULL;
+    return MonMenuIcons[species - 1];
 }

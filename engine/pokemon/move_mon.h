@@ -1,6 +1,7 @@
 bool TryAddMonToParty(SpeciesId species, uint8_t level);
 bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level, uint8_t monType, uint8_t battleMode);
 void FillPP(uint8_t* de, const move_t* hl);
+void FillNativePP(uint8_t* de, const MoveId* moves);
 bool AddTempmonToParty(void);
 bool SendGetMonIntoFromBox(uint8_t param);
 bool CloseSRAM_And_SetCarryFlag(const struct Box* box);

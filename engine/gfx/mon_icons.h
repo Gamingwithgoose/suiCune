@@ -3,7 +3,7 @@ struct IconData {
     const char* path;
     uint8_t c;
 };
-struct IconData LoadOverworldMonIcon(species_t e);
+struct IconData LoadOverworldMonIcon(SpeciesId species);
 void LoadMenuMonIcon(uint8_t e);
 void Unused_GetPartyMenuMonIcon(void);
 // struct SpriteAnim* Mobile_InitAnimatedMonIcon(void);

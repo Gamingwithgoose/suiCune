@@ -209,14 +209,9 @@ void StepHappiness(void){
     // RET;
 }
 
-static void IncBreedMonExp(uint8_t* exp){
-    if(++exp[2] != 0)
-        return;
-    if(++exp[1] != 0)
-        return;
-    uint8_t hi = ++exp[0];
-    if(hi > HIGH(MAX_DAY_CARE_EXP >> 8))
-        exp[0] = HIGH(MAX_DAY_CARE_EXP >> 8);
+static void IncBreedMonExp(uint32_t* exp){
+    if(*exp < MAX_DAY_CARE_EXP)
+        ++*exp;
 }
 
 //  Raise the experience of Day-Care Pokémon every step cycle.
@@ -242,7 +237,7 @@ void DayCareStep(void){
             // IF_C goto day_care_lady;
             // LD_A(HIGH(MAX_DAY_CARE_EXP >> 8));
             // LD_hl_A;
-            IncBreedMonExp(gPokemon.breedMon1.exp);
+            IncBreedMonExp(&gPokemon.breedMon1.exp);
         }
     }
 
@@ -268,7 +263,7 @@ void DayCareStep(void){
             // IF_C goto check_egg;
             // LD_A(HIGH(MAX_DAY_CARE_EXP >> 8));
             // LD_hl_A;
-            IncBreedMonExp(gPokemon.breedMon2.exp);
+            IncBreedMonExp(&gPokemon.breedMon2.exp);
         }
     }
 

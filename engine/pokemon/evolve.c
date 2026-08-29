@@ -852,6 +852,55 @@ void FillMoves(move_t* de, uint8_t* pp, species_t species, uint8_t level){
     // RET;
 }
 
+void FillNativeMoves(MoveId* dest, uint8_t* pp, SpeciesId species, uint8_t level){
+    const struct EvoMoves* evoMoves = (species == 0 || species > NUM_POKEMON)? NULL: EvosAttacksPointers[species - 1];
+    if(evoMoves == NULL)
+        return;
+
+    const struct LevelMove* moves = evoMoves->learnset;
+    for(size_t i = 0; moves[i].level != 0xff && level >= moves[i].level; ++i) {
+        uint8_t learnLevel = moves[i].level;
+        if(wram->wSkipMovesBeforeLevelUp && wram->wPrevPartyLevel >= learnLevel)
+            continue;
+
+        bool alreadyKnown = false;
+        for(size_t slot = 0; slot < NUM_MOVES; ++slot) {
+            if(dest[slot] == moves[i].move) {
+                alreadyKnown = true;
+                break;
+            }
+        }
+        if(alreadyKnown)
+            continue;
+
+        size_t slot = 0;
+        while(slot < NUM_MOVES && dest[slot] != NO_MOVE)
+            ++slot;
+        if(slot == NUM_MOVES) {
+            for(size_t n = 0; n < NUM_MOVES - 1; ++n) {
+                dest[n] = dest[n + 1];
+                if(wram->wEvolutionOldSpecies != 0)
+                    pp[n] = pp[n + 1];
+            }
+            slot = NUM_MOVES - 1;
+        }
+
+        dest[slot] = moves[i].move;
+        if(wram->wEvolutionOldSpecies != 0) {
+            if(moves[i].move <= NUM_ATTACKS)
+                pp[slot] = Moves[moves[i].move].pp;
+            else
+                pp[slot] = 0;
+        }
+    }
+}
+
+void ShiftNativeMoves(MoveId* moves){
+    for(size_t i = 0; i < NUM_MOVES - 1; ++i)
+        moves[i] = moves[i + 1];
+}
+
+
 void ShiftMoves(move_t* hl){
     // LD_C(NUM_MOVES - 1);
 
@@ -876,65 +925,26 @@ uint8_t EvoFlagAction(uint8_t* hl, uint8_t c, uint8_t b){
     return SmallFarFlagAction(hl, c, b);
 }
 
-//  Find the first mon to evolve into wCurPartySpecies.
-//  Return the new species if a pre-evolution is found.
-//  species otherwise.
-species_t GetPreEvolution(species_t species){
-    // LD_C(0);
-    species_t c = 0;
-
-    do {
-    // loop:
-    //   //  For each Pokemon...
-        // LD_HL(mEvosAttacksPointers);
-        // LD_B(0);
-        // ADD_HL_BC;
-        // ADD_HL_BC;
-        // LD_A_hli;
-        // LD_H_hl;
-        // LD_L_A;
-        const struct EvoData* evo = EvosAttacksPointers[c]->evolutions;
-
+//  Find the first species that evolves into the requested species.
+//  Return the requested species when no pre-evolution exists.
+SpeciesId GetPreEvolutionNative(SpeciesId species){
+    for(SpeciesId candidate = 1; candidate <= NUM_POKEMON; ++candidate) {
+        const struct EvoData* evo = EvosAttacksPointers[candidate - 1]->evolutions;
         while(evo->type != 0) {
-        // loop2:
-        //   //  For each evolution...
-            // LD_A_hli;
-            // AND_A_A;
-            // IF_Z goto no_evolve;  // If we jump, this Pokemon does not evolve into wCurPartySpecies.
-            // CP_A(EVOLVE_STAT);  // This evolution type has the extra parameter of stat comparison.
-            // IF_NZ goto not_tyrogue;
-            // INC_HL;
-
-
-        // not_tyrogue:
-            // INC_HL;
-            // LD_A_addr(wCurPartySpecies);
-            // CP_A_hl;
-            // IF_Z goto found_preevo;
-            if(evo->species == species) {
-            // found_preevo:
-                // INC_C;
-                // LD_A_C;
-                // LD_addr_A(wCurPartySpecies);
-                // SCF;
-                // RET;
-                return c;
-            }
-            // INC_HL;
-            evo++;
-            // LD_A_hl;
-            // AND_A_A;
-            // IF_NZ goto loop2;
+            if(evo->species == species)
+                return candidate;
+            ++evo;
         }
-
-
-    // no_evolve:
-        // INC_C;
-        // LD_A_C;
-        // CP_A(NUM_POKEMON);
-        // IF_C goto loop;
-    } while(++c < NUM_POKEMON);
-    // AND_A_A;
-    // RET;
+    }
     return species;
+}
+
+species_t GetPreEvolution(species_t species){
+    SpeciesId preEvolution = GetPreEvolutionNative(species);
+    LegacySpeciesId legacy;
+    if(!TrySpeciesIdToLegacy(preEvolution, &legacy)) {
+        log_err("Pre-evolution species ID %u cannot enter the legacy Pokemon path.\n", preEvolution);
+        return species;
+    }
+    return legacy;
 }

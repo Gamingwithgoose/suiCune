@@ -34,10 +34,10 @@
 #include "../../data/moves/tmhm_moves.h"
 #include "../../data/text/common.h"
 
-static bool GetEggMove(const move_t* de);
-static void LoadEggMove(const move_t* de2);
-static const move_t* GetHeritableMoves(void);
-static move_t* GetBreedmonMovePointer(void);
+static bool GetEggMove(const MoveId* de);
+static void LoadEggMove(const MoveId* de2);
+static const MoveId* GetHeritableMoves(void);
+static MoveId* GetBreedmonMovePointer(void);
 
 static bool CheckBreedmonCompatibility_CheckBreedingGroupCompatibility(void){
 //  If either mon is in the No Eggs group,
@@ -155,18 +155,7 @@ uint8_t CheckBreedmonCompatibility(void){
         wram->wBreedingCompatibility = 0x0;
         return wram->wBreedingCompatibility;
     }
-    // LD_A_addr(wBreedMon1Species);
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.breedMon1.species;
-    // LD_A_addr(wBreedMon1DVs);
-    // LD_addr_A(wTempMonDVs);
-    wram->wTempMon.mon.DVs = gPokemon.breedMon1.DVs;
-    // LD_A_addr(wBreedMon1DVs + 1);
-    // LD_addr_A(wTempMonDVs + 1);
-    // LD_A(TEMPMON);
-    // LD_addr_A(wMonType);
-    // PREDEF(pGetGender);
-    u8_flag_s gender = GetGender(TEMPMON);
+    u8_flag_s gender = GetGenderForSpeciesDVs(gPokemon.breedMon1.species, gPokemon.breedMon1.DVs);
     // IF_C goto genderless;
     if(gender.flag)
         goto genderless;
@@ -176,19 +165,7 @@ uint8_t CheckBreedmonCompatibility(void){
     uint8_t b = (gender.a != 0)? 0x1: 0x2;
 
 // breedmon2:
-    // PUSH_BC;
-    // LD_A_addr(wBreedMon2Species);
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.breedMon2.species;
-    // LD_A_addr(wBreedMon2DVs);
-    // LD_addr_A(wTempMonDVs);
-    wram->wTempMon.mon.DVs = gPokemon.breedMon2.DVs;
-    // LD_A_addr(wBreedMon2DVs + 1);
-    // LD_addr_A(wTempMonDVs + 1);
-    // LD_A(TEMPMON);
-    // LD_addr_A(wMonType);
-    // PREDEF(pGetGender);
-    u8_flag_s gender2 = GetGender(TEMPMON);
+    u8_flag_s gender2 = GetGenderForSpeciesDVs(gPokemon.breedMon2.species, gPokemon.breedMon2.DVs);
     // POP_BC;
     // IF_C goto genderless;
     if(gender2.flag)
@@ -569,7 +546,7 @@ void InitEggMoves(void){
     // CALL(aGetHeritableMoves);
     // LD_D_H;
     // LD_E_L;
-    const move_t* de = GetHeritableMoves();
+    const MoveId* de = GetHeritableMoves();
     // LD_B(NUM_MOVES);
     uint8_t b = NUM_MOVES;
 
@@ -581,7 +558,7 @@ void InitEggMoves(void){
         if(*de == NO_MOVE)
             break;
         // LD_HL(wEggMonMoves);
-        move_t* hl = gPokemon.eggMon.moves;
+        MoveId* hl = gPokemon.eggMon.moves;
         // LD_C(NUM_MOVES);
         uint8_t c = NUM_MOVES;
 
@@ -614,7 +591,7 @@ void InitEggMoves(void){
     // RET;
 }
 
-static bool GetEggMove(const move_t* de){
+static bool GetEggMove(const MoveId* de){
     // PUSH_BC;
     // LD_A_addr(wEggMonSpecies);
     // DEC_A;
@@ -647,7 +624,7 @@ static bool GetEggMove(const move_t* de){
 
 // reached_end:
     // CALL(aGetBreedmonMovePointer);
-    move_t* hl = GetBreedmonMovePointer();
+    MoveId* hl = GetBreedmonMovePointer();
     // LD_B(NUM_MOVES);
     uint8_t b = NUM_MOVES;
 
@@ -733,7 +710,7 @@ inherit_tmhm:;
         return false;
     // LD_addr_A(wPutativeTMHMMove);
     // PREDEF(pCanLearnTMHMMove);
-    uint8_t c = CanLearnTMHMMove(wram->wCurPartySpecies, *de);
+    uint8_t c = CanLearnTMHMMove(gPokemon.eggMon.species, *de);
     // LD_A_C;
     // AND_A_A;
     // IF_Z goto done;
@@ -752,14 +729,14 @@ inherit_tmhm:;
     // RET;
 }
 
-static void LoadEggMove(const move_t* de2){
+static void LoadEggMove(const MoveId* de2){
     // PUSH_DE;
     // PUSH_BC;
     // LD_A_de;
     // LD_B_A;
-    move_t b = *de2;
+    MoveId b = *de2;
     // LD_HL(wEggMonMoves);
-    move_t* hl = gPokemon.eggMon.moves;
+    MoveId* hl = gPokemon.eggMon.moves;
     // LD_C(NUM_MOVES);
     uint8_t c = NUM_MOVES;
 
@@ -774,7 +751,7 @@ static void LoadEggMove(const move_t* de2){
         // IF_NZ goto loop;
     } while(--c != 0);
     // LD_DE(wEggMonMoves);
-    move_t* de = gPokemon.eggMon.moves;
+    MoveId* de = gPokemon.eggMon.moves;
     // LD_HL(wEggMonMoves + 1);
     hl = gPokemon.eggMon.moves + 1;
     // LD_A_hli;
@@ -797,103 +774,33 @@ done:
     // LD_HL(wEggMonMoves);
     // LD_DE(wEggMonPP);
     // PREDEF(pFillPP);
-    FillPP(gPokemon.eggMon.PP, gPokemon.eggMon.moves);
+    FillNativePP(gPokemon.eggMon.PP, gPokemon.eggMon.moves);
     // POP_BC;
     // POP_DE;
     // RET;
 }
 
-static const move_t* GetHeritableMoves(void){
-    // LD_HL(wBreedMon2Moves);
-    move_t* hl = gPokemon.breedMon2.moves;
-    // LD_A_addr(wBreedMon1Species);
-    species_t sp = wram->wCurPartySpecies;
-    // CP_A(DITTO);
-    // IF_Z goto ditto1;
+static const MoveId* GetHeritableMoves(void){
     if(gPokemon.breedMon1.species == DITTO) {
-    // ditto1:
-        // LD_A_addr(wCurPartySpecies);
-        // PUSH_AF;
-        // LD_A_addr(wBreedMon2Species);
-        // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = gPokemon.breedMon2.species;
-        // LD_A_addr(wBreedMon2DVs);
-        // LD_addr_A(wTempMonDVs);
-        // LD_A_addr(wBreedMon2DVs + 1);
-        // LD_addr_A(wTempMonDVs + 1);
-        wram->wTempMon.mon.DVs = gPokemon.breedMon2.DVs;
-        // LD_A(TEMPMON);
-        // LD_addr_A(wMonType);
-        // PREDEF(pGetGender);
-        u8_flag_s gender = GetGender(TEMPMON);
-        // IF_C goto inherit_mon2_moves;
-        // IF_NZ goto inherit_mon2_moves;
-        if(gender.flag || gender.a != 0) {
-        // inherit_mon2_moves:
-            // LD_HL(wBreedMon2Moves);
-            // POP_AF;
-            // LD_addr_A(wCurPartySpecies);
-            wram->wCurPartySpecies = sp;
-            // RET;
+        u8_flag_s gender = GetGenderForSpeciesDVs(gPokemon.breedMon2.species, gPokemon.breedMon2.DVs);
+        if(gender.flag || gender.a != 0)
             return gPokemon.breedMon2.moves;
-        }
-    // inherit_mon1_moves:
-        // LD_HL(wBreedMon1Moves);
-        // POP_AF;
-        // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = sp;
-        // RET;
         return gPokemon.breedMon1.moves;
     }
-    // LD_A_addr(wBreedMon2Species);
-    // CP_A(DITTO);
-    // IF_Z goto ditto2;
-    else if(gPokemon.breedMon1.species == DITTO) {
-    // ditto2:
-        // LD_A_addr(wCurPartySpecies);
-        // PUSH_AF;
-        // LD_A_addr(wBreedMon1Species);
-        // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = gPokemon.breedMon1.species;
-        // LD_A_addr(wBreedMon1DVs);
-        // LD_addr_A(wTempMonDVs);
-        // LD_A_addr(wBreedMon1DVs + 1);
-        // LD_addr_A(wTempMonDVs + 1);
-        wram->wTempMon.mon.DVs = gPokemon.breedMon1.DVs;
-        // LD_A(TEMPMON);
-        // LD_addr_A(wMonType);
-        // PREDEF(pGetGender);
-        u8_flag_s gender = GetGender(TEMPMON);
-        // IF_C goto inherit_mon1_moves;
-        // IF_NZ goto inherit_mon1_moves;
-        if(gender.flag || gender.a != 0) {
-        // inherit_mon1_moves:
-            // LD_HL(wBreedMon1Moves);
-            // POP_AF;
-            // LD_addr_A(wCurPartySpecies);
-            wram->wCurPartySpecies = sp;
-            // RET;
+
+    if(gPokemon.breedMon2.species == DITTO) {
+        u8_flag_s gender = GetGenderForSpeciesDVs(gPokemon.breedMon1.species, gPokemon.breedMon1.DVs);
+        if(gender.flag || gender.a != 0)
             return gPokemon.breedMon1.moves;
-        }
-    // inherit_mon2_moves:
-        // LD_HL(wBreedMon2Moves);
-        // POP_AF;
-        // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = sp;
-        // RET;
         return gPokemon.breedMon2.moves;
     }
-    // LD_A_addr(wBreedMotherOrNonDitto);
-    // AND_A_A;
-    // RET_Z ;
+
     if(gPokemon.breedMotherOrNonDitto == 0)
-        return hl;
-    // LD_HL(wBreedMon1Moves);
-    // RET;
+        return gPokemon.breedMon2.moves;
     return gPokemon.breedMon1.moves;
 }
 
-static move_t* GetBreedmonMovePointer(void){
+static MoveId* GetBreedmonMovePointer(void){
     // LD_HL(wBreedMon1Moves);
     // LD_A_addr(wBreedMon1Species);
     // CP_A(DITTO);

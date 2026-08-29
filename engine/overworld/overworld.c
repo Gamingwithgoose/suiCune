@@ -332,7 +332,7 @@ static struct SpriteLoadData GetMonSprite(uint8_t a){
     }
     // CP_A(SPRITE_DAY_CARE_MON_1);
     // IF_Z goto BreedMon1;
-    uint8_t e;
+    SpeciesId e;
     if(a == SPRITE_DAY_CARE_MON_1) {
     // BreedMon1:
         // LD_A_addr(wBreedMon1Species);

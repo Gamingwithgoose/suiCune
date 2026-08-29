@@ -650,91 +650,36 @@ static const txt_cmd_s NoRoomForEggText[] = {
 }
 
 bool DayCare_GiveEgg(void){
-    // LD_A_addr(wEggMonLevel);
-    // LD_addr_A(wCurPartyLevel);
-    wram->wCurPartyLevel = gPokemon.eggMon.level;
-    // LD_HL(wPartyCount);
-    // LD_A_hl;
-    // CP_A(PARTY_LENGTH);
-    // IF_NC goto PartyFull;
-    if(gPokemon.partyCount >= PARTY_LENGTH) {
-    // PartyFull:
-        // SCF;
-        // RET;
+    if(gPokemon.partyCount >= PARTY_LENGTH)
+        return true;
+
+    // Party ownership is still legacy. Validate the full native egg projection
+    // before changing party state so an expanded ID can never be truncated.
+    struct BoxMon legacyEgg;
+    if(!ConvertNativeBoxMonToLegacy(&legacyEgg, &gPokemon.eggMon)) {
+        log_err("Day-Care egg cannot enter the temporary legacy party record.\n");
         return true;
     }
-    // INC_A;
-    // LD_hl_A;
-    uint8_t c = gPokemon.partyCount++;
 
-    // LD_C_A;
-    // LD_B(0);
-    // ADD_HL_BC;
-    // LD_A(EGG);
-    // LD_hli_A;
+    uint8_t c = gPokemon.partyCount;
+    gPokemon.partyCount++;
     gPokemon.partySpecies[c] = EGG;
-    // LD_A_addr(wEggMonSpecies);
-    // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.eggMon.species;
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.eggMon.species;
-    // LD_A(-1);
-    // LD_hl_A;
-    gPokemon.partySpecies[c + 1] = (species_t)-1;
+    if(c + 1 < PARTY_LENGTH)
+        gPokemon.partySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
+    else
+        gPokemon.partyEnd = LEGACY_SPECIES_LIST_END;
 
-    // LD_HL(wPartyMonNicknames);
-    // LD_BC(MON_NAME_LENGTH);
-    // CALL(aDayCare_GetCurrentPartyMember);
-    // LD_HL(wEggMonNickname);
-    // CALL(aCopyBytes);
+    wram->wCurSpecies = legacyEgg.species;
+    wram->wCurPartySpecies = legacyEgg.species;
+    wram->wCurPartyLevel = gPokemon.eggMon.level;
+
     CopyBytes(gPokemon.partyMonNickname[c], gPokemon.eggMonNickname, MON_NAME_LENGTH);
+    CopyBytes(gPokemon.partyMonOT[c], gPokemon.eggMonOT, NAME_LENGTH);
+    CopyBytes(&gPokemon.partyMon[c].mon, &legacyEgg, sizeof(legacyEgg));
 
-    // LD_HL(wPartyMonOTs);
-    // LD_BC(NAME_LENGTH);
-    // CALL(aDayCare_GetCurrentPartyMember);
-    // LD_HL(wEggMonOT);
-    // CALL(aCopyBytes);
-    CopyBytes(gPokemon.partyMonOT[c], gPokemon.eggMonOT, MON_NAME_LENGTH);
-
-    // LD_HL(wPartyMon1);
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // CALL(aDayCare_GetCurrentPartyMember);
-    // LD_HL(wEggMon);
-    // LD_BC(BOXMON_STRUCT_LENGTH);
-    // CALL(aCopyBytes);
-    CopyBytes(&gPokemon.partyMon[c].mon, &gPokemon.eggMon, BOXMON_STRUCT_LENGTH);
-
-    // CALL(aGetBaseData);
-    GetBaseData(gPokemon.eggMon.species);
-    // LD_A_addr(wPartyCount);
-    // DEC_A;
-    // LD_HL(wPartyMon1);
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // CALL(aAddNTimes);
-    // LD_B_H;
-    // LD_C_L;
-    struct PartyMon* bc = gPokemon.partyMon + c;
-    // LD_HL(MON_ID + 1);
-    // ADD_HL_BC;
-    // PUSH_HL;
-    // LD_HL(MON_MAXHP);
-    // ADD_HL_BC;
-    // LD_D_H;
-    // LD_E_L;
-    // POP_HL;
-    // PUSH_BC;
-    // LD_B(FALSE);
-    // PREDEF(pCalcMonStats);
-    CalcMonStats_PartyMon(bc, FALSE);
-    // POP_BC;
-    // LD_HL(MON_HP);
-    // ADD_HL_BC;
-    // XOR_A_A;
-    // LD_hli_A;
-    // LD_hl_A;
-    bc->HP = 0;
-    // AND_A_A;
-    // RET;
+    struct PartyMon* partyMon = gPokemon.partyMon + c;
+    CalcMonStats_PartyMon(partyMon, FALSE);
+    partyMon->HP = 0;
     return false;
 }
 
@@ -749,277 +694,93 @@ bool DayCare_GiveEgg(void){
 // }
 
 void DayCare_InitBreeding(void){
-    // LD_A_addr(wDayCareLady);
-    // BIT_A(DAYCARELADY_HAS_MON_F);
-    // RET_Z ;
-    // LD_A_addr(wDayCareMan);
-    // BIT_A(DAYCAREMAN_HAS_MON_F);
-    // RET_Z ;
-    if(!bit_test(gPokemon.dayCareLady, DAYCARELADY_HAS_MON_F) || !bit_test(gPokemon.dayCareMan, DAYCARELADY_HAS_MON_F))
+    if(!bit_test(gPokemon.dayCareLady, DAYCARELADY_HAS_MON_F)
+    || !bit_test(gPokemon.dayCareMan, DAYCAREMAN_HAS_MON_F))
         return;
-    // CALLFAR(aCheckBreedmonCompatibility);
+
     CheckBreedmonCompatibility();
-    // LD_A_addr(wBreedingCompatibility);
-    // AND_A_A;
-    // RET_Z ;
-    // INC_A;
-    // RET_Z ;
     if(wram->wBreedingCompatibility == 0 || wram->wBreedingCompatibility == 0xff)
         return;
-    // LD_HL(wDayCareMan);
-    // SET_hl(DAYCAREMAN_MONS_COMPATIBLE_F);
+
     bit_set(gPokemon.dayCareMan, DAYCAREMAN_MONS_COMPATIBLE_F);
-
-    uint8_t a;
     do {
-    // loop:
-        // CALL(aRandom);
-        a = Random();
-        // CP_A(150);
-        // IF_C goto loop;
-    } while(a < 150);
-    // LD_addr_A(wStepsToEgg);
-    gPokemon.stepsToEgg = a;
-    // JP(mDayCare_InitBreeding_UselessJump);
+        gPokemon.stepsToEgg = Random();
+    } while(gPokemon.stepsToEgg < 150);
 
-// UselessJump:
-    // XOR_A_A;
-    // LD_HL(wEggMon);
-    // LD_BC(BOXMON_STRUCT_LENGTH);
-    // CALL(aByteFill);
-    ByteFill(&gPokemon.eggMon, BOXMON_STRUCT_LENGTH, 0);
-    // LD_HL(wEggMonNickname);
-    // LD_BC(MON_NAME_LENGTH);
-    // CALL(aByteFill);
-    ByteFill(gPokemon.eggMonNickname, MON_NAME_LENGTH, 0);
-    // LD_HL(wEggMonOT);
-    // LD_BC(NAME_LENGTH);
-    // CALL(aByteFill);
-    ByteFill(gPokemon.eggMonOT, NAME_LENGTH, 0);
-    // LD_A_addr(wBreedMon1DVs);
-    // LD_addr_A(wTempMonDVs);
-    wram->wTempMon.mon.DVs = gPokemon.breedMon1.DVs;
-    // LD_A_addr(wBreedMon1DVs + 1);
-    // LD_addr_A(wTempMonDVs + 1);
-    // LD_A_addr(wBreedMon1Species);
-    // LD_addr_A(wCurPartySpecies);
-    wram->wTempMon.mon.species = gPokemon.breedMon1.species;
-    // LD_A(0x3);
-    // LD_addr_A(wMonType);
-    wram->wMonType = 0x3;
-    // LD_A_addr(wBreedMon1Species);
-    // CP_A(DITTO);
-    // LD_A(0x1);
-    // IF_Z goto LoadWhichBreedmonIsTheMother;
-    // LD_A_addr(wBreedMon2Species);
-    // CP_A(DITTO);
-    // LD_A(0x0);
-    // IF_Z goto LoadWhichBreedmonIsTheMother;
-    // FARCALL(aGetGender);
-    // LD_A(0x0);
-    // IF_Z goto LoadWhichBreedmonIsTheMother;
-    // INC_A;
+    ByteFill(&gPokemon.eggMon, sizeof(gPokemon.eggMon), 0);
+    ByteFill(gPokemon.eggMonNickname, sizeof(gPokemon.eggMonNickname), 0);
+    ByteFill(gPokemon.eggMonOT, sizeof(gPokemon.eggMonOT), 0);
 
-// LoadWhichBreedmonIsTheMother:
-    // LD_addr_A(wBreedMotherOrNonDitto);
-    gPokemon.breedMotherOrNonDitto = (gPokemon.breedMon1.species == DITTO || (gPokemon.breedMon2.species != DITTO && GetGender(TEMPMON).a != 0))? 0x1: 0x0;
-    // AND_A_A;
-    // LD_A_addr(wBreedMon1Species);
-    // IF_Z goto GotMother;
-    // LD_A_addr(wBreedMon2Species);
+    u8_flag_s breed1Gender = GetGenderForSpeciesDVs(gPokemon.breedMon1.species, gPokemon.breedMon1.DVs);
+    gPokemon.breedMotherOrNonDitto =
+        (gPokemon.breedMon1.species == DITTO
+      || (gPokemon.breedMon2.species != DITTO && !breed1Gender.flag && breed1Gender.a != 0))? 1: 0;
 
-// GotMother:
-    // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = (gPokemon.breedMotherOrNonDitto)? gPokemon.breedMon2.species: gPokemon.breedMon1.species;
-    // CALLFAR(aGetPreEvolution);
-    // CALLFAR(aGetPreEvolution);
-    wram->wCurPartySpecies = GetPreEvolution(GetPreEvolution(wram->wCurPartySpecies));
-    // LD_A(EGG_LEVEL);
-    // LD_addr_A(wCurPartyLevel);
-    wram->wCurPartyLevel = EGG_LEVEL;
+    SpeciesId motherSpecies = gPokemon.breedMotherOrNonDitto
+        ? gPokemon.breedMon2.species
+        : gPokemon.breedMon1.species;
+    SpeciesId eggSpecies = GetPreEvolutionNative(GetPreEvolutionNative(motherSpecies));
 
-//  Nidoran♀ can give birth to either gender of Nidoran
-    // LD_A_addr(wCurPartySpecies);
-    // CP_A(NIDORAN_F);
-    // IF_NZ goto GotEggSpecies;
-    if(wram->wCurPartySpecies == NIDORAN_F) {
-        // CALL(aRandom);
-        // CP_A(50 percent + 1);
-        // LD_A(NIDORAN_F);
-        // IF_C goto GotEggSpecies;
-        // LD_A(NIDORAN_M);
-        wram->wCurPartySpecies = (Random() >= 50 percent + 1)? NIDORAN_M: NIDORAN_F;
-    }
+    // Nidoran female can produce either Nidoran sex.
+    if(eggSpecies == NIDORAN_F)
+        eggSpecies = (Random() >= 50 percent + 1)? NIDORAN_M: NIDORAN_F;
 
-// GotEggSpecies:
-    // LD_addr_A(wCurPartySpecies);
-    // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = wram->wCurPartySpecies;
-    // LD_addr_A(wEggMonSpecies);
-    gPokemon.eggMon.species = wram->wCurPartySpecies;
-
-    const struct BaseData* eggBase = GetSpeciesBaseData(gPokemon.eggMon.species);
+    const struct BaseData* eggBase = GetSpeciesBaseData(eggSpecies);
     if(eggBase == NULL)
         return;
-    // LD_HL(wEggMonNickname);
-    // LD_DE(mDayCare_InitBreeding_String_EGG);
-    // CALL(aCopyName2);
-    CopyName2(gPokemon.eggMonNickname, U82C("EGG@"));
-    // LD_HL(wPlayerName);
-    // LD_DE(wEggMonOT);
-    // LD_BC(NAME_LENGTH);
-    // CALL(aCopyBytes);
-    CopyBytes(gPokemon.eggMonOT, gPlayer.playerName, NAME_LENGTH);
-    // XOR_A_A;
-    // LD_addr_A(wEggMonItem);
-    gPokemon.eggMon.item = NO_ITEM;
-    // LD_DE(wEggMonMoves);
-    // XOR_A_A;  // FALSE
-    // LD_addr_A(wSkipMovesBeforeLevelUp);
-    wram->wSkipMovesBeforeLevelUp = FALSE;
-    // PREDEF(pFillMoves);
-    FillMoves(gPokemon.eggMon.moves, gPokemon.eggMon.PP, gPokemon.eggMon.species, gPokemon.eggMon.level);
-    // FARCALL(aInitEggMoves);
-    InitEggMoves();
-    // LD_HL(wEggMonID);
-    // LD_A_addr(wPlayerID);
-    // LD_hli_A;
-    // LD_A_addr(wPlayerID + 1);
-    // LD_hl_A;
-    gPokemon.eggMon.id = gPlayer.playerID;
-    // LD_A_addr(wCurPartyLevel);
-    // LD_D_A;
-    // CALLFAR(aCalcExpAtLevel);
-    uint32_t exp = CalcExpAtLevelWithGrowthRate(eggBase->growthRate, wram->wCurPartyLevel);
-    // LD_HL(wEggMonExp);
-    // LDH_A_addr(hMultiplicand);
-    // LD_hli_A;
-    gPokemon.eggMon.exp[0] = exp & 0xff;
-    // LDH_A_addr(hMultiplicand + 1);
-    // LD_hli_A;
-    gPokemon.eggMon.exp[1] = (exp >> 8) & 0xff;
-    // LDH_A_addr(hMultiplicand + 2);
-    // LD_hl_A;
-    gPokemon.eggMon.exp[2] = (exp >> 16) & 0xff;
-    // XOR_A_A;
-    // LD_B(wEggMonDVs - wEggMonStatExp);
-    // LD_HL(wEggMonStatExp);
 
-// loop2:
-    // LD_hli_A;
-    // DEC_B;
-    // IF_NZ goto loop2;
+    gPokemon.eggMon.species = eggSpecies;
+    gPokemon.eggMon.item = NO_ITEM;
+    gPokemon.eggMon.id = gPlayer.playerID;
+    gPokemon.eggMon.level = EGG_LEVEL;
+    gPokemon.eggMon.exp = CalcExpAtLevelWithGrowthRate(eggBase->growthRate, EGG_LEVEL);
     ByteFill(gPokemon.eggMon.statExp, sizeof(gPokemon.eggMon.statExp), 0);
-    // LD_HL(wEggMonDVs);
-    // CALL(aRandom);
-    uint16_t dv = (Random() | (Random() << 8));
-    // LD_hli_A;
-    gPokemon.eggMon.DVs = dv;
-    // LD_addr_A(wTempMonDVs);
-    wram->wTempMon.mon.DVs = dv;
-    // CALL(aRandom);
-    // LD_hld_A;
-    // LD_addr_A(wTempMonDVs + 1);
-    uint16_t dvs;
-    // LD_DE(wBreedMon1DVs);
-    // LD_A_addr(wBreedMon1Species);
-    // CP_A(DITTO);
-    // IF_Z goto GotDVs;
-    // LD_DE(wBreedMon2DVs);
-    // LD_A_addr(wBreedMon2Species);
-    // CP_A(DITTO);
-    // IF_Z goto GotDVs;
+
+    CopyName2(gPokemon.eggMonNickname, U82C("EGG@"));
+    CopyBytes(gPokemon.eggMonOT, gPlayer.playerName, NAME_LENGTH);
+
+    wram->wCurPartyLevel = EGG_LEVEL;
+    wram->wSkipMovesBeforeLevelUp = FALSE;
+    FillNativeMoves(gPokemon.eggMon.moves, gPokemon.eggMon.PP, eggSpecies, EGG_LEVEL);
+    InitEggMoves();
+
+    uint16_t randomDVs = (uint16_t)(Random() | (Random() << 8));
+    gPokemon.eggMon.DVs = randomDVs;
+
+    uint16_t inheritedDVs;
     if(gPokemon.breedMon1.species == DITTO) {
-        dvs = gPokemon.breedMon1.species;
+        inheritedDVs = gPokemon.breedMon1.DVs;
     }
     else if(gPokemon.breedMon2.species == DITTO) {
-        dvs = gPokemon.breedMon2.species;
+        inheritedDVs = gPokemon.breedMon2.DVs;
     }
     else {
-        // LD_A(TEMPMON);
-        // LD_addr_A(wMonType);
-        wram->wMonType = TEMPMON;
-        // PUSH_HL;
-        // FARCALL(aGetGender);
-        u8_flag_s gender = GetGender(TEMPMON);
-        // POP_HL;
-        // LD_DE(wBreedMon1DVs);
-        // LD_BC(wBreedMon2DVs);
-        // IF_C goto SkipDVs;
-        if(gender.flag) 
-            goto SkipDVs;
-        // IF_Z goto ParentCheck2;
-        if(gender.a != 0) {
-            // LD_A_addr(wBreedMotherOrNonDitto);
-            // AND_A_A;
-            // IF_Z goto GotDVs;
-            // LD_D_B;
-            // LD_E_C;
-            dvs = (gPokemon.breedMotherOrNonDitto)? gPokemon.breedMon2.DVs: gPokemon.breedMon1.DVs;
-            // goto GotDVs;
+        u8_flag_s eggGender = GetGenderForSpeciesDVs(eggSpecies, randomDVs);
+        if(eggGender.flag)
+            goto SkipInheritedDVs;
+
+        if(eggGender.a != 0) {
+            inheritedDVs = gPokemon.breedMotherOrNonDitto
+                ? gPokemon.breedMon2.DVs
+                : gPokemon.breedMon1.DVs;
         }
         else {
-        // ParentCheck2:
-            // LD_A_addr(wBreedMotherOrNonDitto);
-            // AND_A_A;
-            // IF_NZ goto GotDVs;
-            // LD_D_B;
-            // LD_E_C;
-            dvs = (gPokemon.breedMotherOrNonDitto)? gPokemon.breedMon1.DVs: gPokemon.breedMon2.DVs;
+            inheritedDVs = gPokemon.breedMotherOrNonDitto
+                ? gPokemon.breedMon1.DVs
+                : gPokemon.breedMon2.DVs;
         }
     }
 
-// GotDVs:
-    // LD_A_de;
-    // INC_DE;
-    // AND_A(0xf);
-    // LD_B_A;
-    // LD_A_hl;
-    // AND_A(0xf0);
-    // ADD_A_B;
-    // LD_hli_A;
-    uint8_t dv1 = (dv & 0xf0) + (dvs & 0xf);
-    // LD_A_de;
-    // AND_A(0x7);
-    // LD_B_A;
-    // LD_A_hl;
-    // AND_A(0xf8);
-    // ADD_A_B;
-    uint8_t dv2 = ((dv >> 8) & 0xf8) + ((dvs >> 8) & 0x7);
-    // LD_hl_A;
-    gPokemon.eggMon.DVs = (dv2 << 8) + dv1;
+    {
+        uint8_t low = (uint8_t)((randomDVs & 0xf0) + (inheritedDVs & 0x0f));
+        uint8_t high = (uint8_t)(((randomDVs >> 8) & 0xf8) + ((inheritedDVs >> 8) & 0x07));
+        gPokemon.eggMon.DVs = (uint16_t)((high << 8) | low);
+    }
 
-SkipDVs:
-    // LD_HL(wStringBuffer1);
-    // LD_DE(wMonOrItemNameBuffer);
-    // LD_BC(NAME_LENGTH);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wMonOrItemNameBuffer, wram->wStringBuffer1, NAME_LENGTH);
-    // LD_HL(wEggMonMoves);
-    // LD_DE(wEggMonPP);
-    // PREDEF(pFillPP);
-    FillPP(gPokemon.eggMon.PP, gPokemon.eggMon.moves);
-    // LD_HL(wMonOrItemNameBuffer);
-    // LD_DE(wStringBuffer1);
-    // LD_BC(NAME_LENGTH);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wStringBuffer1, wram->wMonOrItemNameBuffer, NAME_LENGTH);
-    // LD_A_addr(wBaseEggSteps);
-    // LD_HL(wEggMonHappiness);
-    // LD_hli_A;
+SkipInheritedDVs:
+    FillNativePP(gPokemon.eggMon.PP, gPokemon.eggMon.moves);
     gPokemon.eggMon.happiness = eggBase->eggSteps;
-    // XOR_A_A;
-    // LD_hli_A;
     gPokemon.eggMon.pokerusStatus = 0;
-    // LD_hli_A;
     gPokemon.eggMon.caughtData[0] = 0;
-    // LD_hl_A;
     gPokemon.eggMon.caughtData[1] = 0;
-    // LD_A_addr(wCurPartyLevel);
-    // LD_addr_A(wEggMonLevel);
-    gPokemon.eggMon.level = wram->wCurPartyLevel;
-    // RET;
-
-// String_EGG:
-    //db [''];
 }

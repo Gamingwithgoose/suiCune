@@ -179,42 +179,38 @@ void PrintTempMonStats(tile_t* hl, uint16_t bc){
     // RET;
 }
 
+//  Return the gender implied by a species and its DV word.
+//  a = 1: male, a = 0: female, flag = true: genderless/invalid species.
+u8_flag_s GetGenderForSpeciesDVs(SpeciesId species, uint16_t DVs){
+    const struct BaseData* base = GetSpeciesBaseData(species);
+    if(base == NULL)
+        return (u8_flag_s){.a = 0, .flag = true};
+
+    // Combine the Attack and Speed DV nibbles in the same form Crystal uses
+    // when comparing against the species gender threshold.
+    uint8_t dvGenderValue = (uint8_t)((DVs & 0xf0) | ((DVs & 0xf000) >> 12));
+    uint8_t ratio = base->gender;
+
+    if(ratio == (uint8_t)GENDER_UNKNOWN)
+        return (u8_flag_s){.a = 0, .flag = true};
+    if(ratio == GENDER_F0)
+        return (u8_flag_s){.a = 1, .flag = false};
+    if(ratio == GENDER_F100 || ratio >= dvGenderValue)
+        return (u8_flag_s){.a = 0, .flag = false};
+    return (u8_flag_s){.a = 1, .flag = false};
+}
+
 //  Return the gender of a given monster (wCurPartyMon/wCurOTMon/wCurWildMon).
 //  When calling this function, a should be set to an appropriate wMonType value.
-//  return values:
-//  a = 1: f = nc|nz
-//  a = 0: f = nc|z
-//         f = c:  genderless
-//  This is determined by comparing the Attack and Speed DVs
-//  with the species' gender ratio.
 u8_flag_s GetGender(uint8_t monType){
-//  Figure out what type of monster struct we're looking at.
-
     uint16_t DVs = 0;
     switch(monType) {
-//  0: PartyMon
-    // LD_HL(wPartyMon1DVs);
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // LD_A_addr(wMonType);
-    // AND_A_A;
-    // IF_Z goto PartyMon;
     case PARTYMON:
         DVs = gPokemon.partyMon[wram->wCurPartyMon].mon.DVs;
         break;
-
-//  1: OTPartyMon
-    // LD_HL(wOTPartyMon1DVs);
-    // DEC_A;
-    // IF_Z goto PartyMon;
     case OTPARTYMON:
         DVs = wram->wOTPartyMon[wram->wCurPartyMon].mon.DVs;
         break;
-
-//  2: sBoxMon
-    // LD_HL(sBoxMon1DVs);
-    // LD_BC(BOXMON_STRUCT_LENGTH);
-    // DEC_A;
-    // IF_Z goto sBoxMon;
     case BOXMON: {
         OpenSRAM(MBANK(asBox));
         struct Box box;
@@ -222,108 +218,16 @@ u8_flag_s GetGender(uint8_t monType){
         DVs = box.mons[wram->wCurPartyMon].DVs;
         CloseSRAM();
     } break;
-
-//  3: Unknown
-    // LD_HL(wTempMonDVs);
-    // DEC_A;
-    // IF_Z goto DVs;
     case TEMPMON:
         DVs = wram->wTempMon.mon.DVs;
         break;
-
-//  else: WildMon
-    // LD_HL(wEnemyMonDVs);
-    // goto DVs;
     default:
     case WILDMON:
         DVs = wram->wEnemyMon.dvs;
         break;
-
-//  Get our place in the party/box.
-
-
-// PartyMon:
-
-// sBoxMon:
-    // LD_A_addr(wCurPartyMon);
-    // CALL(aAddNTimes);
-
     }
-// DVs:
-//  sBoxMon data is read directly from SRAM.
-    // LD_A_addr(wMonType);
-    // CP_A(BOXMON);
-    // LD_A(BANK(sBox));
-    // CALL_Z (aOpenSRAM);
 
-//  Attack DV
-    // LD_A_hli;
-    // AND_A(0xf0);
-    // LD_B_A;
-//  Speed DV
-    // LD_A_hl;
-    // AND_A(0xf0);
-    // SWAP_A;
-
-//  Put our DVs together.
-    // OR_A_B;
-    // LD_B_A;
-    uint8_t b = (uint8_t)((DVs & 0xf0) | ((DVs & 0xf000) >> 12));
-
-//  Close SRAM if we were dealing with a sBoxMon.
-    // LD_A_addr(wMonType);
-    // CP_A(BOXMON);
-    // CALL_Z (aCloseSRAM);
-
-//  We need the gender ratio to do anything with this.
-    // PUSH_BC;
-    // LD_A_addr(wCurPartySpecies);
-    // DEC_A;
-    // LD_HL(mBaseData + BASE_GENDER);
-    // LD_BC(BASE_DATA_SIZE);
-    // CALL(aAddNTimes);
-    // POP_BC;
-
-    // LD_A(BANK(aBaseData));
-    // CALL(aGetFarByte);
-    uint8_t a = BasePokemonData[wram->wCurPartySpecies - 1].gender;
-
-//  The higher the ratio, the more likely the monster is to be female.
-
-    // CP_A(GENDER_UNKNOWN);
-    // IF_Z goto Genderless;
-    if(a == (uint8_t)GENDER_UNKNOWN)
-    // Genderless:
-        // SCF;
-        // RET;
-        return (u8_flag_s){.a = 0, .flag = true};
-
-    // AND_A_A;  // GENDER_F0?
-    // IF_Z goto Male;
-    if(a == GENDER_F0)
-    // Male:
-        // LD_A(1);
-        // AND_A_A;
-        // RET;
-        return (u8_flag_s){.a = 1, .flag = false};
-
-
-    // CP_A(GENDER_F100);
-    // IF_Z goto Female;
-//  Values below the ratio are male, and vice versa.
-    // CP_A_B;
-    // IF_C goto Male;
-    if(a == GENDER_F100 || a >= b) {
-    // Female:
-        // XOR_A_A;
-        // RET;
-        return (u8_flag_s){.a = 0, .flag = false};
-    }
-// Male:
-    // LD_A(1);
-    // AND_A_A;
-    // RET;
-    return (u8_flag_s){.a = 1, .flag = false};
+    return GetGenderForSpeciesDVs(wram->wCurPartySpecies, DVs);
 }
 
 static uint8_t* ListMovePP_load_loop(uint8_t* hl, uint8_t a, uint16_t de, uint8_t c) {

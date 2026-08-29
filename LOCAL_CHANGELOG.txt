@@ -13,7 +13,7 @@ converted during this audit.
 Pre-existing working-tree state
 -------------------------------
 - `lib/libmobile` was already dirty when this session began. It remains
-  user-owned and was not modified by this session.
+  a pre-existing local modification and was not modified by this session.
 - Initial branch/commit: `main` at `2d9149c5` ("Fixed long-standing bugs
   related to TMs/HMs...").
 - `git submodule status` could not run in the available devkitPro shell because
@@ -264,20 +264,20 @@ Build commands executed
   Result: dry run only; the devkitPro MSYS environment lacked `sdl2-config`, so
   this environment is not a usable baseline without path/package correction.
 - `cmake -S /c/Users/maver/OneDrive/Documents/GitHub/suiCune -B
-  /c/Users/maver/Documents/Codex/2026-08-27/do/work/suiCune-phase0-build -G
+  /c/Users/maver/Documents/suiCune-phase0-build -G
   "Unix Makefiles" -DFEATURE_NETWORKING=OFF -DFEATURE_MOBILE=OFF
   -DUSE_PHYSFS=OFF -DUSE_SDLNET=OFF -DCMAKE_BUILD_TYPE=Release`
   Result: configuration failed because that devkitPro environment could not find
   SDL2 through pkg-config.
 - With `C:\msys64\ucrt64\bin` prepended to PATH:
   `cmake.exe -S C:\Users\maver\OneDrive\Documents\GitHub\suiCune -B
-  C:\Users\maver\Documents\Codex\2026-08-27\do\work\suiCune-phase0-ucrt-build3
+  C:\Users\maver\Documents\suiCune-phase0-ucrt-build3
   -G Ninja -DCMAKE_BUILD_TYPE=Release`
   Result: successful default-feature configuration. CMake emitted two developer
   warnings for mismatched arguments on `if`/`endif` blocks at lines 36-44.
 - With the same PATH:
   `cmake.exe --build
-  C:\Users\maver\Documents\Codex\2026-08-27\do\work\suiCune-phase0-ucrt-build3
+  C:\Users\maver\Documents\suiCune-phase0-ucrt-build3
   --parallel 8`
   Result: success, 984/984 steps; produced `suiCune.exe` (10,757,380 bytes) and
   `lib/liblibmobile.a`.
@@ -285,7 +285,7 @@ Build commands executed
 Test commands executed
 ----------------------
 - `ctest.exe --test-dir
-  C:\Users\maver\Documents\Codex\2026-08-27\do\work\suiCune-phase0-ucrt-build3
+  C:\Users\maver\Documents\suiCune-phase0-ucrt-build3
   --output-on-failure`
   Result: no CTest tests are defined.
 - Hidden launch smoke test of `suiCune.exe` from the repository working
@@ -312,14 +312,14 @@ Regressions discovered or outstanding
 - Project-context correction recorded on 2026-08-28: this repository is an
   independent suiCune project. Defects, behavior, assets, and TODOs from Project
   Celebi, Polished Crystal, Gen2Recomp, or earlier projects do not apply unless
-  the user explicitly imports them. The current suiCune intro is correct.
+  they are explicitly brought into scope. The current suiCune intro is correct.
 
 Unresolved blockers and risks
 -----------------------------
 - There is no automated behavioral/regression harness beyond startup-only Debug
   serialization checks. Rendering, menus, audio, input, saves, and gameplay need
   reproducible tests before risky subsystem replacement.
-- The dirty `lib/libmobile` submodule must remain untouched until its user-owned
+- The dirty `lib/libmobile` submodule must remain untouched until its pre-existing
   changes are understood or explicitly placed in scope.
 - CMake writes runtime and library products into the source tree even for an
   out-of-source build. They are ignored, but this weakens build isolation.
@@ -355,7 +355,7 @@ the newly native bag terminator correctly.
 
 Pre-existing working-tree state
 -------------------------------
-- `lib/libmobile` was dirty before this session and remains user-owned. It was
+- `lib/libmobile` was dirty before this session and remains a pre-existing local change. It was
   not modified.
 - `LOCAL_CHANGELOG.txt` already existed from Phase 0 and was maintained as the
   sole project handoff document.
@@ -459,7 +459,7 @@ Obsolete Game Boy/emulation dependency removed
 Temporary migration code introduced
 ------------------------------------
 - The old lowercase aliases remain byte-sized compatibility types. Removal
-  condition: delete each alias only after all users in its live party/battle,
+  condition: delete each alias only after all callers in its live party/battle,
   WRAM, script, link, and save-format domain have migrated to either a semantic
   native ID or an explicit `Legacy*Id`.
 - Checked native-to-legacy conversions remain at trainer, encounter, evolution,
@@ -499,7 +499,7 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED — source-only migration pass.
 
 Regressions discovered
 ----------------------
@@ -523,7 +523,7 @@ Unresolved blockers and risks
   content storage. Broad `0xff`, `255`, and `(uint8_t)` results include hardware,
   masks, flags, counters, and legacy formats and require subsystem-level review,
   not blind replacement.
-- No compiler or runtime validation was permitted for this session. The user
+- No compiler or runtime validation was performed during this source-only session. A later
   should review and build this working tree before additional dependent changes.
 
 Next recommended native-conversion task
@@ -543,7 +543,7 @@ Date/session: 2026-08-28 - Phase 1 continuation, native content records and API 
 Task worked on
 --------------
 Continued the Phase 1 semantic-ID migration from the exact existing working
-tree. This was stopped at the user's requested handoff point after completing
+tree. This was stopped at the handoff point after completing
 the currently active BaseData, growth/stat, TM/HM, mart, script-API, and battle
 query edits. The original large Phase A-I request is only partially complete.
 
@@ -552,7 +552,7 @@ Starting repository state
 - The working tree already contained the in-progress Phase 1 edits represented
   by the source files listed below. They were preserved and completed as one
   coherent continuation rather than discarded or replaced.
-- `lib/libmobile` was already dirty and remains user-owned and untouched.
+- `lib/libmobile` was already dirty and remains an untouched pre-existing local change.
 - No branch, commit, tag, push, reset, restore, clean, or history operation was
   performed.
 
@@ -680,7 +680,7 @@ Untouched remaining work from the original request
 - Full battle-to-party synchronization, boxed-Pokemon ownership, mail held-item
   ownership, move-learning storage, evolution storage, and link/mobile Pokemon
   conversions remain constrained by the live packed records.
-- No global lowercase-alias replacement, script-engine redesign, trainer-AI
+- No global lowercase-alias replacement, script-engine redesign, trainer behavior
   redesign, save-format redesign, or network redesign was attempted.
 
 Architectural changes actually made
@@ -749,7 +749,7 @@ Compatibility and save/link implications
 Suspected source-level risks and regressions
 --------------------------------------------
 - No compiler or runtime validation was permitted. Header/signature propagation
-  and the intentionally changed native `BaseData` layout require the user's
+  and the intentionally changed native `BaseData` layout require a
   next build to validate all platform/compiler branches.
 - `GetSpeciesBaseData` intentionally supports only the current loaded
   `NUM_POKEMON` database. Future expanded content needs an explicit database
@@ -772,7 +772,7 @@ Exact stopping point and next recommended task
   runtime Box/Party Pokemon representation, make the player party/daycare state
   authoritative in that representation, and add centralized checked conversion
   to the existing packed Crystal serializer/link records. Before changing any
-  stride, enumerate and migrate every raw copy/fixed-offset user of that slice.
+  stride, enumerate and migrate every raw copy/fixed-offset caller of that slice.
   Do not add a mirrored sidecar and do not widen `BoxMon` in place.
 
 Build commands executed
@@ -785,7 +785,7 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED — source-only migration pass.
 
 
 Date/session: 2026-08-28 - Phase 1 native Pokemon ownership slice and application icon
@@ -794,17 +794,17 @@ Date/session: 2026-08-28 - Phase 1 native Pokemon ownership slice and applicatio
 Task worked on
 --------------
 Started the first contained authoritative native-Pokemon ownership slice from
-`a7f13824` after the previous Codex handoff. The Bug Catching Contest's retained
+`a7f13824` after the previous Phase 1 handoff. The Bug Catching Contest's retained
 caught Pokemon is now stored as a native runtime Pokemon instead of a packed
 Crystal `PartyMon`, while explicit temporary conversion remains only where that
 Pokemon must enter still-unmigrated party/box/WRAM/save structures. Also replaced
-the project application icon with the user-supplied Celebi artwork and wired the
+the project application icon with the provided Celebi artwork and wired the
 Windows resource into the CMake target.
 
 Starting repository state
 -------------------------
 - HEAD was `a7f13824318fb9b3b4d0dfa6bd69e055c797675f` ("Continued from last job").
-- `lib/libmobile` was already dirty and remains user-owned and untouched.
+- `lib/libmobile` was already dirty and remains an untouched pre-existing local change.
 - No branch, commit, push, reset, restore, clean, or history operation was
   performed.
 
@@ -844,7 +844,7 @@ Files modified
 - `engine/events/bug_contest/display_stats.c`: explicitly creates the temporary
   big-endian numeric view required by the still-legacy number-printing API.
 - `icon.png`: replaced with a 32x32 transparent Celebi icon derived from the
-  user-supplied artwork using nearest-neighbor scaling.
+  provided artwork using nearest-neighbor scaling.
 - `icon.ico`: replaced with a multi-resolution Windows icon containing 16, 24,
   32, 48, 64, 128, and 256 pixel sizes.
 - `LOCAL_CHANGELOG.txt`: appended this handoff.
@@ -942,9 +942,9 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED — source-only migration pass.
 
-Known source-level risks / items for user validation
+Known source-level risks / validation notes
 ----------------------------------------------------
 - This changes the in-memory `PokemonData` layout, which is intended because
   `PokemonData` is a serialized native C owner rather than an exact WRAM overlay.
@@ -967,3 +967,183 @@ Next recommended native-conversion task
 4. Once live Pokemon ownership is native, implement the versioned PC-only
    `save.dat` format and remove Crystal SRAM/MBC persistence instead of extending
    the old save format further.
+
+
+Date/session: 2026-08-28 - Phase 1 continuation, native Day-Care and egg ownership
+================================================================================
+
+Task worked on
+--------------
+Moved the persistent Day-Care parents and pending egg out of packed Crystal
+`BoxMon` ownership and into the existing native Pokemon model. Breeding logic,
+level growth, egg move inheritance, experience, gender queries, and overworld
+Day-Care icon lookup now operate on semantic native IDs through this slice.
+
+Starting repository state
+-------------------------
+- Continued from the Native Pokemon A1 working tree at `a7f13824` plus the
+  uncommitted A1 source changes.
+- `lib/libmobile` was already dirty and remains an untouched pre-existing local
+  change.
+- Historical changelog wording and build-directory labels were normalized to
+  project-only terminology.
+
+Files modified
+--------------
+- `LOCAL_CHANGELOG.txt`: normalized historical wording and appended this
+  migration record.
+- `constants/types.h`: changed `breedMon1`, `breedMon2`, and `eggMon` in
+  `PokemonData` from packed `BoxMon` records to `NativeBoxMon` records.
+- `util/serialize.c`: changed the temporary Crystal-save projection for both
+  Day-Care parents and the pending egg to use the checked native BoxMon
+  serializer.
+- `engine/pokemon/experience.c`, `engine/pokemon/experience.h`: added a native
+  species/experience level calculation path and made the packed PartyMon helper
+  delegate to it.
+- `engine/pokemon/breedmon_level_growth.c`: calculates deposited Pokemon level
+  growth directly from native species and 32-bit experience without staging a
+  packed temporary Pokemon.
+- `engine/pokemon/mon_stats.c`, `engine/pokemon/mon_stats.h`: added a semantic
+  species + DV gender query; the existing mon-type wrapper now delegates to the
+  same implementation.
+- `engine/pokemon/evolve.c`, `engine/pokemon/evolve.h`: added native move-fill
+  support and a native pre-evolution lookup that returns semantic `SpeciesId`.
+- `engine/pokemon/move_mon.c`, `engine/pokemon/move_mon.h`: added native PP fill,
+  converted Day-Care deposit into native ownership, and centralized checked
+  conversion back to the still-packed player party on withdrawal.
+- `engine/pokemon/breeding.c`: migrated inherited parent/egg move pointers to
+  `MoveId`, removed WRAM species/DV staging from breeding gender checks, and
+  uses native egg species for TM/HM inheritance checks.
+- `engine/events/daycare.c`: rewrote pending-egg creation around `NativeBoxMon`,
+  native pre-evolution lookup, native move/PP fill, direct 32-bit experience,
+  and checked conversion only when the egg enters the still-legacy party.
+- `engine/events/happiness_egg.c`: Day-Care step experience now increments the
+  native 32-bit experience value directly with the existing Day-Care cap.
+- `engine/pokemon/tempmon.c`: the remaining TEMPMON bridge explicitly converts
+  native Day-Care state into the temporary packed WRAM record instead of
+  treating native storage as byte-compatible.
+- `engine/overworld/overworld.c`, `engine/gfx/mon_icons.c`,
+  `engine/gfx/mon_icons.h`: Day-Care overworld icon lookup now carries
+  `SpeciesId` without an intermediate byte truncation.
+
+Architectural changes actually made
+-----------------------------------
+- The two deposited Day-Care Pokemon and the generated pending egg now have one
+  authoritative native representation. They are no longer live packed Crystal
+  `BoxMon` records.
+- Day-Care species, held item, and move identity can now remain `SpeciesId`,
+  `ItemId`, and `MoveId` while deposited and throughout breeding/egg creation.
+- Day-Care experience is a normal native `uint32_t`; routine Day-Care stepping
+  no longer edits a three-byte Crystal experience array.
+- Breeding gender calculation can operate from `SpeciesId` + DVs directly and
+  no longer requires copying a deposited Pokemon through `wCurPartySpecies` and
+  `wTempMon` simply to determine gender.
+- Egg move generation and inheritance use native `MoveId` arrays. Conversion to
+  byte-sized move IDs occurs only when the egg is eventually projected into the
+  current packed player-party record.
+- Pre-evolution lookup now has a native `SpeciesId` API and no longer needs a
+  byte-sized species round trip for egg species selection.
+
+Behavior corrections made while migrating the slice
+----------------------------------------------------
+- Native pre-evolution lookup returns the actual one-based candidate species;
+  the old translated helper returned the zero-based table index.
+- The second Ditto branch in inherited-move selection now checks parent 2, which
+  matches the original branch comments and makes that path reachable.
+- Ditto DV inheritance now reads the deposited Pokemon's DVs rather than using
+  the Ditto species ID as though it were a DV word.
+- Day-Care withdrawal writes calculated experience to the legacy party record in
+  the same high/middle/low byte order used by the rest of the Pokemon runtime.
+- Party terminator updates used by Day-Care withdrawal and egg receipt no longer
+  rely on writing one element past the end of `partySpecies`; the separate
+  `partyEnd` byte is used for the sixth slot.
+
+Temporary migration bridges and exact removal conditions
+--------------------------------------------------------
+- Player party Pokemon are still packed `PartyMon`/`BoxMon` records. Depositing
+  a Pokemon converts that packed record into `NativeBoxMon`; withdrawing a
+  Day-Care Pokemon or receiving an egg performs a checked native-to-legacy
+  conversion. Remove both directions when player-party ownership becomes native.
+- `SendGetMonIntoFromBox` retains historical Day-Care parameter branches even
+  though current callers use the dedicated Day-Care routines. Those branches
+  now use explicit conversion rather than raw structure copies. Remove or fold
+  them when the PC/party transfer API is replaced during native party/box work.
+- `CopyMonToTempMon` still has a TEMPMON compatibility path for code that expects
+  the packed WRAM temporary Pokemon. It now converts from native Day-Care data
+  explicitly. Remove it when remaining temporary-mon consumers use native
+  Pokemon/query APIs.
+- `PokemonData` serialization still projects the native Day-Care parents and egg
+  into Crystal's 32-byte BoxMon save layout. This is temporary persistence only;
+  remove it with the Crystal SRAM serializer when versioned `save.dat` becomes
+  authoritative.
+- Current Pokemon/move/icon databases are still bounded by the present Crystal
+  content counts. The widened IDs are preserved through this slice, but content
+  beyond the loaded tables still requires the later native content-database
+  expansion.
+
+Save/compatibility implications
+-------------------------------
+- The in-memory `PokemonData` layout changes because three more live Pokemon
+  records are now native and unpacked.
+- The temporary serializer continues to emit and read the same Crystal-width
+  Day-Care/egg save payload by using explicit native field serialization. No
+  raw native struct bytes are written to the old save image.
+- Native IDs or experience values that cannot fit the temporary Crystal save
+  projection are rejected by the existing checked serializer rather than
+  truncated.
+- Crystal SRAM compatibility remains transitional and is not a final project
+  architecture requirement.
+
+Static source audit performed
+-----------------------------
+- Re-read all repository references to `breedMon1`, `breedMon2`, and `eggMon`
+  after changing their owner type.
+- Checked for remaining raw `BoxMon*`, `move_t*`, raw-copy, and direct byte-ID
+  uses against the newly native Day-Care records.
+- Verified declarations and call sites for `CalcLevelForSpeciesExp`,
+  `GetGenderForSpeciesDVs`, `FillNativeMoves`, `FillNativePP`, and
+  `GetPreEvolutionNative`.
+- Checked the temporary serializer descriptors for all three changed PokemonData
+  fields; they use the same native-to-Crystal BoxMon projection already used by
+  the A1 native contest record.
+- Inspected the source diff and ran `git diff --check`; no whitespace/error
+  report remained.
+- Confirmed `lib/libmobile` was not modified.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None. No game executable, compiler, CMake configure, Make/Ninja, CTest, or
+  runtime smoke test was invoked.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — source-only migration pass.
+
+Known source-level risks / validation notes
+-------------------------------------------
+- `PokemonData` has intentionally changed native struct offsets again. The
+  serializer is field/offset driven, but compiler validation is still needed
+  before treating this source pass as build-confirmed.
+- The player party remains legacy-shaped, so expanded Day-Care Pokemon cannot
+  yet be withdrawn into the party. The conversion fails cleanly instead of
+  truncating the ID.
+- The temporary SRAM serializer still caps native Pokemon experience at the old
+  24-bit BoxMon field. Native `save.dat` will remove that persistence ceiling.
+- Native egg move/PP helpers use the currently loaded move database. Expanded
+  moves require the later content-database count/resource work.
+
+Next recommended native-conversion task
+---------------------------------------
+1. Migrate the authoritative player party as one ownership-complete slice:
+   `partySpecies` and `partyMon` must move together to semantic native state.
+2. Convert party creation, normal move/held-item access, status/HP/stat updates,
+   party menus, and battle staging to the native record rather than adding a
+   mirrored party sidecar.
+3. Keep checked packed conversion only at still-unmigrated box/link/mobile/WRAM
+   boundaries during that transition.
+4. Migrate PC box ownership after the player party is coherent, then move
+   directly into the versioned PC-only `save.dat` persistence phase.

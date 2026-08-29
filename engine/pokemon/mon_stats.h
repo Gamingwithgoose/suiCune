@@ -2,6 +2,7 @@ uint8_t DrawPlayerHP(tile_t* hl, uint8_t b);
 uint8_t DrawEnemyHP(tile_t* hl, uint8_t b);
 void PrintTempMonStats(tile_t* hl, uint16_t bc);
 u8_flag_s GetGender(uint8_t monType);
+u8_flag_s GetGenderForSpeciesDVs(SpeciesId species, uint16_t DVs);
 void ListMovePP(tile_t* hl);
 void BrokenPlacePPUnits(void);
 void Unused_PlaceEnemyHPLevel(void);

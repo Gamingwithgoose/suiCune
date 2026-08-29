@@ -2343,7 +2343,7 @@ struct PokemonData {
     uint8_t dayCareMan;
     uint8_t breedMon1Nickname[MON_NAME_LENGTH];
     uint8_t breedMon1OT[NAME_LENGTH];
-    struct BoxMon breedMon1;
+    struct NativeBoxMon breedMon1;
     // bit 7: active
     // bit 0: monster 2 in day-care
     uint8_t dayCareLady;
@@ -2353,10 +2353,10 @@ struct PokemonData {
     uint8_t breedMotherOrNonDitto;
     uint8_t breedMon2Nickname[MON_NAME_LENGTH];
     uint8_t breedMon2OT[NAME_LENGTH];
-    struct BoxMon breedMon2;
+    struct NativeBoxMon breedMon2;
     uint8_t eggMonNickname[MON_NAME_LENGTH];
     uint8_t eggMonOT[NAME_LENGTH];
-    struct BoxMon eggMon;
+    struct NativeBoxMon eggMon;
     SpeciesId bugContestSecondPartySpecies;
     struct NativePartyMon contestMon;
     uint8_t dunsparceMapGroup;
