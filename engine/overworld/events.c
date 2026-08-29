@@ -1154,7 +1154,11 @@ u8_flag_s BGEventJumptable(uint8_t a){
             // LD_DE(wHiddenItemData);
             // LD_BC(wHiddenItemDataEnd - wHiddenItemData);
             // CALL(aFarCopyBytes);
-            wram->wHiddenItemID = gCurBGEvent.hiddenItem->item;
+            if(gCurBGEvent.hiddenItem->item > UINT8_MAX) {
+                log_err("Hidden item ID %u cannot enter the legacy script record.\n", gCurBGEvent.hiddenItem->item);
+                return u8_flag(0, false);
+            }
+            wram->wHiddenItemID = (LegacyItemId)gCurBGEvent.hiddenItem->item;
             wram->wHiddenItemEvent = gCurBGEvent.hiddenItem->eventFlag;
             // LD_A(BANK(aHiddenItemScript));
             // LD_HL(mHiddenItemScript);
@@ -1173,7 +1177,11 @@ u8_flag_s BGEventJumptable(uint8_t a){
             // LD_DE(wHiddenItemData);
             // LD_BC(wHiddenItemDataEnd - wHiddenItemData);
             // CALL(aFarCopyBytes);
-            wram->wHiddenItemID = gCurBGEvent.hiddenItem->item;
+            if(gCurBGEvent.hiddenItem->item > UINT8_MAX) {
+                log_err("Hidden item ID %u cannot enter the legacy script record.\n", gCurBGEvent.hiddenItem->item);
+                return u8_flag(0, false);
+            }
+            wram->wHiddenItemID = (LegacyItemId)gCurBGEvent.hiddenItem->item;
             wram->wHiddenItemEvent = gCurBGEvent.hiddenItem->eventFlag;
             // goto dontread;
             return u8_flag(0, false);

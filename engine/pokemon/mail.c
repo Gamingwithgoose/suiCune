@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include <stdlib.h>
 #include "mail.h"
 #include "mail_2.h"
 #include "party_menu.h"
@@ -312,7 +313,11 @@ void GivePokeMail(const struct Pokemail* mail){
     // CALL(aAddNTimes);
     // POP_BC;
     // LD_hl_B;
-    gPokemon.partyMon[a].mon.item = mail->item;
+    if(mail->item > UINT8_MAX) {
+        log_err("Mail item ID %u cannot enter the legacy Pokemon record.\n", mail->item);
+        abort();
+    }
+    gPokemon.partyMon[a].mon.item = (LegacyItemId)mail->item;
     // POP_AF;
     // PUSH_BC;
     // PUSH_AF;

@@ -723,7 +723,7 @@ void FillMoves(move_t* de, uint8_t* pp, species_t species, uint8_t level){
     // goto GetLevel;
     const struct LevelMove* moves = hl->learnset;
 
-    for(uint8_t i = 0; moves[i].level != 0xff && level >= moves[i].level; i++) {
+    for(size_t i = 0; moves[i].level != 0xff && level >= moves[i].level; i++) {
     // GetLevel:
         // LD_A_hli;
         // AND_A_A;

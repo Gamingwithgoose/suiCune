@@ -1986,17 +1986,25 @@ struct PlayerData {
         };
     };
     uint8_t TMsHMs[NUM_TMS + NUM_HMS];
-    uint8_t numItems;
-    item_quantity_pocket_en_s items[MAX_ITEMS];
-    ItemId itemsEnd;
-    uint8_t numKeyItems;
-    ItemId keyItems[MAX_KEY_ITEMS + 1];
-    uint8_t numBalls;
-    item_quantity_pocket_en_s balls[MAX_BALLS];
-    ItemId ballsEnd;
-    uint8_t numPCItems;
-    item_quantity_pocket_en_s PCItems[MAX_PC_ITEMS];
-    ItemId PCItemsEnd;
+    struct {
+        uint8_t numItems;
+        item_quantity_pocket_en_s items[MAX_ITEMS];
+        ItemId itemsEnd;
+    };
+    struct {
+        uint8_t numKeyItems;
+        ItemId keyItems[MAX_KEY_ITEMS + 1];
+    };
+    struct {
+        uint8_t numBalls;
+        item_quantity_pocket_en_s balls[MAX_BALLS];
+        ItemId ballsEnd;
+    };
+    struct {
+        uint8_t numPCItems;
+        item_quantity_pocket_en_s PCItems[MAX_PC_ITEMS];
+        ItemId PCItemsEnd;
+    };
     // bit 0: map
     // bit 1: radio
     // bit 2: phone

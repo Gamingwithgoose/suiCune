@@ -402,9 +402,14 @@ Files modified
 - `engine/battle/read_trainer_attributes.c`: range-checks native trainer items
   before legacy battle-WRAM assignment.
 - `engine/pokemon/evolve.c`: consumes native evolution species and learnset move
-  IDs, with checked conversion into still-legacy Pokemon records.
+  IDs, traverses learnsets with a native-size index, and checks conversion into
+  still-legacy Pokemon records.
 - `engine/events/npc_trade.c`, `engine/events/npc_trade.h`: consumes native NPC
   trade species/items and checks conversion into legacy trade/Pokemon records.
+- `engine/overworld/events.c`: rejects native hidden-item IDs that cannot enter
+  the legacy script/WRAM handoff instead of truncating them.
+- `engine/pokemon/mail.c`: checks native mail item IDs before writing the legacy
+  held-item field.
 - `home/names.c`, `home/names.h`: migrated species, move, and item name lookup
   APIs to semantic IDs without requiring byte-sized parameters.
 - `engine/battle/core.c`: corrected the roamer species pointer helper for native
@@ -433,7 +438,8 @@ Architectural changes made
   because legacy arrays would then be traversed with incorrect 16-bit strides.
 - Native wild/fishing/trainer/evolution/learnset/NPC-trade/item tables now carry
   semantic IDs. Native player bag entries separate `ItemId` from 8-bit quantity
-  instead of storing both in an alternating item-typed array.
+  instead of storing both in an alternating item-typed array; aligned anonymous
+  pocket blocks preserve the existing generic pocket-access API safely.
 - Pokédex bit indexing now accepts `DexId`; the backing array still scales from
   `NUM_POKEMON` and remains part of the current Crystal-compatible save model.
 - Crystal SRAM/mobile/Mystery Gift records have explicit legacy byte types.
