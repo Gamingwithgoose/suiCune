@@ -141,42 +141,25 @@ uint8_t FindAboveLevel(struct PartyMon* bc, uint8_t level){
 //  If that species is in your party, returns its location in c, and true (nz).
 //  Otherwise, returns false (z).
 u8_flag_s FindThatSpecies(species_t b){
-    // LD_C(-1);
-    uint8_t c = (uint8_t)-1;
-    // LD_HL(wPartySpecies);
-    species_t* hl = gPokemon.partySpecies;
-    species_t a;
-    do {
-    // loop:
-        // LD_A_hli;
-        a = *(hl++);
-        // CP_A(-1);
-        // RET_Z ;
-        if(a == (uint8_t)-1)
-            return u8_flag(c, false);
-        // INC_C;
-        c++;
-        // CP_A_B;
-        // IF_NZ goto loop;
-    } while(a != b);
-    // LD_A(0x1);
-    // AND_A_A;
-    return u8_flag(c, true);
-    // RET;
+    for(uint8_t i = 0; i < gPokemon.partyCount; ++i) {
+        if(gPokemon.partyMon[i].mon.species == b)
+            return u8_flag(i, true);
+    }
+    return u8_flag((uint8_t)-1, false);
 }
 
 uint8_t RetroactivelyIgnoreEggs(uint8_t c){
     // LD_E(0b11111110);
     uint8_t e = 0b11111110;
     // LD_HL(wPartySpecies);
-    for(uint32_t i = 0; i < lengthof(gPokemon.partySpecies) && gPokemon.partySpecies[i] != 0xff; ++i) {
+    for(uint32_t i = 0; i < gPokemon.partyCount; ++i) {
     // loop:
         // LD_A_hli;
         // CP_A(-1);
         // RET_Z ;
         // CP_A(EGG);
         // IF_NZ goto skip_notegg;
-        if(gPokemon.partySpecies[i] == EGG) {
+        if(gPokemon.partyMon[i].mon.species == EGG) {
             // LD_A_C;
             // AND_A_E;
             // LD_C_A;

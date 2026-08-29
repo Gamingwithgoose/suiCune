@@ -1096,6 +1096,439 @@ Build/test results
 ------------------
 Build/runtime validation: NOT PERFORMED — per user instruction.
 
+
+Session: 2026-08-29 — Player-party species authority consolidation
+==================================================================
+
+Task worked on
+--------------
+- Continued Phase 1 from the native decoded PC-box stopping point.
+- Performed a bounded preparatory slice for the future native player-party
+  conversion: normal gameplay and UI species reads now use the species stored
+  in each authoritative `PartyMon` record and iterate by `partyCount`, rather
+  than treating the parallel terminator-based `partySpecies` byte list as
+  runtime authority.
+- Did not begin the full `NativePartyMon` ownership conversion, save-format
+  replacement, link-format conversion, or another subsystem.
+
+Starting repository state
+-------------------------
+- Continued with all uncommitted native PC-box changes from the preceding
+  session intact.
+- `lib/libmobile` was already dirty and remains an untouched pre-existing
+  user-owned change.
+- No user-owned changes were reset, restored, cleaned, committed, or pushed.
+
+Files modified in this continuation
+-----------------------------------
+- `LOCAL_CHANGELOG.txt`: appended this continuation record.
+- `engine/battle/core.c`: player battle setup, fit-to-fight checks, egg checks,
+  and experience setup read species from the selected party record.
+- `engine/events/battle_tower/battle_tower.c`: Egg Ticket party scanning now
+  uses `partyCount` and party-record species.
+- `engine/events/battle_tower/rules.c`,
+  `engine/events/battle_tower/rules.h`: Battle Tower egg and uniqueness checks
+  no longer receive or traverse the duplicate party-species list.
+- `engine/events/field_moves.c`: Fly icon setup reads the selected party record.
+- `engine/events/halloffame.c`: Hall of Fame collection iterates `partyCount`
+  and reads party-record species, then writes the Hall of Fame terminator.
+- `engine/events/happiness_egg.c`: first-mon, egg, and step-happiness species
+  queries use party records; corrected the inverted empty-party guard that made
+  `StepHappiness` return for every nonempty party.
+- `engine/events/lucky_number.c`: party lottery checks use party-record ID and
+  species fields; native PC-box lottery handling remains native until the
+  checked temporary legacy-script species boundary.
+- `engine/events/overworld.c`: field-move, Surf, and Strength species queries
+  use party records and the party count.
+- `engine/events/sacred_ash.c`: fainted-party scanning uses party-record egg
+  state.
+- `engine/events/unown_walls.c`: the first-party Ho-Oh check uses the party
+  record.
+- `engine/gfx/mon_icons.c`: party-menu icon selection uses the party record.
+- `engine/overworld/scripting.c`: `checkpoke` iterates the active party count
+  and reads party-record species.
+- `engine/pokegear/pokegear.c`: Fly-map icon selection uses the party record.
+- `engine/pokemon/bills_pc.c`: party portions of PC listing and selection use
+  party-record species; the obsolete party `CopySpeciesToTemp` helper was
+  removed. Existing native decoded-box work in this file was preserved.
+- `engine/pokemon/breeding.c`: egg-step and hatch scans use `partyCount` and
+  party-record species; the transitional species-list synchronization write on
+  hatch remains.
+- `engine/pokemon/evolve.c`, `engine/pokemon/evolve.h`: evolution traversal no
+  longer receives a pointer into the duplicate species list; it iterates by
+  `partyCount` and reads the selected party record. Successful evolution still
+  synchronizes the legacy list for remaining consumers.
+- `engine/pokemon/health.c`: party healing iterates `partyCount` and checks egg
+  state from party records.
+- `engine/pokemon/mon_menu.c`: move-screen cycling, icon selection, and arrow
+  availability use party indices/count and party-record species.
+- `engine/pokemon/party_menu.c`: TM/HM compatibility, gender, egg, and selection
+  queries use party-record species.
+- `engine/pokemon/search2.c`: party species searches and egg filtering use the
+  active party count and party records instead of sentinel traversal.
+- `engine/pokemon/tempmon.c`: `PARTYMON` species lookup now reads the selected
+  party record directly; opponent, box-SRAM, and Day-Care compatibility cases
+  retain their explicit boundaries.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed work
+--------------
+- Consolidated normal player-party species reads in battle, party UI, field
+  moves, icons, scripts, healing, breeding/hatching scans, Hall of Fame,
+  evolution traversal, Battle Tower rules, the lottery, and temporary-mon
+  lookup onto the corresponding `PartyMon.mon.species` field.
+- Replaced the migrated sentinel-based loops with bounded `partyCount` loops.
+- Removed the duplicate species-array parameter from both Battle Tower party
+  uniqueness helpers and updated their declarations and callers.
+- Removed the now-dead party `CopySpeciesToTemp` helper from Bills PC.
+- Corrected `StepHappiness` so it returns for an empty party rather than a
+  nonempty party.
+
+Partially completed work
+------------------------
+- Player-party conversion remains preparatory only. `PokemonData.partyMon`
+  still contains packed legacy `PartyMon` records, whose embedded species,
+  moves, and item fields remain byte-sized.
+- `PokemonData.partySpecies` remains a transitional duplicate list. Normal
+  gameplay/UI readers were migrated in this slice, but creation, insertion,
+  removal, swapping, Day-Care, contest, debug/initialization, evolution/hatch
+  synchronization, and link/time-capsule paths still maintain or consume it.
+- Native decoded PC boxes still project through legacy buffers for unmigrated
+  PC UI/party-transfer operations, as documented in the preceding session.
+
+Untouched remaining work
+------------------------
+- Full `NativePartyMon` ownership and migration of every party mutation path.
+- Removal of `partySpecies` after all mutation, initialization, link, mobile,
+  save, and transfer users have explicit native or legacy-boundary handling.
+- Native opponent-party ownership and battle staging.
+- Native versioned `save.dat` authority and removal of SRAM-layout persistence.
+- Link/time-capsule format redesign or explicit import/export isolation.
+- Later roadmap phases, including native game loop, renderer, audio, map,
+  script, entity, content-database, expanded Pokemon model, and multiplayer.
+
+Architectural changes actually made
+-----------------------------------
+- The duplicate terminator-based `partySpecies` array is no longer the normal
+  read authority for the migrated gameplay and UI routines. Active membership
+  comes from `partyCount`, and species comes from the corresponding party
+  record.
+- Evolution and Battle Tower helper APIs no longer require callers to pass the
+  parallel species list solely to determine party membership or egg state.
+- No new wrapper, sidecar, fallback implementation, or parallel native party
+  owner was introduced.
+
+Obsolete Game Boy/emulation dependency removed
+----------------------------------------------
+- Removed terminator-list traversal from the migrated normal party readers.
+  The underlying packed party records and the compatibility species list have
+  not yet been removed and are not claimed as native.
+
+Temporary migration code and exact removal conditions
+------------------------------------------------------
+- `partySpecies` remains synchronized by party mutation paths, evolution, egg
+  hatching, and contest handling. Remove it only after `NativePartyMon` is the
+  sole player-party owner and link/save/mobile boundaries construct explicit
+  legacy payloads from native records.
+- Player party records remain packed `PartyMon`. Replace them only as one
+  ownership-complete slice that migrates creation, mutation, UI, battle staging,
+  stats/status, moves/items, transfer, and serialization users together.
+- Checked native-box-to-legacy PC UI/transfer conversions from the prior slice
+  remain. Remove them when Bills PC and player-party transfer buffers operate on
+  native Pokemon records, retaining conversion only at genuine legacy export
+  boundaries.
+
+Compatibility and save-format implications
+------------------------------------------
+- This continuation does not intentionally change the serialized save format.
+- Link, time-capsule, Crystal SRAM, and existing party mutation paths still see
+  the synchronized byte list. Expanded species still cannot enter those legacy
+  boundaries and must continue to fail checked conversion rather than truncate.
+- The preceding native PC-box in-memory layout and serializer implications
+  remain unchanged.
+
+Investigated but not implemented
+--------------------------------
+- Classified every remaining direct `gPokemon.partySpecies` reference. The
+  remaining references are concentrated in mutation/initialization code,
+  Bug Contest party masking, and explicit link/time-capsule consumers.
+- Inspected Bug Contest drop-off/return behavior. It still temporarily masks
+  the party by editing the legacy list and reconstructs `partyCount`; changing
+  it safely belongs with the complete party mutation migration, so it was not
+  altered here.
+- Inspected link and time-capsule consumers but did not change their byte-format
+  behavior in this slice.
+
+Suspected source-level risks
+----------------------------
+- The source has not been compiled; declaration/type integration remains to be
+  compiler-validated by the user.
+- `GetFirstPokemonHappiness` retains the existing gameplay invariant that a
+  caller has at least one non-egg party member. This slice bounds its egg scan
+  by `partyCount`, but did not invent behavior for an all-egg party.
+- Correcting the inverted `StepHappiness` guard activates the routine for
+  nonempty parties as its translated comments and loop require; runtime
+  confirmation remains outstanding.
+- The party record and `partySpecies` must remain synchronized until the
+  transitional list is removed. Any undiscovered mutation path that updates
+  only one representation remains a risk of the pre-existing dual state.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None. No game executable, compiler, CMake configure, Make/Ninja, CTest, or
+  runtime smoke test was invoked.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact current stopping point
+----------------------------
+- Normal gameplay/UI reads of player-party species have been consolidated onto
+  `partyMon[index].mon.species` and active iteration onto `partyCount`.
+- The authoritative player-party owner is still the packed `PartyMon` array,
+  not `NativePartyMon`; the legacy `partySpecies` cache remains for mutation and
+  compatibility paths.
+- The original Phase 1 player-party migration is therefore partially completed,
+  not complete.
+
+Exact recommended next task
+---------------------------
+1. Audit and migrate the player-party mutation cluster as one coherent unit:
+   initialization, add/remove, swap, Day-Care/contest transfer, hatch/evolution
+   updates, and debug setup.
+2. Introduce native party ownership only when those mutation paths, semantic
+   move/item/species fields, and party serialization can migrate together.
+3. Derive explicit legacy link/time-capsule/save payloads at their boundaries,
+   then remove `partySpecies` once repository-wide references reach zero.
+
+
+Date/session: 2026-08-29 - Native decoded PC-box migration
+===========================================================
+
+Task worked on
+--------------
+- Continued Phase 1 from the committed native Pokemon generation/stat boundary.
+- Migrated decoded PC-box records and their normal C consumers from packed
+  `BoxMon`/byte species storage to native semantic Pokemon records.
+- This is a substantial continuation of Phase A, not completion of the full
+  Phase 1 prompt. Player-party and battle ownership remain unfinished.
+
+Starting repository state
+-------------------------
+- Started at `5bad31c2` (`more changes`). The preceding generation/stat work was
+  already committed by the user and was treated as the new baseline.
+- `lib/libmobile` was the sole pre-existing dirty path and remained untouched.
+- No other pre-existing user modification was present when this pass began.
+
+Files modified
+--------------
+- `LOCAL_CHANGELOG.txt`: appended this handoff record.
+- `constants/types.h`: replaced the ambiguous packed decoded `Box` record with
+  unpacked `NativeBox`, native Pokemon entries, and a clearly named transitional
+  Crystal species-list round-trip cache.
+- `util/serialize.c`, `util/serialize.h`: migrated box serialization APIs and
+  descriptors to `NativeBox`/`NativeBoxMon`, rebuilt Crystal's redundant active
+  species list from authoritative native mons on write, and rejected invalid
+  box counts.
+- `engine/pokemon/move_mon.c`, `engine/pokemon/move_mon.h`: migrated box
+  deposit/withdraw, new boxed-mon creation, PP restoration, insertion shifts,
+  and removal shifts to native records and checked party-boundary conversion.
+- `engine/pokemon/move_mon_wo_mail.c`: converts the legacy temporary PC buffer
+  once before inserting a native box record; native record stride is used for
+  insertion rather than `BoxMon` stride.
+- `engine/items/item_effects.c`, `engine/items/item_effects.h`: added direct
+  maximum-PP calculation for `NativeBoxMon`/`MoveId` without staging moves in a
+  packed temporary record.
+- `engine/pokemon/bills_pc.c`, `engine/pokemon/bills_pc_top.c`: migrated decoded
+  box access to native entries and centralized checked projection only where
+  the current WRAM-era PC UI still requires packed temporary fields.
+- `engine/pokemon/search.c`, `engine/pokemon/search.h`: added native ownership
+  comparison, widened the semantic species query, and made box searches use the
+  native mon record.
+- `engine/events/lucky_number.c`: made box lottery checks read native mon IDs and
+  species, retaining checked conversion only for the legacy display state.
+- `engine/pokemon/caught_data.c`: added native caught-data mutation for boxed
+  Pokemon while retaining the packed party helper.
+- `engine/printer/printer.c`, `engine/printer/printer.h`: migrated decoded box
+  printing/gender access to native mons and count-based traversal.
+- `engine/pokemon/mon_stats.c`: updated decoded box DV access to `NativeBox`.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed work
+--------------
+- `NativeBox` is an unpacked native decoded structure. Its Pokemon entries are
+  `NativeBoxMon`, so species, held item, moves, and experience remain semantic
+  native values while normal C box operations are in progress.
+- Active boxed species now have one runtime authority: `mons[i].species`.
+  Runtime consumers no longer maintain or consult Crystal's separate species
+  list when inserting, deleting, searching, printing, or listing boxed mons.
+- Crystal's redundant species list is now an explicitly named serialization
+  cache only. `Serialize_Box` refreshes active entries and the terminator from
+  authoritative native mons before writing the old SRAM image.
+- Box deposit/withdraw validates the complete native/legacy conversion before
+  mutating party or box counts. No content ID is silently truncated.
+- Box record insertion/removal uses native record stride. The prior raw copy of
+  a packed `BoxMon` into native storage and the prior raw copy of a native box
+  record into a packed WRAM temporary record have been removed.
+- Native PP restoration reads `MoveId` directly through
+  `GetMaxPPOfNativeMove`; it no longer copies widened moves into the byte-sized
+  temporary Pokemon.
+- PC UI, printer, and lottery paths use checked native-to-legacy conversion at
+  their remaining true WRAM display boundaries and fail explicitly if a future
+  expanded ID cannot be represented.
+- Box traversal now uses the decoded count/native record array rather than the
+  byte species-list sentinel. Search of non-current boxes now uses `box.count`
+  instead of the box-number loop index.
+- Deposited-mon PP restoration now targets `box.count - 1`, the actual newly
+  appended entry, instead of the following unused slot.
+- The printer's out-of-bounds diagnostic read of `boxSpecies[-1]` was removed.
+
+Architectural changes actually made
+-----------------------------------
+- The decoded PC-box API is no longer byte-layout compatible with Crystal SRAM
+  and is no longer packed. Field/descriptor serialization is the only supported
+  conversion between the decoded representation and the Crystal byte image.
+- Box manipulation, queries, caught-data updates, lottery checks, and printer
+  reads now operate on `NativeBoxMon` rather than treating packed `BoxMon` as a
+  live C record.
+- The redundant Crystal box species list ceased to be runtime-authoritative;
+  it survives only to preserve unused legacy bytes during exact SRAM round trips.
+- Packed `BoxMon` remains an explicit player-party/WRAM/link compatibility type,
+  not the decoded PC-box gameplay representation.
+
+Obsolete Game Boy/emulation dependency removed
+-----------------------------------------------
+- Normal decoded box logic no longer depends on Crystal's packed 32-byte mon
+  stride, byte species-list traversal, or duplicate active species ownership.
+- Native box insert/delete shifting uses native C record size and count.
+- The Game Boy species-list terminator is now generated only at serialization
+  time instead of driving native box traversal.
+
+Temporary migration code and exact removal conditions
+------------------------------------------------------
+- `NativeBox.legacySpecies` preserves the unused tail of Crystal's redundant
+  SRAM species list for byte-exact round trips. Remove it when the Crystal SRAM
+  serializer is retired, or when legacy box serialization is rewritten to emit
+  canonical unused bytes without requiring exact tail preservation.
+- `ConvertNativeBoxMonToLegacy` remains at PC withdrawal and WRAM temporary UI,
+  printer, and lottery boundaries. Remove each bridge when the player party and
+  corresponding UI/display state are native semantic structures.
+- `ConvertBoxMonToNative` remains at packed player-party and WRAM PC-buffer
+  deposit boundaries. Remove it when player-party ownership and the move-PC
+  temporary buffer are native.
+- Crystal box SRAM remains authoritative between accesses. `NativeBox` is the
+  decoded working representation, not yet a persistent native box database.
+  Remove that limitation only with the later versioned native save/PC storage
+  phase; do not add a mirrored sidecar.
+
+Compatibility and save-format implications
+------------------------------------------
+- The external Crystal SRAM box byte layout is intentionally unchanged.
+- Deserialization expands legacy byte IDs and 24-bit experience into native
+  fields. Serialization uses checked native field conversion and aborts rather
+  than truncating an unrepresentable species, item, move, or experience value.
+- Valid current Crystal box data should serialize to the same active species
+  list and mon payload. Unused species-list tail bytes are retained by the
+  transitional cache.
+- Native IDs above the Crystal format range still cannot be persisted in the
+  current save format. No high-bit table, sidecar, alias, clamp, or fake mapping
+  was introduced.
+- Link, Mobile Adapter, Time Capsule, and packed player-party formats were not
+  changed in this pass.
+
+Partially completed work
+------------------------
+- PC-box behavior is native only while decoded in C. Persistent ownership still
+  resides in Crystal SRAM until the native save phase.
+- Bills PC and printer logic can read native decoded mons, but several shared
+  WRAM UI fields remain byte-sized and therefore require checked projection.
+- The native Pokemon runtime migration now covers Day-Care, contest generation,
+  and decoded boxes; it does not yet cover the authoritative player party or
+  battle records.
+
+Untouched remaining work from the original large prompt
+-------------------------------------------------------
+- Native player-party ownership, native opponent party, and native battle-mon
+  staging/synchronization.
+- Native temporary Pokemon/UI state sufficient to remove remaining box-to-WRAM
+  projections.
+- Native base-stat/species content record conversion.
+- Remaining broad SpeciesId/DexId/MoveId/ItemId propagation through scripts,
+  trainers, battles, items, Pokédex, and content APIs.
+- Final script operand, trainer, link/mobile, and save boundary cleanup.
+- Versioned native save system and persistent native PC storage remain later
+  roadmap phases and were not started here.
+
+Static/source inspection performed
+----------------------------------
+- Traced every `Serialize_Box`/`Deserialize_Box` caller and every direct
+  `NativeBox` mon/species consumer after the type migration.
+- Audited box insert/delete shifts, PC UI temporary copies, printer traversal,
+  caught-data writes, ownership searches, and lucky-number traversal for packed
+  stride assumptions and implicit native-ID narrowing.
+- Verified remaining `BoxMon` references are party, WRAM temporary, link, mobile,
+  or explicit conversion records rather than decoded PC-box entries.
+- Reviewed the complete source diff and checked it for whitespace errors.
+- Confirmed no build output or generated artifact was created and the pre-existing
+  `lib/libmobile` state was not modified.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Suspected source-level risks / unresolved validation
+----------------------------------------------------
+- This pass intentionally changes decoded structure names, offsets, alignment,
+  and record stride. Compiler validation is still required by the user before
+  treating the pass as build-confirmed.
+- The existing serializer self-test was inspected but not executed. Its exact
+  SRAM round-trip behavior remains runtime-unverified.
+- Current PC UI and printer state cannot display future species/items above the
+  Crystal byte range; those boundaries reject the value instead of truncating it.
+- Native PP lookup still assumes a `MoveId` indexes the currently loaded move
+  database. Expanded database/count/resource work remains required.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped with decoded PC boxes coherently migrated to `NativeBox` and all known
+  callers adapted, while Crystal SRAM remains the explicit persistence boundary.
+- Next, migrate the authoritative player party as one ownership-complete slice:
+  party species and party mons must move together to `NativePartyMon`, followed
+  by creation, menu, held-item/move, HP/status/stat, battle staging, and save
+  boundary callers. Do not add a parallel party sidecar.
+
+Overall Phase 1 status
+----------------------
+- PARTIALLY COMPLETED. This session completed the decoded PC-box slice, but the
+  original large Phase 1 prompt remains unfinished as itemized above.
+
 Known source-level risks / validation notes
 -------------------------------------------
 - The native generator and stat-path refactor are source-audited but not
@@ -1301,10 +1734,11 @@ Next recommended native-conversion task
 
 Latest handoff marker: 2026-08-29
 ---------------------------------
-The full 2026-08-29 "Native Pokemon generation and stat-calculation boundary"
-section above is the latest session record. It follows from, and does not
-precede, the 2026-08-28 Day-Care work despite its insertion position in this
-append-only file. The current stopping point is native Pokemon generation with
-the player/opponent party ownership migration still next.
+The full 2026-08-29 "Player-party species authority consolidation" section
+above is the latest session record. It follows the native decoded PC-box work
+despite the historical section ordering in this append-only file. The current
+stopping point is consolidated normal party-species reads, with full native
+player/opponent party ownership, mutation migration, and persistent native PC
+storage still unfinished.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

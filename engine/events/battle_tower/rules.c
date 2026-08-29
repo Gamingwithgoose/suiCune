@@ -271,15 +271,12 @@ bool BattleTower_CheckPartyHasThreeMonsThatAreNotEggs(void){
     // LD_B(0);
     uint8_t b = 0;
     // LD_C_A;
-    uint8_t c = gPokemon.partyCount;
-    const species_t* hl = gPokemon.partySpecies;
-
-    do {
+    for(uint8_t i = 0; i < gPokemon.partyCount; ++i) {
     // loop:
         // LD_A_hli;
         // CP_A(EGG);
         // IF_Z goto egg;
-        if(*(hl++) != EGG) {
+        if(gPokemon.partyMon[i].mon.species != EGG) {
             // INC_B;
             b++;
         }
@@ -287,7 +284,7 @@ bool BattleTower_CheckPartyHasThreeMonsThatAreNotEggs(void){
     // egg:
         // DEC_C;
         // IF_NZ goto loop;
-    } while(--c != 0);
+    }
     // LD_A_addr(wPartyCount);
     // CP_A_B;
     // RET_Z ;
@@ -312,7 +309,7 @@ bool CheckBTRule_PartySpeciesAreUnique(void){
     // LD_HL(wPartyMon1Species);
     // CALL(aCheckPartyValueIsUnique);
     // RET;
-    return CheckPartyValueIsUnique(gPokemon.partyMon, gPokemon.partySpecies, gPokemon.partyCount);
+    return CheckPartyValueIsUnique(gPokemon.partyMon, gPokemon.partyCount);
 }
 
 static bool CheckPartyValueIsUnique_isegg(const species_t a) {
@@ -326,7 +323,7 @@ static bool CheckPartyValueIsUnique_isegg(const species_t a) {
     return a == EGG;
 }
 
-bool CheckPartyValueIsUnique(const struct PartyMon* hl, const species_t* de, uint8_t count){
+bool CheckPartyValueIsUnique(const struct PartyMon* hl, uint8_t count){
     // LD_DE(wPartyCount);
     // LD_A_de;
     // INC_DE;
@@ -344,7 +341,7 @@ bool CheckPartyValueIsUnique(const struct PartyMon* hl, const species_t* de, uin
             uint8_t c = b;
             // CALL(aCheckPartyValueIsUnique_isegg);
             // IF_Z goto next;
-            if(CheckPartyValueIsUnique_isegg(*de))
+            if(CheckPartyValueIsUnique_isegg(hl->mon.species))
                 continue;
             // LD_A_hl;
             // AND_A_A;
@@ -353,16 +350,15 @@ bool CheckPartyValueIsUnique(const struct PartyMon* hl, const species_t* de, uin
                 continue;
 
             species_t match = hl->mon.species;
-            const species_t* de2 = de;
             const struct PartyMon* hl2 = hl;
 
             do {
             // loop2:
                 // CALL(aCheckPartyValueIsUnique_nextmon);
-                hl2++, de2++;
+                hl2++;
                 // CALL(aCheckPartyValueIsUnique_isegg);
                 // IF_Z goto next2;
-                if(CheckPartyValueIsUnique_isegg(*de2))
+                if(CheckPartyValueIsUnique_isegg(hl2->mon.species))
                     continue;
                 // CP_A_hl;
                 // IF_Z goto gotcha;
@@ -388,7 +384,7 @@ bool CheckPartyValueIsUnique(const struct PartyMon* hl, const species_t* de, uin
             // CALL(aCheckPartyValueIsUnique_nextmon);
             // DEC_B;
             // IF_NZ goto loop;
-        } while(hl++, de++, --b != 0);
+        } while(hl++, --b != 0);
     }
 
 // done:
@@ -410,10 +406,10 @@ bool CheckBTRule_PartyItemsAreUnique(void){
     // LD_HL(wPartyMon1Item);
     // CALL(aCheckPartyValueIsUnique);
     // RET;
-    return CheckPartyItemIsUnique(gPokemon.partyMon, gPokemon.partySpecies, gPokemon.partyCount);
+    return CheckPartyItemIsUnique(gPokemon.partyMon, gPokemon.partyCount);
 }
 
-bool CheckPartyItemIsUnique(const struct PartyMon* hl, const species_t* de, uint8_t count){
+bool CheckPartyItemIsUnique(const struct PartyMon* hl, uint8_t count){
     // LD_DE(wPartyCount);
     // LD_A_de;
     // INC_DE;
@@ -431,7 +427,7 @@ bool CheckPartyItemIsUnique(const struct PartyMon* hl, const species_t* de, uint
             uint8_t c = b;
             // CALL(aCheckPartyValueIsUnique_isegg);
             // IF_Z goto next;
-            if(CheckPartyValueIsUnique_isegg(*de))
+            if(CheckPartyValueIsUnique_isegg(hl->mon.species))
                 continue;
             // LD_A_hl;
             // AND_A_A;
@@ -440,16 +436,15 @@ bool CheckPartyItemIsUnique(const struct PartyMon* hl, const species_t* de, uint
                 continue;
 
             item_t match = hl->mon.item;
-            const species_t* de2 = de;
             const struct PartyMon* hl2 = hl;
 
             do {
             // loop2:
                 // CALL(aCheckPartyValueIsUnique_nextmon);
-                hl2++, de2++;
+                hl2++;
                 // CALL(aCheckPartyValueIsUnique_isegg);
                 // IF_Z goto next2;
-                if(CheckPartyValueIsUnique_isegg(*de2))
+                if(CheckPartyValueIsUnique_isegg(hl2->mon.species))
                     continue;
                 // CP_A_hl;
                 // IF_Z goto gotcha;
@@ -475,7 +470,7 @@ bool CheckPartyItemIsUnique(const struct PartyMon* hl, const species_t* de, uint
             // CALL(aCheckPartyValueIsUnique_nextmon);
             // DEC_B;
             // IF_NZ goto loop;
-        } while(hl++, de++, --b != 0);
+        } while(hl++, --b != 0);
     }
 
 // done:
@@ -497,15 +492,12 @@ bool CheckBTRule_HasPartyAnEgg(void){
     // LD_HL(wPartyCount);
     // LD_A_hli;
     // LD_C_A;
-    uint8_t c = gPokemon.partyCount;
-    const species_t* hl = gPokemon.partySpecies;
-
-    do {
+    for(uint8_t i = 0; i < gPokemon.partyCount; ++i) {
     // loop:
         // LD_A_hli;
         // CP_A(EGG);
         // IF_Z goto found;
-        if(*(hl++) == EGG) {
+        if(gPokemon.partyMon[i].mon.species == EGG) {
         // found:
             // SCF;
             // RET;
@@ -513,7 +505,7 @@ bool CheckBTRule_HasPartyAnEgg(void){
         }
         // DEC_C;
         // IF_NZ goto loop;
-    } while(--c != 0);
+    }
     // AND_A_A;
     // RET;
     return false;

@@ -1365,11 +1365,11 @@ static void MoveScreenLoop_cycle(int dir) {
         // LD_A_hl;
         // CP_A(-1);
         // IF_Z goto cycle_left;
-        if(gPokemon.partySpecies[c] == (species_t)-1)
+        if(c >= gPokemon.partyCount)
             goto cycle_left;
         // CP_A(EGG);
         // RET_NZ ;
-        if(gPokemon.partySpecies[c] != EGG)
+        if(gPokemon.partyMon[c].mon.species != EGG)
             return;
         goto cycle_right;
 
@@ -1393,7 +1393,7 @@ static void MoveScreenLoop_cycle(int dir) {
         // LD_A_hl;
         // CP_A(EGG);
         // RET_NZ ;
-        if(gPokemon.partySpecies[c] != EGG)
+        if(gPokemon.partyMon[c].mon.species != EGG)
             return;
         // LD_A_addr(wCurPartyMon);
         // AND_A_A;
@@ -1656,7 +1656,7 @@ void SetUpMoveScreenBG(void){
     // ADD_HL_DE;
     // LD_A_hl;
     // LD_addr_A(wTempIconSpecies);
-    wram->wTempIconSpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+    wram->wTempIconSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // LD_E(MONICON_MOVES);
     // FARCALL(aLoadMenuMonIcon);
     LoadMenuMonIcon(MONICON_MOVES);
@@ -1845,7 +1845,7 @@ void PlaceMoveScreenLeftArrow(void){
     // LD_D(0);
     // LD_HL(wPartyCount);
     // ADD_HL_DE;
-    species_t* species = gPokemon.partySpecies + c - 1;
+    int index = c - 1;
 
     do {
     // loop:
@@ -1856,7 +1856,8 @@ void PlaceMoveScreenLeftArrow(void){
         // IF_Z goto prev;
         // CP_A(NUM_POKEMON + 1);
         // IF_C goto legal;
-        if(*species != 0 && *species != EGG && *species < NUM_POKEMON + 1) {
+        species_t species = gPokemon.partyMon[index].mon.species;
+        if(species != 0 && species != EGG && species < NUM_POKEMON + 1) {
         // legal:
             // hlcoord(16, 0, wTilemap);
             // LD_hl(0x71);
@@ -1867,7 +1868,7 @@ void PlaceMoveScreenLeftArrow(void){
 
     // prev:
         // DEC_HL;
-        --species;
+        --index;
         // DEC_C;
         // IF_NZ goto loop;
     } while(--c != 0);
@@ -1888,9 +1889,7 @@ void PlaceMoveScreenRightArrow(void){
     // LD_D(0);
     // LD_HL(wPartySpecies);
     // ADD_HL_DE;
-    species_t* hl = gPokemon.partySpecies + c;
-
-    while(*hl != (species_t)-1) {
+    while(c < gPokemon.partyCount) {
     // loop:
         // LD_A_hl;
         // CP_A(-1);
@@ -1901,7 +1900,8 @@ void PlaceMoveScreenRightArrow(void){
         // IF_Z goto next;
         // CP_A(NUM_POKEMON + 1);
         // IF_C goto legal;
-        if(*hl != 0 && *hl != EGG && *hl <= NUM_POKEMON) {
+        species_t species = gPokemon.partyMon[c].mon.species;
+        if(species != 0 && species != EGG && species <= NUM_POKEMON) {
         // legal:
             // hlcoord(18, 0, wTilemap);
             // LD_hl(0xed);
@@ -1912,7 +1912,7 @@ void PlaceMoveScreenRightArrow(void){
 
     // next:
         // INC_HL;
-        hl++;
+        c++;
         // goto loop;
     }
 

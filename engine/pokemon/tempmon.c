@@ -147,8 +147,9 @@ static species_t GetMonSpecies(uint8_t e) {
         case PARTYMON:
         // partymon:
             // LD_HL(wPartySpecies);
-            hl = gPokemon.partySpecies;
-            break;
+            a = gPokemon.partyMon[e].mon.species;
+            wram->wCurPartySpecies = a;
+            return a;
         case OTPARTYMON:
         // otpartymon:
             // LD_HL(wOTPartySpecies);

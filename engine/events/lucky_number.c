@@ -7,8 +7,9 @@
 #include "../../mobile/mobile_41.h"
 #include "../../util/serialize.h"
 #include "../../data/text/common.h"
+#include <stdlib.h>
 
-static bool CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(struct BoxMon* mon){
+static bool CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(uint16_t id, SpeciesId species){
     // PUSH_BC;
     // PUSH_DE;
     // PUSH_HL;
@@ -17,7 +18,7 @@ static bool CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(struct BoxMon* 
     // LD_HL(wMonIDDigitsBuffer);
     // LD_BC((PRINTNUM_LEADINGZEROS | 2 << 8) | 5);
     // CALL(aPrintNum);
-    PrintNum(wram->wMonIDDigitsBuffer, &mon->id, PRINTNUM_LEADINGZEROS | 2, 5);
+    PrintNum(wram->wMonIDDigitsBuffer, &id, PRINTNUM_LEADINGZEROS | 2, 5);
     // LD_HL(wLuckyNumberDigitsBuffer);
     // LD_DE(wLuckyIDNumber);
     // LD_BC((PRINTNUM_LEADINGZEROS | 2 << 8) | 5);
@@ -56,7 +57,7 @@ static bool CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(struct BoxMon* 
     // POP_HL;
     // POP_DE;
     // PUSH_AF;
-    species_t s = mon->species;
+    SpeciesId s = species;
     // LD_A_C;
     // LD_B(1);
     // CP_A(5);
@@ -96,7 +97,10 @@ static bool CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(struct BoxMon* 
     // POP_BC;
     // LD_A_B;
     // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = s;
+    if(!TrySpeciesIdToLegacy(s, &wram->wCurPartySpecies)) {
+        log_err("Native box species cannot enter the temporary legacy lucky-number state.\n");
+        abort();
+    }
     // POP_BC;
     // SCF;
     // RET;
@@ -138,7 +142,7 @@ void CheckForLuckyNumberWinners(void){
         text_far(v_LuckyNumberMatchPCText)
         text_end
     };
-    struct Box box;
+    struct NativeBox box;
     // XOR_A_A;
     // LD_addr_A(wScriptVar);
     wram->wScriptVar = 0x0;
@@ -153,19 +157,16 @@ void CheckForLuckyNumberWinners(void){
     uint8_t d = gPokemon.partyCount;
     // LD_HL(wPartyMon1ID);
     struct PartyMon* hl = gPokemon.partyMon;
-    // LD_BC(wPartySpecies);
-    species_t* bc = gPokemon.partySpecies;
 
     do {
     // PartyLoop:
         // LD_A_bc;
         // INC_BC;
         // CP_A(EGG);
-        if(*bc != EGG) {
+        if(hl->mon.species != EGG) {
             // CALL_NZ (aCheckForLuckyNumberWinners_CompareLuckyNumberToMonID);
-            CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(&hl->mon);
+            CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(hl->mon.id, hl->mon.species);
         }
-        bc++;
         // PUSH_BC;
         // LD_BC(PARTYMON_STRUCT_LENGTH);
         // ADD_HL_BC;
@@ -185,9 +186,8 @@ void CheckForLuckyNumberWinners(void){
         // LD_D_A;
         uint8_t d = box.count;
         // LD_HL(sBoxMon1ID);
-        struct BoxMon* mon = box.mons;
+        struct NativeBoxMon* mon = box.mons;
         // LD_BC(sBoxSpecies);
-        species_t* species = box.species;
 
         do {
         // OpenBoxLoop:
@@ -197,14 +197,13 @@ void CheckForLuckyNumberWinners(void){
             // IF_Z goto SkipOpenBoxMon;
             // CALL(aCheckForLuckyNumberWinners_CompareLuckyNumberToMonID);
             // IF_NC goto SkipOpenBoxMon;
-            if(*species != EGG && CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(mon)) {
+            if(mon->species != EGG && CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(mon->id, mon->species)) {
                 // LD_A(TRUE);
                 // LD_addr_A(wTempByteValue);
                 wram->wTempByteValue = TRUE;
             }
 
         // SkipOpenBoxMon:
-            species++;
             // PUSH_BC;
             // LD_BC(BOXMON_STRUCT_LENGTH);
             // ADD_HL_BC;
@@ -251,10 +250,9 @@ void CheckForLuckyNumberWinners(void){
         // LD_B_H;
         // LD_C_L;
         // INC_BC;
-        species_t* bc = box.species;
+        struct NativeBoxMon* hl = box.mons;
         // LD_DE(sBoxMon1ID - sBox);
         // ADD_HL_DE;
-        struct BoxMon* hl = box.mons;
         // LD_D_A;
         uint8_t d = count;
 
@@ -262,13 +260,13 @@ void CheckForLuckyNumberWinners(void){
         // BoxNLoop:
             // LD_A_bc;
             // INC_BC;
-            species_t species = *(bc++);
+            SpeciesId species = hl->species;
             // CP_A(EGG);
             // IF_Z goto SkipBoxMon;
 
             // CALL(aCheckForLuckyNumberWinners_CompareLuckyNumberToMonID);  // sets wScriptVar and wCurPartySpecies appropriately
             // IF_NC goto SkipBoxMon;
-            if(species != EGG && CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(hl)) {
+            if(species != EGG && CheckForLuckyNumberWinners_CompareLuckyNumberToMonID(hl->id, hl->species)) {
                 // LD_A(TRUE);
                 // LD_addr_A(wTempByteValue);
                 wram->wTempByteValue = TRUE;

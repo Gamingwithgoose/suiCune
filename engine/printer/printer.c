@@ -18,6 +18,7 @@
 #include "../../gfx/misc.h"
 #include "../../util/printer.h"
 #include "../../util/serialize.h"
+#include <stdlib.h>
 
 bool SendScreenToPrinter(void){
     uint8_t frames = 30;
@@ -1018,10 +1019,8 @@ void Printer_PrintBoxListSegment(tile_t* hl, uint8_t c){
     // LD_A_addr(wBankOfBoxToPrint);
     // CALL(aOpenSRAM);
     OpenSRAM(wram->wBankOfBoxToPrint);
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(wram->wAddrOfBoxToPrint));
-    species_t* boxSpecies = box.species;
-
     while(1) {
     // loop:
         // LD_A_C;
@@ -1034,12 +1033,16 @@ void Printer_PrintBoxListSegment(tile_t* hl, uint8_t c){
         // LD_A_de;
         // CP_A(0xff);
         // JP_Z (mPrinter_PrintBoxListSegment_finish);
-        log_debug("species = %d vs %d vs %d\n", *boxSpecies, boxSpecies[1], boxSpecies[-1]);
-        if(*boxSpecies == (species_t)-1)
+        if(wram->wWhichBoxMonToPrint >= box.count)
             break;
+        SpeciesId species = box.mons[wram->wWhichBoxMonToPrint].species;
         // LD_addr_A(wNamedObjectIndex);
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = *boxSpecies;
+        if(!TrySpeciesIdToLegacy(species, &wram->wCurPartySpecies)) {
+            CloseSRAM();
+            log_err("Native box species cannot enter the temporary legacy printer state.\n");
+            abort();
+        }
 
         // PUSH_BC;
         // PUSH_HL;
@@ -1058,7 +1061,7 @@ void Printer_PrintBoxListSegment(tile_t* hl, uint8_t c){
 
         // PUSH_HL;
         // CALL(aPlaceString);
-        PlaceStringSimple(GetBasePokemonName(*boxSpecies), hl);
+        PlaceStringSimple(GetBasePokemonName(species), hl);
         // LD_A_addr(wCurPartySpecies);
         // CP_A(EGG);
         // POP_HL;
@@ -1133,7 +1136,6 @@ void Printer_PrintBoxListSegment(tile_t* hl, uint8_t c){
         hl += 3 * SCREEN_WIDTH;
         // POP_BC;
         // INC_DE;
-        boxSpecies++;
         // JP(mPrinter_PrintBoxListSegment_loop);
     }
 
@@ -1148,7 +1150,7 @@ max_length:
     // RET;
 }
 
-tile_t* Printer_GetMonGender(const struct Box* box, tile_t* hl){
+tile_t* Printer_GetMonGender(const struct NativeBox* box, tile_t* hl){
     // PUSH_HL;
     // LD_A_addr(wAddrOfBoxToPrint);
     // LD_L_A;
@@ -1156,7 +1158,7 @@ tile_t* Printer_GetMonGender(const struct Box* box, tile_t* hl){
     // LD_H_A;
     // LD_BC(2 + MONS_PER_BOX + MON_DVS);
     // ADD_HL_BC;
-    const struct BoxMon* boxMon = box->mons;
+    const struct NativeBoxMon* boxMon = box->mons;
     // LD_BC(BOXMON_STRUCT_LENGTH);
     // LD_A_addr(wWhichBoxMonToPrint);
     // CALL(aAddNTimes);

@@ -213,7 +213,7 @@ u8_flag_s GetGender(uint8_t monType){
         break;
     case BOXMON: {
         OpenSRAM(MBANK(asBox));
-        struct Box box;
+        struct NativeBox box;
         Deserialize_Box(&box, GBToRAMAddr(sBox));
         DVs = box.mons[wram->wCurPartyMon].DVs;
         CloseSRAM();

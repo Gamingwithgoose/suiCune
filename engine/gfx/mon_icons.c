@@ -244,7 +244,7 @@ static struct SpriteAnim* InitPartyMenuIcon(void){
     // LD_D(0);
     // ADD_HL_DE;
     // LD_A_hl;
-    species_t a = gPokemon.partySpecies[hram.hObjectStructIndex];
+    species_t a = gPokemon.partyMon[hram.hObjectStructIndex].mon.species;
     // CALL(aReadMonMenuIcon);
     // LD_addr_A(wCurIcon);
     wram->wCurIcon = ReadMonMenuIcon(a);

@@ -1,9 +1,11 @@
 #include "../../constants.h"
 #include "../../home/sram.h"
 #include "../../home/copy.h"
+#include "../../home/pokemon.h"
 #include "../../util/serialize.h"
 #include "move_mon_wo_mail.h"
 #include "move_mon.h"
+#include <stdlib.h>
 
 static void InsertSpeciesIntoBoxOrParty(uint8_t* count, species_t* party);
 static void InsertDataIntoBoxOrParty(uint8_t* hl, const uint8_t* de, uint16_t bc);
@@ -12,11 +14,11 @@ void InsertPokemonIntoBox(void){
     // LD_A(BANK(sBoxCount));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxCount));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_HL(sBoxCount);
     // CALL(aInsertSpeciesIntoBoxOrParty);
-    InsertSpeciesIntoBoxOrParty(&box.count, box.species);
+    box.count++;
     // LD_A_addr(sBoxCount);
     // DEC_A;
     // LD_addr_A(wNextBoxOrPartyIndex);
@@ -43,7 +45,12 @@ void InsertPokemonIntoBox(void){
     // LD_BC(BOXMON_STRUCT_LENGTH);
     // LD_DE(wBufferMon);
     // CALL(aInsertDataIntoBoxOrParty);
-    InsertDataIntoBoxOrParty((uint8_t*)box.mons, (const uint8_t*)&wram->wBufferMon.mon, sizeof(struct BoxMon));
+    struct NativeBoxMon nativeMon;
+    if(!ConvertBoxMonToNative(&nativeMon, &wram->wBufferMon.mon)) {
+        log_err("Temporary legacy Pokemon cannot enter native box storage.\n");
+        abort();
+    }
+    InsertDataIntoBoxOrParty((uint8_t*)box.mons, (const uint8_t*)&nativeMon, sizeof(nativeMon));
     // LD_HL(wBufferMonMoves);
     // LD_DE(wTempMonMoves);
     // LD_BC(NUM_MOVES);

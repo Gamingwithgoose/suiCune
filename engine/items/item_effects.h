@@ -154,6 +154,7 @@ void ApplyPPUp(void);
 uint8_t ComputeMaxPP(uint8_t pp, uint8_t base);
 void RestoreAllPP(struct PartyMon* pmon);
 uint8_t GetMaxPPOfMove(void* mon, uint8_t montype, uint8_t n);
+uint8_t GetMaxPPOfNativeMove(const struct NativeBoxMon* mon, uint8_t n);
 void GetMthMoveOfNthPartymon(void);
 void GetMthMoveOfCurrentMon(void);
 //#include "data/items/heal_status.h"

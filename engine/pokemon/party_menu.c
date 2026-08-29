@@ -501,7 +501,7 @@ void PlacePartyMonTMHMCompatibility(void){
             // LD_A_hl;
             // LD_addr_A(wCurPartySpecies);
             // PREDEF(pCanLearnTMHMMove);
-            uint8_t c = CanLearnTMHMMove(gPokemon.partySpecies[b], wram->wPutativeTMHMMove);
+            uint8_t c = CanLearnTMHMMove(gPokemon.partyMon[b].mon.species, wram->wPutativeTMHMMove);
             // POP_HL;
             // CALL(aPlacePartyMonTMHMCompatibility_PlaceAbleNotAble);
             // CALL(aPlaceString);
@@ -638,7 +638,7 @@ void PlacePartyMonGender(void){
         // IF_Z goto next;
         if(!PartyMenuCheckEgg(b)) {
             // LD_addr_A(wCurPartySpecies);
-            wram->wCurPartySpecies = gPokemon.partySpecies[b];
+            wram->wCurPartySpecies = gPokemon.partyMon[b].mon.species;
             // PUSH_HL;
             // LD_A_B;
             // LD_addr_A(wCurPartyMon);
@@ -811,7 +811,7 @@ bool PartyMenuCheckEgg(uint8_t b){
     // LD_A_de;
     // CP_A(EGG);
     // RET;
-    return gPokemon.partySpecies[b] == EGG;
+    return gPokemon.partyMon[b].mon.species == EGG;
 }
 
 const uint8_t* GetPartyMenuQualityIndexes(void){
@@ -986,7 +986,7 @@ u8_flag_s PartyMenuSelect(void){
             // ADD_HL_BC;
             // LD_A_hl;
             // LD_addr_A(wCurPartySpecies);
-            wram->wCurPartySpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+            wram->wCurPartySpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
 
             // LD_DE(SFX_READ_TEXT_2);
             // CALL(aPlaySFX);

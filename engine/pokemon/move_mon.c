@@ -35,7 +35,7 @@
 #define RANDY_OT_ID (1001)
 
 static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct NativeBoxMon* dest, uint8_t a);
-static void ShiftBoxMon(struct Box* box);
+static void ShiftBoxMon(struct NativeBox* box);
 static uint16_t CalcMonStat(const uint16_t* statExp, uint16_t dvs, uint8_t b,
                            uint8_t c, uint8_t baseStat, uint8_t level, bool statExpBigEndian);
 
@@ -682,7 +682,7 @@ bool SendGetMonIntoFromBox(uint8_t param){
     // LD_A(BANK(sBoxCount));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxCount));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_A_addr(wPokemonWithdrawDepositParameter);
     // AND_A_A;
@@ -691,16 +691,32 @@ bool SendGetMonIntoFromBox(uint8_t param){
     // IF_Z goto check_IfPartyIsFull;
     uint8_t c;
     uint8_t* count;
-    species_t* species;
+    LegacySpeciesId* legacySpecies = NULL;
     struct PartyMon* pmon = NULL;
-    struct BoxMon* bmon = NULL;
     struct NativeBoxMon* nativeBmon = NULL;
     uint8_t* de_ot = NULL;
+    struct BoxMon legacyTransfer;
+    struct NativeBoxMon nativeTransfer;
+    switch(param) {
+    case PC_WITHDRAW:
+        if(!ConvertNativeBoxMonToLegacy(&legacyTransfer, &box.mons[wram->wCurPartyMon]))
+            return CloseSRAM_And_SetCarryFlag(&box);
+        break;
+    case DAY_CARE_WITHDRAW:
+        if(!ConvertNativeBoxMonToLegacy(&legacyTransfer, &gPokemon.breedMon1))
+            return CloseSRAM_And_SetCarryFlag(&box);
+        break;
+    case PC_DEPOSIT:
+    case DAY_CARE_DEPOSIT:
+        if(!ConvertBoxMonToNative(&nativeTransfer, &gPokemon.partyMon[wram->wCurPartyMon].mon))
+            return CloseSRAM_And_SetCarryFlag(&box);
+        break;
+    }
     if(param == PC_WITHDRAW || param == DAY_CARE_WITHDRAW) {
     // check_IfPartyIsFull:
         // LD_HL(wPartyCount);
         count = &gPokemon.partyCount;
-        species = gPokemon.partySpecies;
+        legacySpecies = gPokemon.partySpecies;
         // LD_A_hl;
         // CP_A(PARTY_LENGTH);
         // JP_Z (mCloseSRAM_And_SetCarryFlag);
@@ -722,7 +738,6 @@ bool SendGetMonIntoFromBox(uint8_t param){
     else {
         // LD_HL(sBoxCount);
         count = &box.count;
-        species = box.species;
         // LD_A_hl;
         c = *count;
         // CP_A(MONS_PER_BOX);
@@ -747,17 +762,11 @@ bool SendGetMonIntoFromBox(uint8_t param){
 
 // okay1:
     // LD_hli_A;
-    if(param == DAY_CARE_WITHDRAW) {
-        LegacySpeciesId legacySpecies;
-        if(!TrySpeciesIdToLegacy(gPokemon.breedMon1.species, &legacySpecies))
-            return CloseSRAM_And_SetCarryFlag(&box);
-        species[c - 1] = legacySpecies;
-    }
-    else {
-        species[c - 1] = wram->wCurPartySpecies;
-    }
+    if(param == DAY_CARE_WITHDRAW || param == PC_WITHDRAW)
+        legacySpecies[c - 1] = legacyTransfer.species;
     // LD_hl(0xff);
-    species[c] = (species_t)-1;
+    if(legacySpecies != NULL)
+        legacySpecies[c] = LEGACY_SPECIES_LIST_END;
 
     // LD_A_addr(wPokemonWithdrawDepositParameter);
     // DEC_A;
@@ -772,7 +781,7 @@ bool SendGetMonIntoFromBox(uint8_t param){
         // LD_HL(sBoxMon1Species);
         // LD_BC(BOXMON_STRUCT_LENGTH);
         // LD_A_addr(sBoxCount);
-        bmon = box.mons + (box.count - 1);
+        nativeBmon = box.mons + (box.count - 1);
 
     // okay2:
         // DEC_A;  // wPartyCount - 1
@@ -790,22 +799,20 @@ breedmon:
         // LD_HL(sBoxMon1Species);
         // LD_BC(BOXMON_STRUCT_LENGTH);
         // IF_Z goto okay3;
-        CopyBytes(&pmon->mon, &box.mons[wram->wCurPartyMon], sizeof(pmon->mon));
+        pmon->mon = legacyTransfer;
         break;
     case DAY_CARE_WITHDRAW:
         // The player party is still a packed legacy owner. Convert only at this
         // temporary boundary until party ownership becomes native.
-        if(!ConvertNativeBoxMonToLegacy(&pmon->mon, &gPokemon.breedMon1))
-            return CloseSRAM_And_SetCarryFlag(&box);
+        pmon->mon = legacyTransfer;
         break;
     case DAY_CARE_DEPOSIT:
-        if(!ConvertBoxMonToNative(nativeBmon, &gPokemon.partyMon[wram->wCurPartyMon].mon))
-            return CloseSRAM_And_SetCarryFlag(&box);
+        *nativeBmon = nativeTransfer;
         break;
     case PC_DEPOSIT:
         // LD_HL(wPartyMon1Species);
         // LD_BC(BOXMON_STRUCT_LENGTH);
-        CopyBytes(bmon, &gPokemon.partyMon[wram->wCurPartyMon].mon, sizeof(*bmon));
+        *nativeBmon = nativeTransfer;
         break;
 
     // okay3:
@@ -946,7 +953,7 @@ breedmon:
         // DEC_A;
         // LD_B_A;
         // CALL(aRestorePPOfDepositedPokemon);
-        RestorePPOfDepositedPokemon(&box, box.count);
+        RestorePPOfDepositedPokemon(&box, box.count - 1);
         break;
     // CP_A(DAY_CARE_DEPOSIT);
     // JP_Z (mSendGetMonIntoFromBox_CloseSRAM_And_ClearCarryFlag);
@@ -1032,7 +1039,7 @@ breedmon:
     return false;
 }
 
-bool CloseSRAM_And_SetCarryFlag(const struct Box* box){
+bool CloseSRAM_And_SetCarryFlag(const struct NativeBox* box){
     Serialize_Box(GBToRAMAddr(sBox), box);
     // CALL(aCloseSRAM);
     CloseSRAM();
@@ -1041,88 +1048,14 @@ bool CloseSRAM_And_SetCarryFlag(const struct Box* box){
     return true;
 }
 
-void RestorePPOfDepositedPokemon(struct Box* box, uint8_t b){
-    // LD_A_B;
-    // LD_HL(sBoxMons);
-    // LD_BC(BOXMON_STRUCT_LENGTH);
-    // CALL(aAddNTimes);
-    // LD_B_H;
-    // LD_C_L;
-    struct BoxMon* bc = box->mons + b;
-    // LD_HL(MON_PP);
-    // ADD_HL_BC;
-    // PUSH_HL;
-    // PUSH_BC;
-    // LD_DE(wTempMonPP);
-    // LD_BC(NUM_MOVES);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wTempMon.mon.PP, bc->PP, sizeof(bc->PP));
-    // POP_BC;
-    // LD_HL(MON_MOVES);
-    // ADD_HL_BC;
-    // PUSH_HL;
-    move_t* hl = bc->moves;
-    // LD_DE(wTempMonMoves);
-    // LD_BC(NUM_MOVES);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wTempMon.mon.moves, bc->moves, sizeof(bc->moves));
-    // POP_HL;
-    // POP_DE;
-    uint8_t* de = bc->PP;
-
-    // LD_A_addr(wMenuCursorY);
-    // PUSH_AF;
-    uint8_t menuCursorY = wram->wMenuCursorY;
-    // LD_A_addr(wMonType);
-    // PUSH_AF;
-    uint8_t monType = wram->wMonType;
-    // LD_B(0);
-    b = 0;
-
-    do {
-    // loop:
-        // LD_A_hli;
-        // AND_A_A;
-        // IF_Z goto done;
-        if(*hl == NO_MOVE)
+void RestorePPOfDepositedPokemon(struct NativeBox* box, uint8_t boxIndex){
+    struct NativeBoxMon* mon = &box->mons[boxIndex];
+    for(uint8_t moveIndex = 0; moveIndex < NUM_MOVES; ++moveIndex) {
+        if(mon->moves[moveIndex] == NO_MOVE)
             break;
-        // LD_addr_A(wTempMonMoves);
-        wram->wTempMon.mon.moves[0] = *(hl++);
-        // LD_A(BOXMON);
-        // LD_addr_A(wMonType);
-        // LD_A_B;
-        // LD_addr_A(wMenuCursorY);
-        // PUSH_BC;
-        // PUSH_HL;
-        // PUSH_DE;
-        // FARCALL(aGetMaxPPOfMove);
-        uint8_t pp = GetMaxPPOfMove(bc, BOXMON, b);
-        // POP_DE;
-        // POP_HL;
-        // LD_A_addr(wTempPP);
-        // LD_B_A;
-        // LD_A_de;
-        // AND_A(0b11000000);
-        // ADD_A_B;
-        // LD_de_A;
-        *de = pp + (*de & 0b11000000);
-        // POP_BC;
-        // INC_DE;
-        de++;
-        // INC_B;
-        // LD_A_B;
-        // CP_A(NUM_MOVES);
-        // IF_C goto loop;
-    } while(++b != NUM_MOVES);
-
-// done:
-    // POP_AF;
-    // LD_addr_A(wMonType);
-    wram->wMonType = monType;
-    // POP_AF;
-    // LD_addr_A(wMenuCursorY);
-    wram->wMenuCursorY = menuCursorY;
-    // RET;
+        uint8_t ppUps = mon->PP[moveIndex] & PP_UP_MASK;
+        mon->PP[moveIndex] = GetMaxPPOfNativeMove(mon, moveIndex) | ppUps;
+    }
 }
 
 bool RetrieveMonFromDayCareMan(void){
@@ -1285,7 +1218,7 @@ bool SendMonIntoBox(void){
     // LD_A(BANK(sBoxCount));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxCount));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_DE(sBoxCount);
     // LD_A_de;
@@ -1306,28 +1239,6 @@ bool SendMonIntoBox(void){
     // LD_A_addr(wCurPartySpecies);
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = wram->wCurPartySpecies;
-    // LD_C_A;
-    species_t* de = box.species;
-    species_t c = wram->wCurPartySpecies;
-    species_t a;
-    do {
-    // loop:
-        // INC_DE;
-        // LD_A_de;
-        a = *de;
-        // LD_B_A;
-        species_t b = a;
-        // LD_A_C;
-        a = c;
-        // LD_C_B;
-        c = b;
-        // LD_de_A;
-        *de = a;
-        de++;
-        // INC_A;
-        // IF_NZ goto loop;
-    } while(a != 0xff);
-
     // CALL(aShiftBoxMon);
     ShiftBoxMon(&box);
 
@@ -1350,10 +1261,13 @@ bool SendMonIntoBox(void){
 
     // LD_HL(wEnemyMon);
     // LD_DE(sBoxMon1);
-    struct BoxMon* boxmon = box.mons;
+    struct NativeBoxMon* boxmon = box.mons;
     // LD_BC(1 + 1 + NUM_MOVES);  // species + item + moves
     // CALL(aCopyBytes);
-    CopyBytes(boxmon, &wram->wEnemyMon, sizeof(species_t) + sizeof(item_t) + sizeof(move_t) * NUM_MOVES);
+    boxmon->species = wram->wEnemyMon.species;
+    boxmon->item = wram->wEnemyMon.item;
+    for(uint8_t i = 0; i < NUM_MOVES; ++i)
+        boxmon->moves[i] = wram->wEnemyMon.moves[i];
 
     // LD_HL(wPlayerID);
     // LD_A_hli;
@@ -1371,15 +1285,13 @@ bool SendMonIntoBox(void){
     // POP_DE;
     // LDH_A_addr(hProduct + 1);
     // LD_de_A;
-    boxmon->exp[0] = HIGH(exp >> 8);
+    boxmon->exp = exp;
     // INC_DE;
     // LDH_A_addr(hProduct + 2);
     // LD_de_A;
-    boxmon->exp[1] = HIGH(exp);
     // INC_DE;
     // LDH_A_addr(hProduct + 3);
     // LD_de_A;
-    boxmon->exp[2] = LOW(exp);
     // INC_DE;
 
 // Set all 5 Experience Values to 0
@@ -1443,7 +1355,8 @@ bool SendMonIntoBox(void){
     // LD_DE(wTempMonMoves);
     // LD_BC(NUM_MOVES);
     // CALL(aCopyBytes);
-    CopyBytes(boxmon->moves, wram->wTempMon.mon.moves, sizeof(boxmon->moves));
+    for(uint8_t i = 0; i < NUM_MOVES; ++i)
+        boxmon->moves[i] = wram->wTempMon.mon.moves[i];
 
     // LD_HL(sBoxMon1PP);
     // LD_DE(wTempMonPP);
@@ -1509,7 +1422,7 @@ static void ShiftBoxMon_shift(void* hl_, uint8_t count, uint16_t bc) {
     // RET;
 }
 
-static void ShiftBoxMon(struct Box* box){
+static void ShiftBoxMon(struct NativeBox* box){
     // LD_HL(sBoxMonOTs);
     // LD_BC(NAME_LENGTH);
     // CALL(aShiftBoxMon_shift);
@@ -1522,7 +1435,7 @@ static void ShiftBoxMon(struct Box* box){
 
     // LD_HL(sBoxMons);
     // LD_BC(BOXMON_STRUCT_LENGTH);
-    ShiftBoxMon_shift(box->mons, box->count, sizeof(struct BoxMon));
+    ShiftBoxMon_shift(box->mons, box->count, sizeof(struct NativeBoxMon));
 }
 
 bool GiveEgg(void){
@@ -1844,24 +1757,11 @@ void RemoveMonFromPartyOrBox(uint8_t param){
     else {
         // LD_A(BANK(sBoxCount));
         // CALL(aOpenSRAM);
-        struct Box box;
+        struct NativeBox box;
         OpenSRAM(MBANK(asBoxCount));
         Deserialize_Box(&box, GBToRAMAddr(sBox));
         // LD_HL(sBoxCount);
         box.count--;
-        species_t* spec = box.species + wram->wCurPartyMon;
-        species_t a;
-        do {
-        // loop:
-            // LD_A_de;
-            a = spec[1];
-            // INC_DE;
-            // LD_hli_A;
-            *(spec++) = a;
-            // INC_A;
-            // IF_NZ goto loop;
-        } while(a != 0xff);
-
         // LD_A_addr(wCurPartyMon);
         // LD_C_A;
         // LD_B(0);
@@ -1940,7 +1840,7 @@ void RemoveMonFromPartyOrBox(uint8_t param){
             // LD_BC(wPartyMonOTs);
 
         // copy:
-            struct BoxMon* boxMons = box.mons;
+            struct NativeBoxMon* boxMons = box.mons;
             // CALL(aCopyDataUntil);
             CopyDataUntil(boxMons + wram->wCurPartyMon, 
                 boxMons + wram->wCurPartyMon + 1,

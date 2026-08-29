@@ -30,6 +30,7 @@
 #include "../../home/string.h"
 #include "../../home/copy_name.h"
 #include "../../util/serialize.h"
+#include <stdlib.h>
 
 static void v_DepositPKMN_RunJumptable(void);
 
@@ -48,6 +49,7 @@ static u8_flag_s BillsPC_LeftRightDidSomething(void);
 static void BillsPC_PlaceString(uint8_t* de);
 
 static void BillsPC_LoadMonStats(void);
+static void BillsPC_LoadNativeBoxMonStats(const struct NativeBoxMon* mon);
 static species_t BillsPC_GetSelectedPokemonSpecies(void);
 
 static bool BillsPC_CheckMail_PreventBlackout(void);
@@ -57,11 +59,11 @@ static void BillsPC_StatsScreen(void);
 static void BillsPC_CopyMon(void);
 static bool DepositPokemon(void);
 static bool TryWithdrawPokemon(void);
-static void CopySpeciesToTemp(const species_t* hl);
+static void CopyNativeSpeciesToTemp(const struct NativeBoxMon* mons);
 static void CopyNicknameToTemp(const uint8_t (*hl)[MON_NAME_LENGTH]);
 static void CopyOTNameToTemp(const uint8_t (*hl)[NAME_LENGTH]);
 static void CopyMonToTemp(const struct PartyMon* hl);
-static void CopyBoxMonToTemp(const struct BoxMon* hl);
+static void CopyBoxMonToTemp(const struct NativeBoxMon* hl);
 
 static void BillsPC_PlaceChooseABoxString(void);
 static void BillsPC_PlaceWhatsUpString(void);
@@ -1786,7 +1788,7 @@ void PCMonInfo(void){
 }
 
 static void BillsPC_LoadMonStats(void){
-    struct Box box;
+    struct NativeBox box;
     // LD_A_addr(wBillsPC_CursorPosition);
     // LD_HL(wBillsPC_ScrollPosition);
     // ADD_A_hl;
@@ -1851,7 +1853,7 @@ static void BillsPC_LoadMonStats(void){
         // CALL(aAddNTimes);
         // LD_A_hl;
         // LD_addr_A(wTempMonLevel);
-        wram->wTempMon.mon.level = box.mons[e].level;
+        BillsPC_LoadNativeBoxMonStats(&box.mons[e]);
         // POP_HL;
         // PUSH_HL;
         // LD_BC(sBoxMon1Item - sBox);
@@ -1861,7 +1863,6 @@ static void BillsPC_LoadMonStats(void){
         // CALL(aAddNTimes);
         // LD_A_hl;
         // LD_addr_A(wTempMonItem);
-        wram->wTempMon.mon.item = box.mons[e].item;
         // POP_HL;
         // LD_BC(sBoxMon1DVs - sBox);
         // ADD_HL_BC;
@@ -1874,7 +1875,6 @@ static void BillsPC_LoadMonStats(void){
         // INC_DE;
         // LD_A_hl;
         // LD_de_A;
-        wram->wTempMon.mon.DVs = box.mons[e].DVs;
         // CALL(aCloseSRAM);
         CloseSRAM();
         // RET;
@@ -1892,7 +1892,7 @@ static void BillsPC_LoadMonStats(void){
     // CALL(aAddNTimes);
     // LD_A_hl;
     // LD_addr_A(wTempMonLevel);
-    wram->wTempMon.mon.level = box.mons[e].level;
+    BillsPC_LoadNativeBoxMonStats(&box.mons[e]);
 
     // LD_HL(sBoxMon1Item);
     // LD_BC(BOXMON_STRUCT_LENGTH);
@@ -1900,7 +1900,6 @@ static void BillsPC_LoadMonStats(void){
     // CALL(aAddNTimes);
     // LD_A_hl;
     // LD_addr_A(wTempMonItem);
-    wram->wTempMon.mon.item = box.mons[e].item;
 
     // LD_HL(sBoxMon1DVs);
     // LD_BC(BOXMON_STRUCT_LENGTH);
@@ -1912,7 +1911,6 @@ static void BillsPC_LoadMonStats(void){
     // INC_DE;
     // LD_A_hl;
     // LD_de_A;
-    wram->wTempMon.mon.DVs = box.mons[e].DVs;
 
     // CALL(aCloseSRAM);
     CloseSRAM();
@@ -1920,10 +1918,21 @@ static void BillsPC_LoadMonStats(void){
 
 }
 
+static void BillsPC_LoadNativeBoxMonStats(const struct NativeBoxMon* mon){
+    LegacyItemId item;
+    if(!TryItemIdToLegacy(mon->item, &item)) {
+        log_err("Native box item cannot enter the temporary legacy PC preview.\n");
+        abort();
+    }
+    wram->wTempMon.mon.level = mon->level;
+    wram->wTempMon.mon.item = item;
+    wram->wTempMon.mon.DVs = mon->DVs;
+}
+
 static void BillsPC_RefreshTextboxes_PlaceNickname(const struct BillsPCMonEntry* de, tile_t* hl) {
     static const char CancelString[] = "CANCEL@";
     static const char Placeholder[] = "-----@";
-    struct Box box;
+    struct NativeBox box;
     // LD_A_de;
     // AND_A_A;
     // RET_Z ;
@@ -1964,11 +1973,10 @@ static void BillsPC_RefreshTextboxes_PlaceNickname(const struct BillsPCMonEntry*
             // LD_HL(sBoxSpecies);
             // LD_D(0x0);
             // ADD_HL_DE;
-            species_t* species = box.species;
             // LD_A_hl;
             // AND_A_A;
             // IF_Z goto sBoxFail;
-            if(species[e] != 0x0) {
+            if(box.mons[e].species != 0x0) {
                 // LD_HL(sBoxMonNicknames);
                 uint8_t (*nick)[MON_NAME_LENGTH] = box.monNicknames;
                 // LD_BC(MON_NAME_LENGTH);
@@ -2006,7 +2014,7 @@ static void BillsPC_RefreshTextboxes_PlaceNickname(const struct BillsPCMonEntry*
             // PUSH_HL;
             // LD_BC(sBoxMons - sBox);
             // ADD_HL_BC;
-            struct BoxMon* mon = box.mons;
+            struct NativeBoxMon* mon = box.mons;
             // LD_BC(BOXMON_STRUCT_LENGTH);
             // LD_A_E;
             // CALL(aAddNTimes);
@@ -2053,7 +2061,7 @@ static void BillsPC_RefreshTextboxes_PlaceNickname(const struct BillsPCMonEntry*
         // LD_A_hl;
         // AND_A_A;
         // IF_Z goto partyfail;
-        if(gPokemon.partySpecies[e] != 0x0) {
+        if(gPokemon.partyMon[e].mon.species != 0x0) {
             // LD_HL(wPartyMonNicknames);
             // LD_BC(MON_NAME_LENGTH);
             // LD_A_E;
@@ -2134,25 +2142,15 @@ void BillsPC_RefreshTextboxes(void){
 }
 
 void CopyBoxmonSpecies(void){
-    #define copy_box_data0 do { \
-            while(1) {\
-                if(*hl == (species_t)-1 || *hl == 0)\
-                    break;\
-                de->species = *hl;\
-                de->boxNumber = wram->wBillsPC_LoadedBox;\
-                de->listIndex = wram->wBillsPCTempListIndex++;\
-                de++;\
-                hl++;\
-                wram->wBillsPCTempBoxCount++;\
-            }\
-            de->species = (species_t)-1;\
-            wram->wBillsPC_NumMonsInBox = wram->wBillsPCTempBoxCount + 1;\
-        } while(0)
     #define copy_box_data1 do { \
-            while(1) {\
-                if(*hl == (species_t)-1 || *hl == 0)\
-                    break;\
-                de->species = *hl;\
+            while(wram->wBillsPCTempListIndex < box.count) {\
+                LegacySpeciesId listedSpecies;\
+                if(!TrySpeciesIdToLegacy(hl->species, &listedSpecies)) {\
+                    CloseSRAM();\
+                    log_err("Native box species cannot enter the temporary legacy PC list.\n");\
+                    abort();\
+                }\
+                de->species = listedSpecies;\
                 de->boxNumber = wram->wBillsPC_LoadedBox;\
                 de->listIndex = wram->wBillsPCTempListIndex++;\
                 de++;\
@@ -2160,7 +2158,7 @@ void CopyBoxmonSpecies(void){
                 wram->wBillsPCTempBoxCount++;\
             }\
             CloseSRAM();\
-            de->species = (species_t)-1;\
+            de->species = LEGACY_SPECIES_LIST_END;\
             wram->wBillsPC_NumMonsInBox = wram->wBillsPCTempBoxCount + 1;\
         } while(0)
 // copy_box_data: MACRO
@@ -2196,7 +2194,7 @@ void CopyBoxmonSpecies(void){
 //     inc a
 //     ld [wBillsPC_NumMonsInBox], a
 // ENDM
-    struct Box box;
+    struct NativeBox box;
     // XOR_A_A;
     // LD_HL(wBillsPCPokemonList);
     // LD_BC(3 * 30);
@@ -2215,9 +2213,15 @@ void CopyBoxmonSpecies(void){
     if(wram->wBillsPC_LoadedBox == 0) {
     // party:
         // LD_HL(wPartySpecies);
-        species_t* hl = gPokemon.partySpecies;
-        //copy_box_data ['0']
-        copy_box_data0;
+        for(uint8_t i = 0; i < gPokemon.partyCount; ++i) {
+            de->species = gPokemon.partyMon[i].mon.species;
+            de->boxNumber = 0;
+            de->listIndex = wram->wBillsPCTempListIndex++;
+            de++;
+            wram->wBillsPCTempBoxCount++;
+        }
+        de->species = LEGACY_SPECIES_LIST_END;
+        wram->wBillsPC_NumMonsInBox = wram->wBillsPCTempBoxCount + 1;
         // RET;
         return;
     }
@@ -2230,7 +2234,7 @@ void CopyBoxmonSpecies(void){
         OpenSRAM(MBANK(asBox));
         Deserialize_Box(&box, GBToRAMAddr(sBox));
         // LD_HL(sBoxSpecies);
-        species_t* hl = box.species;
+        struct NativeBoxMon* hl = box.mons;
         //copy_box_data ['1']
         copy_box_data1;
         // RET;
@@ -2244,7 +2248,7 @@ void CopyBoxmonSpecies(void){
     OpenSRAM(MBANK(boxptr));
     Deserialize_Box(&box, GBToRAMAddr(boxptr & 0xffff));
     // INC_HL;
-    uint8_t* hl = box.species;
+    struct NativeBoxMon* hl = box.mons;
     //copy_box_data ['1']
     copy_box_data1;
     // RET;
@@ -2606,7 +2610,7 @@ void StatsScreenDPad(void){
 }
 
 static void BillsPC_CopyMon(void){
-    struct Box box;
+    struct NativeBox box;
     // LD_A_addr(wBillsPC_CursorPosition);
     // LD_HL(wBillsPC_ScrollPosition);
     // ADD_A_hl;
@@ -2619,7 +2623,7 @@ static void BillsPC_CopyMon(void){
     // party:
         // LD_HL(wPartySpecies);
         // CALL(aCopySpeciesToTemp);
-        CopySpeciesToTemp(gPokemon.partySpecies);
+        wram->wCurPartySpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
         // LD_HL(wPartyMonNicknames);
         // CALL(aCopyNicknameToTemp);
         CopyNicknameToTemp(gPokemon.partyMonNickname);
@@ -2645,7 +2649,7 @@ static void BillsPC_CopyMon(void){
         Deserialize_Box(&box, GBToRAMAddr(sBox));
         // LD_HL(sBoxSpecies);
         // CALL(aCopySpeciesToTemp);
-        CopySpeciesToTemp(box.species);
+        CopyNativeSpeciesToTemp(box.mons);
         // LD_HL(sBoxMonNicknames);
         // CALL(aCopyNicknameToTemp);
         CopyNicknameToTemp(box.monNicknames);
@@ -2653,14 +2657,18 @@ static void BillsPC_CopyMon(void){
         // CALL(aCopyOTNameToTemp);
         CopyOTNameToTemp(box.monOT);
         // LD_HL(sBoxMons);
-        struct BoxMon* hl = box.mons;
+        struct NativeBoxMon* hl = box.mons;
         // LD_BC(BOXMON_STRUCT_LENGTH);
         // LD_A_addr(wCurPartyMon);
         // CALL(aAddNTimes);
         // LD_DE(wBufferMon);
         // LD_BC(PARTYMON_STRUCT_LENGTH);
         // CALL(aCopyBytes);
-        CopyBytes(&wram->wBufferMon, hl + wram->wCurPartyMon, sizeof(struct PartyMon));
+        if(!ConvertNativeBoxMonToLegacy(&wram->wBufferMon.mon, hl + wram->wCurPartyMon)) {
+            CloseSRAM();
+            log_err("Native box Pokemon cannot enter the temporary legacy PC buffer.\n");
+            abort();
+        }
         // CALL(aCloseSRAM);
         CloseSRAM();
         // FARCALL(aCalcBufferMonStats);
@@ -2680,7 +2688,7 @@ static void BillsPC_CopyMon(void){
         // PUSH_HL;
         // INC_HL;
         // CALL(aCopySpeciesToTemp);
-        CopySpeciesToTemp(box.species);
+        CopyNativeSpeciesToTemp(box.mons);
         // POP_HL;
         // PUSH_HL;
         // LD_BC(sBoxMonNicknames - sBox);
@@ -3114,11 +3122,11 @@ static void MovePKMNWitoutMail_InsertMon_CopyFromBox(void){
     // LD_A(BANK(sBox));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBox));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_HL(sBoxSpecies);
     // CALL(aCopySpeciesToTemp);
-    CopySpeciesToTemp(box.species);
+    CopyNativeSpeciesToTemp(box.mons);
     // LD_HL(sBoxMonNicknames);
     // CALL(aCopyNicknameToTemp);
     CopyNicknameToTemp(box.monNicknames);
@@ -3164,7 +3172,7 @@ static void MovePKMNWitoutMail_InsertMon_CopyFromParty(void){
     wram->wCurPartyMon = wram->wBillsPC_BackupScrollPosition + wram->wBillsPC_BackupCursorPosition;
     // LD_HL(wPartySpecies);
     // CALL(aCopySpeciesToTemp);
-    CopySpeciesToTemp(gPokemon.partySpecies);
+    wram->wCurPartySpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // LD_HL(wPartyMonNicknames);
     // CALL(aCopyNicknameToTemp);
     CopyNicknameToTemp(gPokemon.partyMonNickname);
@@ -3193,15 +3201,13 @@ static void MovePKMNWitoutMail_InsertMon_CopyToParty(void){
     // RET;
 }
 
-static void CopySpeciesToTemp(const species_t* hl){
-    // LD_A_addr(wCurPartyMon);
-    // LD_C_A;
-    // LD_B(0);
-    // ADD_HL_BC;
-    // LD_A_hl;
-    // LD_addr_A(wCurPartySpecies);
-    // RET;
-    wram->wCurPartySpecies = hl[wram->wCurPartyMon];
+static void CopyNativeSpeciesToTemp(const struct NativeBoxMon* mons){
+    LegacySpeciesId legacySpecies;
+    if(!TrySpeciesIdToLegacy(mons[wram->wCurPartyMon].species, &legacySpecies)) {
+        log_err("Native box species cannot enter the temporary legacy PC selection.\n");
+        abort();
+    }
+    wram->wCurPartySpecies = legacySpecies;
 }
 
 static void CopyNicknameToTemp(const uint8_t (*hl)[MON_NAME_LENGTH]){
@@ -3235,8 +3241,11 @@ static void CopyMonToTemp(const struct PartyMon* hl){
     CopyBytes(&wram->wBufferMon, hl + wram->wCurPartyMon, sizeof(*hl));
 }
 
-static void CopyBoxMonToTemp(const struct BoxMon* hl){
-    CopyBytes(&wram->wBufferMon.mon, hl + wram->wCurPartyMon, sizeof(*hl));
+static void CopyBoxMonToTemp(const struct NativeBoxMon* hl){
+    if(!ConvertNativeBoxMonToLegacy(&wram->wBufferMon.mon, hl + wram->wCurPartyMon)) {
+        log_err("Native box Pokemon cannot enter the temporary legacy PC buffer.\n");
+        abort();
+    }
 }
 
 uint32_t GetBoxPointer(uint8_t b){

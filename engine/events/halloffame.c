@@ -240,25 +240,13 @@ void GetHallOfFameParty(void){
     wram->wHallOfFamePokemonList.winCount = gPlayer.hallOfFameCount;
     // INC_DE;
     struct HOFMon* de = wram->wHallOfFamePokemonList.mon;
-    // LD_HL(wPartySpecies);
-    species_t* hl = gPokemon.partySpecies;
     // LD_C(0);
     uint8_t c = 0;
 
-    while(1) {
+    while(c < gPokemon.partyCount) {
     // next:
         // LD_A_hli;
-        species_t a = *(hl++);
-        // CP_A(-1);
-        // IF_Z goto done;
-        if(a == (species_t)-1) {
-        // done:
-            // LD_A(-1);
-            // LD_de_A;
-            de->species = (species_t)-1;
-            // RET;
-            return;
-        }
+        species_t a = gPokemon.partyMon[c].mon.species;
         // CP_A(EGG);
         // IF_NZ goto mon;
         if(a != EGG) {
@@ -336,6 +324,7 @@ void GetHallOfFameParty(void){
         ++c;
         // goto next;
     }
+    de->species = (species_t)-1;
 }
 
 void AnimateHOFMonEntrance(struct HOFMon* mon){

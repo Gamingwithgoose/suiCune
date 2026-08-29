@@ -14,7 +14,9 @@
 #include <stdlib.h>
 
 static void SetBoxmonOrEggmonCaughtData(struct BoxMon* boxmon, uint8_t level);
+static void SetNativeBoxmonOrEggmonCaughtData(struct NativeBoxMon* boxmon, uint8_t level);
 static void SetGiftMonCaughtData(struct BoxMon* hl, uint8_t b);
+static void SetGiftNativeMonCaughtData(struct NativeBoxMon* mon, uint8_t b);
 
 void CheckPartyFullAfterContest(void){
     // LD_A_addr(wContestMonSpecies);
@@ -292,15 +294,30 @@ static void SetBoxmonOrEggmonCaughtData(struct BoxMon* boxmon, uint8_t level){
     boxmon->caughtGenderLocation = (loc | gender);
 }
 
+static void SetNativeBoxmonOrEggmonCaughtData(struct NativeBoxMon* boxmon, uint8_t level){
+    uint8_t time = ((wram->wTimeOfDay + 1) << 6);
+    boxmon->caughtTimeLevel = time | level;
+
+    uint8_t mapGroup = gCurMapData.mapGroup;
+    uint8_t mapNumber = gCurMapData.mapNumber;
+    if(mapGroup == GROUP_POKECENTER_2F && mapNumber == MAP_POKECENTER_2F) {
+        mapGroup = gCurMapData.backupMapGroup;
+        mapNumber = gCurMapData.backupMapNumber;
+    }
+
+    boxmon->caughtGenderLocation = GetWorldMapLocation(mapGroup, mapNumber)
+        | (gCrystal.playerGender << 7);
+}
+
 void SetBoxMonCaughtData(uint8_t level){
     // LD_A(BANK(sBoxMon1CaughtLevel));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxMon1CaughtLevel));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_HL(sBoxMon1CaughtLevel);
     // CALL(aSetBoxmonOrEggmonCaughtData);
-    SetBoxmonOrEggmonCaughtData(box.mons, level);
+    SetNativeBoxmonOrEggmonCaughtData(box.mons, level);
     Serialize_Box(GBToRAMAddr(sBox), &box);
     // CALL(aCloseSRAM);
     CloseSRAM();
@@ -312,13 +329,13 @@ void SetGiftBoxMonCaughtData(uint8_t b){
     // LD_A(BANK(sBoxMon1CaughtLevel));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxMon1));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_HL(sBoxMon1CaughtLevel);
-    struct BoxMon* hl = box.mons;
+    struct NativeBoxMon* hl = box.mons;
     // POP_BC;
     // CALL(aSetGiftMonCaughtData);
-    SetGiftMonCaughtData(hl, b);
+    SetGiftNativeMonCaughtData(hl, b);
     Serialize_Box(GBToRAMAddr(sBox), &box);
     // CALL(aCloseSRAM);
     CloseSRAM();
@@ -346,6 +363,11 @@ static void SetGiftMonCaughtData(struct BoxMon* hl, uint8_t b){
     // LD_hl_A;
     hl->caughtGenderLocation = LANDMARK_GIFT | ((b & 1) << 7);
     // RET;
+}
+
+static void SetGiftNativeMonCaughtData(struct NativeBoxMon* mon, uint8_t b){
+    mon->caughtTimeLevel = 0;
+    mon->caughtGenderLocation = LANDMARK_GIFT | ((b & 1) << 7);
 }
 
 void SetEggMonCaughtData(uint8_t a){

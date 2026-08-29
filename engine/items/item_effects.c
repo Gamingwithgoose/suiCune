@@ -4362,6 +4362,12 @@ uint8_t GetMaxPPOfMove(void* mon, uint8_t montype, uint8_t n){
 
 }
 
+uint8_t GetMaxPPOfNativeMove(const struct NativeBoxMon* mon, uint8_t n){
+    MoveId move = mon->moves[n];
+    uint8_t basePP = Moves[move].pp;
+    return ComputeMaxPP(basePP | (mon->PP[n] & PP_UP_MASK), basePP) & PP_MASK;
+}
+
 // DEPRECATED
 void GetMthMoveOfNthPartymon(void){
     // LD_A_addr(wCurPartyMon);

@@ -68,10 +68,10 @@ void EvolveAfterBattle(void){
 
     // PUSH_HL;
 
-    return EvolveAfterBattle_MasterLoop(gPokemon.partySpecies - 1);
+    return EvolveAfterBattle_MasterLoop();
 }
 
-void EvolveAfterBattle_MasterLoop(species_t* species){
+void EvolveAfterBattle_MasterLoop(void){
 MasterLoop:
     // LD_HL(wCurPartyMon);
     // INC_hl;
@@ -79,12 +79,10 @@ MasterLoop:
 
     // POP_HL;
 
-    // INC_HL;
-    species++;
     // LD_A_hl;
     // CP_A(0xff);
     // JP_Z (mEvolveAfterBattle_MasterLoop_ReturnToMap);
-    if(*species == (species_t)-1) {
+    if(wram->wCurPartyMon >= gPokemon.partyCount) {
     // ReturnToMap:
         // POP_DE;
         // POP_BC;
@@ -109,7 +107,7 @@ MasterLoop:
     }
 
     // LD_addr_A(wEvolutionOldSpecies);
-    wram->wEvolutionOldSpecies = *species;
+    wram->wEvolutionOldSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
 
     // PUSH_HL;
     // LD_A_addr(wCurPartyMon);
@@ -496,7 +494,7 @@ MasterLoop:
         // POP_HL;
         // LD_A_addr(wTempMonSpecies);
         // LD_hl_A;
-        *species = wram->wTempMon.mon.species;
+        gPokemon.partySpecies[wram->wCurPartyMon] = wram->wTempMon.mon.species;
         // PUSH_HL;
         // LD_L_E;
         // LD_H_D;

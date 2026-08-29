@@ -1,6 +1,6 @@
 void EvolvePokemon(void);
 void EvolveAfterBattle(void);
-void EvolveAfterBattle_MasterLoop(species_t* species);
+void EvolveAfterBattle_MasterLoop(void);
 void UpdateSpeciesNameIfNotNicknamed(void);
 void CancelEvolution(void);
 bool IsMonHoldingEverstone(void);

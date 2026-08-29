@@ -1997,19 +1997,14 @@ void BattleTowerAction_EggTicket(void){
         return;
     // LD_A_addr(wPartyCount);
     // LD_B(0);
-    uint8_t b = 0;
-    // LD_C_A;
-    uint8_t c = gPokemon.partyCount;
-    // LD_HL(wPartySpecies);
-    species_t* hl = gPokemon.partySpecies;
     U82CA(buffer, String_MysteryJP);
 
-    do {
+    for(uint8_t b = 0; b < gPokemon.partyCount; ++b) {
     // loop:
         // LD_A_hli;
         // CP_A(EGG);
         // IF_NZ goto not_egg;
-        if(*(hl++) == EGG) {
+        if(gPokemon.partyMon[b].mon.species == EGG) {
             // PUSH_HL;
             // LD_HL(wPartyMonOTs);
             // LD_DE(NAME_LENGTH_JAPANESE);
@@ -2079,11 +2074,7 @@ void BattleTowerAction_EggTicket(void){
         }
 
     // not_egg:
-        // INC_B;
-        ++b;
-        // DEC_C;
-        // IF_NZ goto loop;
-    } while(--c != 0);
+    }
     // RET;
 }
 

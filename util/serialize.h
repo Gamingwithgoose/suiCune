@@ -17,7 +17,7 @@ uint8_t* Serialize_BattleTowerData(uint8_t* dest, const struct BattleTowerData* 
 uint8_t* Serialize_MapId(uint8_t* dest, struct MapId mapId);
 uint8_t* Serialize_Object(uint8_t* dest, const struct Object* bc);
 uint8_t* Serialize_MapObject(uint8_t* dest, const struct MapObject* bc);
-uint8_t* Serialize_Box(uint8_t* dest, const struct Box* box);
+uint8_t* Serialize_Box(uint8_t* dest, const struct NativeBox* box);
 uint8_t* Serialize_MailMsg(uint8_t* dest, const struct MailMsg* mail);
 uint8_t* Serialize_OfferMon(uint8_t* dest, const struct OfferMon* mail);
 uint8_t* Serialize_OptionsData(uint8_t* dest, const struct OptionsData* data);
@@ -43,7 +43,7 @@ const uint8_t* Deserialize_BattleTowerData(struct BattleTowerData* data, const u
 const uint8_t* Deserialize_MapId(struct MapId* mapId, const uint8_t* src);
 const uint8_t* Deserialize_Object(struct Object* bc, const uint8_t* src);
 const uint8_t* Deserialize_MapObject(struct MapObject* bc, const uint8_t* src);
-const uint8_t* Deserialize_Box(struct Box* box, const uint8_t* src);
+const uint8_t* Deserialize_Box(struct NativeBox* box, const uint8_t* src);
 const uint8_t* Deserialize_MailMsg(struct MailMsg* mail, const uint8_t* src);
 const uint8_t* Deserialize_OfferMon(struct OfferMon* mon, const uint8_t* src);
 const uint8_t* Deserialize_OptionsData(struct OptionsData* data, const uint8_t* src);

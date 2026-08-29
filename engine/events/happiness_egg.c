@@ -10,9 +10,7 @@ void GetFirstPokemonHappiness(void){
     struct PartyMon* hl = gPokemon.partyMon;
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // LD_DE(wPartySpecies);
-    species_t* de = gPokemon.partySpecies;
-
-    while(*de == EGG) {
+    while(hl < gPokemon.partyMon + gPokemon.partyCount && hl->mon.species == EGG) {
     // loop:
         // LD_A_de;
         // CP_A(EGG);
@@ -20,7 +18,6 @@ void GetFirstPokemonHappiness(void){
         // INC_DE;
         // ADD_HL_BC;
         // goto loop;
-        de++;
         hl++;
     }
 
@@ -31,7 +28,7 @@ void GetFirstPokemonHappiness(void){
     // LD_addr_A(wScriptVar);
     wram->wScriptVar = hl->mon.happiness;
     // CALL(aGetPokemonName);
-    GetPokemonName(*de);
+    GetPokemonName(hl->mon.species);
     // JP(mCopyPokemonName_Buffer1_Buffer3);
     CopyPokemonName_Buffer1_Buffer3();
 }
@@ -43,12 +40,12 @@ void CheckFirstMonIsEgg(void){
     // LD_A(TRUE);
     // IF_Z goto egg;
     // XOR_A_A;
-    wram->wScriptVar = (gPokemon.partySpecies[0] == EGG)? TRUE: FALSE;
+    wram->wScriptVar = (gPokemon.partyMon[0].mon.species == EGG)? TRUE: FALSE;
 
 // egg:
     // LD_addr_A(wScriptVar);
     // CALL(aGetPokemonName);
-    GetPokemonName(gPokemon.partySpecies[0]);
+    GetPokemonName(gPokemon.partyMon[0].mon.species);
     // JP(mCopyPokemonName_Buffer1_Buffer3);
     return CopyPokemonName_Buffer1_Buffer3();
 }
@@ -65,7 +62,7 @@ void ChangeHappiness(uint8_t c){
     // LD_A_hl;
     // CP_A(EGG);
     // RET_Z ;
-    if(gPokemon.partySpecies[wram->wCurPartyMon] == EGG)
+    if(gPokemon.partyMon[wram->wCurPartyMon].mon.species == EGG)
         return;
 
     // PUSH_BC;
@@ -175,14 +172,13 @@ void StepHappiness(void){
     // LD_A_de;
     // AND_A_A;
     // RET_Z ;
-    if(gPokemon.partyCount != 0)
+    if(gPokemon.partyCount == 0)
         return;
 
     // LD_C_A;
     uint8_t c = gPokemon.partyCount;
     // LD_HL(wPartyMon1Happiness);
     struct PartyMon* hl = gPokemon.partyMon;
-    species_t* de = gPokemon.partySpecies;
 
     do {
     // loop:
@@ -190,7 +186,7 @@ void StepHappiness(void){
         // LD_A_de;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(*de != EGG) {
+        if(hl->mon.species != EGG) {
             // INC_hl;
             // IF_NZ goto next;
             // LD_hl(0xff);
@@ -205,7 +201,7 @@ void StepHappiness(void){
         // POP_DE;
         // DEC_C;
         // IF_NZ goto loop;
-    } while(hl++, de++, --c != 0);
+    } while(hl++, --c != 0);
     // RET;
 }
 

@@ -251,21 +251,15 @@ uint8_t CheckBreedmonCompatibility(void){
 }
 
 bool DoEggStep(void){
-    // LD_DE(wPartySpecies);
-    species_t* de = gPokemon.partySpecies;
     // LD_HL(wPartyMon1Happiness);
     struct PartyMon* hl = gPokemon.partyMon;
     // LD_C(0);
 
-    while(1) {
+    for(uint8_t i = 0; i < gPokemon.partyCount; ++i, ++hl) {
     // loop:
         // LD_A_de;
         // INC_DE;
-        species_t a = *(de++);
-        // CP_A(-1);
-        // RET_Z ;
-        if(a == (species_t)-1)
-            return false;
+        species_t a = hl->mon.species;
         // CP_A(EGG);
         // IF_NZ goto next;
         if(a == EGG) {
@@ -283,10 +277,10 @@ bool DoEggStep(void){
         // PUSH_DE;
         // LD_DE(PARTYMON_STRUCT_LENGTH);
         // ADD_HL_DE;
-        hl++;
         // POP_DE;
         // goto loop;
     }
+    return false;
 }
 
 void OverworldHatchEgg(void){
@@ -349,21 +343,19 @@ void HatchEggs(void){
         text_end
     };
 
-    // LD_DE(wPartySpecies);
-    species_t* de = gPokemon.partySpecies;
     // LD_HL(wPartyMon1Happiness);
     struct PartyMon* hl = gPokemon.partyMon;
     // XOR_A_A;
     // LD_addr_A(wCurPartyMon);
     uint8_t mon = 0;
 
-    while(*de != (species_t)-1) {
+    while(mon < gPokemon.partyCount) {
     // loop:
         // LD_A_de;
         // INC_DE;
         // CP_A(-1);
         // JP_Z (mHatchEggs_done);
-        species_t species = *(de++);
+        species_t species = hl->mon.species;
         // PUSH_DE;
         // PUSH_HL;
         // CP_A(EGG);
@@ -410,10 +402,7 @@ void HatchEggs(void){
 
             // LD_A_addr(wCurPartySpecies);
             // DEC_DE;
-            --de;
-            // LD_de_A;
-            *de = partySpecies;
-            de++;
+            gPokemon.partySpecies[mon] = partySpecies;
             // LD_addr_A(wNamedObjectIndex);
             // LD_addr_A(wCurSpecies);
             // CALL(aGetPokemonName);

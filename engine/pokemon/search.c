@@ -61,7 +61,7 @@ void MonCheck(void){
 
 //  Check if the player owns any monsters of the species in wScriptVar.
 //  It must exist in either party or PC, and have the player's OT and ID.
-bool CheckOwnMonAnywhere(species_t species){
+bool CheckOwnMonAnywhere(SpeciesId species){
 // If there are no monsters in the party,
 // the player must not own any yet.
     // LD_A_addr(wPartyCount);
@@ -102,7 +102,7 @@ bool CheckOwnMonAnywhere(species_t species){
     // LD_A(BANK(sBoxCount));
     // CALL(aOpenSRAM);
     OpenSRAM(MBANK(asBoxCount));
-    struct Box box;
+    struct NativeBox box;
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // LD_A_addr(sBoxCount);
     // AND_A_A;
@@ -112,7 +112,7 @@ bool CheckOwnMonAnywhere(species_t species){
     if(d != 0) {
         // LD_D_A;
         // LD_HL(sBoxMon1Species);
-        struct BoxMon* bmon = box.mons;
+        struct NativeBoxMon* bmon = box.mons;
         // LD_BC(sBoxMonOTs);
         uint8_t (*ots)[NAME_LENGTH] = box.monOT;
 
@@ -121,7 +121,7 @@ bool CheckOwnMonAnywhere(species_t species){
             // CALL(aCheckOwnMon);
             // IF_NC goto loop;
 
-            if(CheckOwnMon(bmon, *ots, species)) {
+            if(CheckOwnNativeMon(bmon, *ots, species)) {
             // found!
                 // CALL(aCloseSRAM);
                 CloseSRAM();
@@ -191,7 +191,7 @@ bool CheckOwnMonAnywhere(species_t species){
         // ADD_HL_DE;
         // LD_D_H;
         // LD_E_L;
-        const struct BoxMon* bmon = box.mons;
+        const struct NativeBoxMon* bmon = box.mons;
         // POP_HL;
         // PUSH_DE;
         // LD_DE(sBoxMonOTs - sBoxCount);
@@ -202,14 +202,14 @@ bool CheckOwnMonAnywhere(species_t species){
         // POP_HL;
 
         // LD_D_A;
-        d = c;
+        d = box.count;
 
         do {
         // boxmon:
             // CALL(aCheckOwnMon);
             // IF_NC goto loopboxmon;
 
-            if(CheckOwnMon(bmon, ots, species)) {
+            if(CheckOwnNativeMon(bmon, ots, species)) {
             // found!
                 // POP_BC;
                 // CALL(aCloseSRAM);
@@ -222,7 +222,7 @@ bool CheckOwnMonAnywhere(species_t species){
             // PUSH_BC;
             // LD_BC(BOXMON_STRUCT_LENGTH);
             // ADD_HL_BC;
-            hl++;
+            bmon++;
             // POP_BC;
             // CALL(aUpdateOTPointer);
             ots += NAME_LENGTH;
@@ -255,7 +255,7 @@ bool CheckOwnMonAnywhere(species_t species){
 //
 //  outputs:
 //  sets carry if monster matches species, ID, and OT name.
-bool CheckOwnMon(const struct BoxMon* hl, const uint8_t* ot, species_t species){
+static bool CheckOwnMonFields(SpeciesId ownedSpecies, uint16_t ownedId, const uint8_t* ot, SpeciesId species){
     // PUSH_BC;
     // PUSH_HL;
     // PUSH_DE;
@@ -267,7 +267,7 @@ bool CheckOwnMon(const struct BoxMon* hl, const uint8_t* ot, species_t species){
     // LD_B_hl;  // species we have
     // CP_A_B;
     // IF_NZ goto notfound;  // species doesn't match
-    if(hl->species != species)
+    if(ownedSpecies != species)
         return false;
 
 //  check ID number
@@ -280,7 +280,7 @@ bool CheckOwnMon(const struct BoxMon* hl, const uint8_t* ot, species_t species){
     // LD_A_addr(wPlayerID + 1);
     // CP_A_hl;
     // IF_NZ goto notfound;  // ID doesn't match
-    if(hl->id != gPlayer.playerID)
+    if(ownedId != gPlayer.playerID)
         return false;
 
 //  check OT
@@ -327,6 +327,14 @@ bool CheckOwnMon(const struct BoxMon* hl, const uint8_t* ot, species_t species){
     // POP_BC;
     // SCF;
     // RET;
+}
+
+bool CheckOwnMon(const struct BoxMon* mon, const uint8_t* ot, SpeciesId species){
+    return CheckOwnMonFields(mon->species, mon->id, ot, species);
+}
+
+bool CheckOwnNativeMon(const struct NativeBoxMon* mon, const uint8_t* ot, SpeciesId species){
+    return CheckOwnMonFields(mon->species, mon->id, ot, species);
 }
 
 const uint32_t SearchBoxAddressTable[] = {

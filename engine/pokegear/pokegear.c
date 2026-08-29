@@ -4131,7 +4131,7 @@ static struct SpriteAnim* TownMapMon(void){
     // ADD_HL_DE;
     // LD_A_hl;
     // LD_addr_A(wTempIconSpecies);
-    wram->wTempIconSpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+    wram->wTempIconSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
 //  Get FlyMon icon
     // LD_E(0x08);  // starting tile in VRAM
     // FARCALL(aGetSpeciesIcon);

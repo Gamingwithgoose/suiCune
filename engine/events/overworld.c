@@ -173,11 +173,11 @@ bool CheckPartyMove(move_t d){
         // IF_Z goto no;
         // CP_A(-1);
         // IF_Z goto no;
-        if(gPokemon.partySpecies[e] == 0 || gPokemon.partySpecies[e] == 0xff)
+        if(gPokemon.partyMon[e].mon.species == 0)
             return false;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(gPokemon.partySpecies[e] == EGG)
+        if(gPokemon.partyMon[e].mon.species == EGG)
             continue;
 
         // LD_BC(PARTYMON_STRUCT_LENGTH);
@@ -693,7 +693,7 @@ static uint8_t GetSurfType(void){
     // LD_HL(wPartySpecies);
     // ADD_HL_DE;
 
-    species_t sp = gPokemon.partySpecies[wram->wCurPartyMon];
+    species_t sp = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // LD_A_hl;
     // CP_A(PIKACHU);
     // LD_A(PLAYER_SURF_PIKA);
@@ -1462,7 +1462,7 @@ void SetStrengthFlag(void){
     // ADD_HL_DE;
     // LD_A_hl;
     // LD_addr_A(wStrengthSpecies);
-    wram->wStrengthSpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+    wram->wStrengthSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // CALL(aGetPartyNickname);
     GetPartyNickname();
     // RET;

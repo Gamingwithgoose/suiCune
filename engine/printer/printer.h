@@ -26,7 +26,7 @@ void PrintPCBox_Page2(void);
 void PrintPCBox_Page3(void);
 void PrintPCBox_Page4(void);
 void Printer_PrintBoxListSegment(tile_t* hl, uint8_t c);
-tile_t* Printer_GetMonGender(const struct Box* box, tile_t* hl);
+tile_t* Printer_GetMonGender(const struct NativeBox* box, tile_t* hl);
 uint16_t Printer_GetBoxMonSpecies(uint8_t a);
 void Printer_PlaceTopBorder(void);
 void Printer_PlaceSideBorders(void);

@@ -11,9 +11,11 @@
 #include "../../home/menu.h"
 #include "../../home/gfx.h"
 #include "../../home/map.h"
+#include "../../home/pokemon.h"
 #include "../../util/serialize.h"
 #include "../menus/save.h"
 #include "../../data/text/common.h"
+#include <stdlib.h>
 
 static bool v_BillsPC_Jumptable(uint8_t sel);
 
@@ -395,7 +397,7 @@ void ClearPCItemScreen(void){
 }
 
 void CopyBoxmonToTempMon(void){
-    struct Box box;
+    struct NativeBox box;
     // LD_A_addr(wCurPartyMon);
     // LD_HL(sBoxMon1Species);
     // LD_BC(BOXMON_STRUCT_LENGTH);
@@ -407,7 +409,10 @@ void CopyBoxmonToTempMon(void){
     OpenSRAM(MBANK(asBoxMon1Species));
     Deserialize_Box(&box, GBToRAMAddr(sBox));
     // CALL(aCopyBytes);
-    CopyBytes(&wram->wTempMon.mon, box.mons + wram->wCurPartyMon, sizeof(box.mons[0]));
+    if(!ConvertNativeBoxMonToLegacy(&wram->wTempMon.mon, box.mons + wram->wCurPartyMon)) {
+        log_err("Box Pokemon cannot enter the temporary legacy UI record.\n");
+        abort();
+    }
     // CALL(aCloseSRAM);
     CloseSRAM();
     // RET;

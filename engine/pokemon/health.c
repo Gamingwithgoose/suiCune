@@ -10,14 +10,14 @@ void HealParty(void){
     wram->wCurPartyMon = 0;
     // LD_HL(wPartySpecies);
 
-    for(size_t i = 0; i < 6 && gPokemon.partySpecies[i] != (species_t)-1; i++) {
+    for(size_t i = 0; i < gPokemon.partyCount; i++) {
     // loop:
         // LD_A_hli;
         // CP_A(-1);
         // IF_Z goto done;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(gPokemon.partySpecies[i] == EGG)
+        if(gPokemon.partyMon[i].mon.species == EGG)
             continue;
 
         // PUSH_HL;

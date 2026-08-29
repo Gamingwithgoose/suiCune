@@ -304,9 +304,9 @@ void DoBattle(void){
     // ADD_HL_BC;
     // LD_A_hl;
     // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+    wram->wCurPartySpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // LD_addr_A(wTempBattleMonSpecies);
-    wram->wTempBattleMonSpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+    wram->wTempBattleMonSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
     // hlcoord(1, 5, wTilemap);
     // LD_A(9);
     // CALL(aSlideBattlePicOut);
@@ -5793,7 +5793,7 @@ static bool CheckIfCurPartyMonIsFitToFight(void){
     // LD_A_hli;
     // OR_A_hl;
     // RET_NZ ;
-    if(gPokemon.partyMon[wram->wCurPartyMon].HP != 0 && gPokemon.partySpecies[wram->wCurPartyMon] != EGG)
+    if(gPokemon.partyMon[wram->wCurPartyMon].HP != 0 && gPokemon.partyMon[wram->wCurPartyMon].mon.species != EGG)
         return true;
 
     // LD_A_addr(wBattleHasJustStarted);
@@ -5811,7 +5811,7 @@ static bool CheckIfCurPartyMonIsFitToFight(void){
     // CP_A(EGG);
     // LD_HL(mBattleText_AnEGGCantBattle);
     // IF_Z goto print_textbox;
-    if(gPokemon.partySpecies[wram->wCurPartyMon] == EGG) {
+    if(gPokemon.partyMon[wram->wCurPartyMon].mon.species == EGG) {
         StdBattleTextbox(BattleText_AnEGGCantBattle);
     }
     else {
@@ -11185,7 +11185,7 @@ void GiveExperiencePoints(void){
         // ADD_HL_DE;
         // LD_A_hl;
         // LD_addr_A(wCurSpecies);
-        wram->wCurSpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+        wram->wCurSpecies = gPokemon.partyMon[wram->wCurPartyMon].mon.species;
         // CALL(aGetBaseData);
         GetBaseData(wram->wCurSpecies);
         // PUSH_BC;

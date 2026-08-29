@@ -16,7 +16,7 @@ void HoOhChamber(void){
     // LD_A_hl;
     // CP_A(HO_OH);  // is Ho-oh the first Pokémon in the party?
     // IF_NZ goto done;  // if not, we're done
-    if(gPokemon.partySpecies[0] == HO_OH) {
+    if(gPokemon.partyMon[0].mon.species == HO_OH) {
         // CALL(aGetMapAttributesPointer);  // pointless?
         // LD_DE(EVENT_WALL_OPENED_IN_HO_OH_CHAMBER);
         // LD_B(SET_FLAG);

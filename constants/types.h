@@ -680,16 +680,15 @@ battle_struct: MACRO
 \1StructEnd::
 ENDM
 */
-#if defined(__cplusplus) || defined(_MSC_VER)
-struct
-#else
-struct __attribute__((packed)) 
-#endif
-Box
+// Native decoded PC-box state. Crystal SRAM layout is handled explicitly by
+// Serialize_Box/Deserialize_Box rather than by packing this runtime structure.
+struct NativeBox
 {
     uint8_t count;
-    species_t species[MONS_PER_BOX + 1];
-    struct BoxMon mons[MONS_PER_BOX];
+    // Round-trip cache for Crystal's redundant species list. Runtime code uses
+    // mons[i].species; Serialize_Box refreshes active entries from that owner.
+    SpeciesId legacySpecies[MONS_PER_BOX + 1];
+    struct NativeBoxMon mons[MONS_PER_BOX];
     uint8_t monOT[MONS_PER_BOX][NAME_LENGTH];
     uint8_t monNicknames[MONS_PER_BOX][MON_NAME_LENGTH];
 };

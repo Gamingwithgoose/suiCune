@@ -240,11 +240,11 @@ const struct SerialField Struc_MapObject[] = {
 };
 #undef FLD_TYPE
 
-#define FLD_TYPE struct Box
+#define FLD_TYPE struct NativeBox
 const struct SerialField Struc_Box[] = {
     FLD(TY_U8, count),
-    FLD_ARR_(TY_LEGACY_SPECIES, species),
-    FLD_STR_ARR_(STRUC_BOXMON, mons),
+    FLD_ARR_(TY_SPECIES_OR_END, legacySpecies),
+    FLD_STR_ARR_(STRUC_NATIVEBOXMON, mons),
     FLD_ARR(TY_U8, monOT, MONS_PER_BOX * NAME_LENGTH),
     FLD_ARR(TY_U8, monNicknames, MONS_PER_BOX * MON_NAME_LENGTH),
 };
@@ -912,8 +912,17 @@ uint8_t* Serialize_MapObject(uint8_t* dest, const struct MapObject* bc) {
     return Serialize_Struct(dest, Structs + (STRUC_MAPOBJECT), bc);
 }
 
-uint8_t* Serialize_Box(uint8_t* dest, const struct Box* box) {
-    return Serialize_Struct(dest, Structs + (STRUC_BOX), box);
+uint8_t* Serialize_Box(uint8_t* dest, const struct NativeBox* box) {
+    if(box->count > MONS_PER_BOX) {
+        fprintf(stderr, "Cannot serialize native box with invalid count %u.\n", box->count);
+        abort();
+    }
+    struct NativeBox projection = *box;
+    uint8_t count = projection.count;
+    for(uint8_t i = 0; i < count; ++i)
+        projection.legacySpecies[i] = projection.mons[i].species;
+    projection.legacySpecies[count] = SPECIES_LIST_END;
+    return Serialize_Struct(dest, Structs + (STRUC_BOX), &projection);
 }
 
 uint8_t* Serialize_MailMsg(uint8_t* dest, const struct MailMsg* mail) {
@@ -1110,8 +1119,13 @@ const uint8_t* Deserialize_MapObject(struct MapObject* bc, const uint8_t* src) {
     return Deserialize_Struct(bc, Structs + STRUC_MAPOBJECT, src);
 }
 
-const uint8_t* Deserialize_Box(struct Box* box, const uint8_t* src) {
-    return Deserialize_Struct(box, Structs + STRUC_BOX, src);
+const uint8_t* Deserialize_Box(struct NativeBox* box, const uint8_t* src) {
+    const uint8_t* end = Deserialize_Struct(box, Structs + STRUC_BOX, src);
+    if(box->count > MONS_PER_BOX) {
+        fprintf(stderr, "Cannot deserialize Crystal box with invalid count %u.\n", box->count);
+        abort();
+    }
+    return end;
 }
 
 const uint8_t* Deserialize_MailMsg(struct MailMsg* mail, const uint8_t* src) {
@@ -1343,7 +1357,7 @@ quit:
 
 int Test_Serialize_Box(void) {
     int result = 0;
-    struct Box data = {0};
+    struct NativeBox data = {0};
     uint8_t buffer[sBoxEnd - sBox] = {0};
     OpenSRAM(MBANK(asBox));
 
