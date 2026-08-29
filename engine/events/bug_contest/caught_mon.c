@@ -16,12 +16,9 @@ static void BugContest_SetCaughtContestMon_generatestats(void) {
     // LD_HL(wContestMon);
     // CALL(aByteFill);
     ByteFill(&gPokemon.contestMon, sizeof(gPokemon.contestMon), 0);
-    // GeneratePartyMonStats still targets the packed Crystal-era PartyMon.
-    // Keep that dependency localized here until party generation itself is native.
-    struct PartyMon legacy = {0};
-    if(!GeneratePartyMonStats(&legacy, wram->wTempEnemyMonSpecies, wram->wCurPartyLevel, PARTYMON, wram->wBattleMode)
-    || !ConvertPartyMonToNative(&gPokemon.contestMon, &legacy)) {
-        log_err("Unable to create native Bug Contest Pokemon from the legacy generator.\n");
+    if(!GenerateNativePartyMonStats(&gPokemon.contestMon, wram->wTempEnemyMonSpecies,
+                                    wram->wCurPartyLevel, PARTYMON, wram->wBattleMode)) {
+        log_err("Unable to create native Bug Contest Pokemon.\n");
         abort();
     }
 }

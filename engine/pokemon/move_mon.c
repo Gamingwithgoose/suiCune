@@ -37,7 +37,7 @@
 static void DepositBreedmon(uint8_t* nickname, uint8_t* ot, struct NativeBoxMon* dest, uint8_t a);
 static void ShiftBoxMon(struct Box* box);
 static uint16_t CalcMonStat(const uint16_t* statExp, uint16_t dvs, uint8_t b,
-                           uint8_t c, uint8_t baseStat, uint8_t level);
+                           uint8_t c, uint8_t baseStat, uint8_t level, bool statExpBigEndian);
 
 bool TryAddMonToParty(SpeciesId species, uint8_t level){
     LegacySpeciesId legacySpecies;
@@ -62,6 +62,10 @@ bool TryAddMonToParty(SpeciesId species, uint8_t level){
     // RET_NC ;
     if(*partyCount + 1 >= PARTY_LENGTH + 1)
         return false;
+
+    struct PartyMon generated = {0};
+    if(!GeneratePartyMonStats(&generated, species, level, wram->wMonType, wram->wBattleMode))
+        return false;
 // Increase the party count
     // LD_de_A;
     // LD_A_de;  // Why are we doing this?
@@ -83,7 +87,12 @@ bool TryAddMonToParty(SpeciesId species, uint8_t level){
     // INC_DE;
     // LD_A(-1);
     // LD_de_A;
-    partySpecies[hram.hMoveMon] = (species_t)-1;
+    if(hram.hMoveMon < PARTY_LENGTH)
+        partySpecies[hram.hMoveMon] = LEGACY_SPECIES_LIST_END;
+    else if((wram->wMonType & 0xf) != 0)
+        wram->wOTPartyEnd = LEGACY_SPECIES_LIST_END;
+    else
+        gPokemon.partyEnd = LEGACY_SPECIES_LIST_END;
 // Now let's load the OT name.
     // LD_HL(wPartyMonOTs);
     // LD_A_addr(wMonType);
@@ -134,14 +143,24 @@ bool TryAddMonToParty(SpeciesId species, uint8_t level){
     // DEC_A;
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // CALL(aAddNTimes);
-    return GeneratePartyMonStats(de + (hram.hMoveMon - 1), species, level, wram->wMonType, wram->wBattleMode);
+    CopyBytes(de + (hram.hMoveMon - 1), &generated, sizeof(generated));
+    return true;
 }
 
-//  wBattleMode specifies whether it's a wild mon or not.
-//  wMonType specifies whether it's an opposing mon or not.
-//  wCurPartySpecies/wCurPartyLevel specify the species and level.
-//  hl points to the wPartyMon struct to fill.
-bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level, uint8_t monType, uint8_t battleMode){
+bool GeneratePartyMonStats(struct PartyMon* dest, SpeciesId species, uint8_t level, uint8_t monType, uint8_t battleMode){
+    struct NativePartyMon native = {0};
+    if(!GenerateNativePartyMonStats(&native, species, level, monType, battleMode))
+        return false;
+    if(!ConvertNativePartyMonToLegacy(dest, &native)) {
+        log_err("Generated Pokemon species %u cannot enter a legacy party record.\n", species);
+        return false;
+    }
+    return true;
+}
+
+//  Native authoritative Pokemon generator. Legacy party callers convert the
+//  result once in GeneratePartyMonStats; native owners use this directly.
+bool GenerateNativePartyMonStats(struct NativePartyMon* hl, SpeciesId species, uint8_t level, uint8_t monType, uint8_t battleMode){
     // LD_E_L;
     // LD_D_H;
     // PUSH_HL;
@@ -151,12 +170,11 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
     // LD_addr_A(wCurSpecies);
     // CALL(aGetBaseData);
     const struct BaseData* base = GetSpeciesBaseData(species);
-    LegacySpeciesId legacySpecies;
-    if(base == NULL || !TrySpeciesIdToLegacy(species, &legacySpecies))
+    if(hl == NULL || base == NULL)
         return false;
     // LD_A_addr(wBaseDexNo);
     // LD_de_A;
-    hl->mon.species = legacySpecies;
+    hl->mon.species = species;
     // INC_DE;
 
 // Copy the item if it's a wild mon
@@ -195,7 +213,7 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
         // LD_addr_A(wSkipMovesBeforeLevelUp);
         wram->wSkipMovesBeforeLevelUp = FALSE;
         // PREDEF(pFillMoves);
-        FillMoves(hl->mon.moves, hl->mon.PP, species, level);
+        FillNativeMoves(hl->mon.moves, hl->mon.PP, species, level);
     }
     else {
         // LD_DE(wEnemyMonMoves);
@@ -207,7 +225,8 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
         // LD_A_de;
         // LD_hl_A;
         // goto next;
-        CopyBytes(hl->mon.moves, wram->wEnemyMon.moves, sizeof(wram->wEnemyMon.moves));
+        for(size_t i = 0; i < NUM_MOVES; ++i)
+            hl->mon.moves[i] = wram->wEnemyMon.moves[i];
     }
 
 // next:
@@ -234,15 +253,13 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
     // POP_DE;
     // LDH_A_addr(hProduct + 1);
     // LD_de_A;
-    hl->mon.exp[0] = HIGH(exp >> 8);
+    hl->mon.exp = exp;
     // INC_DE;
     // LDH_A_addr(hProduct + 2);
     // LD_de_A;
-    hl->mon.exp[1] = HIGH(exp);
     // INC_DE;
     // LDH_A_addr(hProduct + 3);
     // LD_de_A;
-    hl->mon.exp[2] = LOW(exp);
     // INC_DE;
 
 // Initialize stat experience.
@@ -316,7 +333,7 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
     // INC_HL;
     // INC_HL;
     // CALL(aFillPP);
-    FillPP(hl->mon.PP, hl->mon.moves);
+    FillNativePP(hl->mon.PP, hl->mon.moves);
     // POP_DE;
     // POP_HL;
     // for(int rept = 0; rept < NUM_MOVES; rept++){
@@ -360,7 +377,7 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
     hl->unused = 0;
 
 // Initialize HP.
-    uint16_t* statxp = (uint16_t*)((uint8_t*)hl + offsetof(struct BoxMon, statExp));
+    const uint16_t* statxp = hl->mon.statExp;
     // LD_BC(MON_STAT_EXP - 1);
     // ADD_HL_BC;
     // LD_A(1);
@@ -373,8 +390,7 @@ bool GeneratePartyMonStats(struct PartyMon* hl, SpeciesId species, uint8_t level
     // LDH_A_addr(hProduct + 3);
     // LD_de_A;
     // INC_DE;
-    hl->HP = NativeToBigEndian16(CalcMonStat(statxp, hl->mon.DVs, FALSE,
-                                             STAT_HP, base->hp, level));
+    hl->HP = CalcMonStat(statxp, hl->mon.DVs, FALSE, STAT_HP, base->hp, level, false);
     goto initstats;
 
 
@@ -444,7 +460,7 @@ copywildmonDVs:
     // LD_A_hl;
     // LD_de_A;
     // INC_DE;
-    hl->HP = wram->wEnemyMon.hp;
+    hl->HP = BigEndianToNative16(wram->wEnemyMon.hp);
 
 initstats:
     // LD_A_addr(wBattleMode);
@@ -452,10 +468,14 @@ initstats:
     // IF_NZ goto generatestats;
     if(battleMode == 1) {
         // LD_HL(wEnemyMonMaxHP);
-        hl->maxHP = wram->wEnemyMon.maxHP;
+        hl->maxHP = BigEndianToNative16(wram->wEnemyMon.maxHP);
         // LD_BC(PARTYMON_STRUCT_LENGTH - MON_MAXHP);
         // CALL(aCopyBytes);
-        CopyBytes(hl->stats, (uint16_t*)wram_ptr(wEnemyMonStats), sizeof(hl->stats));
+        for(size_t i = 0; i < lengthof(hl->stats); ++i) {
+            uint16_t legacyStat;
+            CopyBytes(&legacyStat, wram->wEnemyMon.stats[i], sizeof(legacyStat));
+            hl->stats[i] = BigEndianToNative16(legacyStat);
+        }
         // POP_HL;
         // goto registerunowndex;
     }
@@ -466,7 +486,7 @@ initstats:
         // ADD_HL_BC;
         // LD_B(FALSE);
         // CALL(aCalcMonStats);
-        CalcMonStats_PartyMon(hl, FALSE);
+        CalcNativeMonStats(hl, FALSE);
     }
 
 // registerunowndex:
@@ -2050,7 +2070,8 @@ void CalcMonStats(uint16_t* stats, const uint16_t* statExp, uint16_t dvs, uint8_
     // loop:
         // INC_C;
         // CALL(aCalcMonStatC);
-        uint16_t stat = NativeToBigEndian16(CalcMonStat(statExp, dvs, b, c, base->stats[c - 1], level));
+        uint16_t stat = NativeToBigEndian16(CalcMonStat(statExp, dvs, b, c,
+                                                       base->stats[c - 1], level, true));
         log_debug("Stat[%d]: %d\n", c - STAT_HP, BigEndianToNative16(stat));
         // LDH_A_addr(hMultiplicand + 1);
         // LD_de_A;
@@ -2068,27 +2089,43 @@ void CalcMonStats(uint16_t* stats, const uint16_t* statExp, uint16_t dvs, uint8_
 }
 
 void CalcMonStats_PartyMon(struct PartyMon* mon, uint8_t b){
-#if !defined(_MSC_VER)
-    // MSVC doesn't like this
-    const uint16_t* statxp = (uint16_t*)((uint8_t*)mon + offsetof(struct BoxMon, statExp));
-    uint16_t* stats = (uint16_t*)((uint8_t*)mon + offsetof(struct PartyMon, maxHP));
-#else
-    // GCC doesn't like this
-    const uint16_t* statxp = ((const struct BoxMon*)mon)->statExp;
-    uint16_t* stats = ((const struct PartyMon*)mon)->maxHP;
-#endif
     const struct BaseData* base = GetSpeciesBaseData(mon->mon.species);
     if(base == NULL)
         return;
-    return CalcMonStats(stats, statxp, mon->mon.DVs, b, base, mon->mon.level);
+
+    uint16_t calculated[STAT_SDEF - STAT_HP + 1];
+    CalcMonStats(calculated, mon->mon.statExp, mon->mon.DVs, b, base, mon->mon.level);
+    mon->maxHP = calculated[0];
+    for(size_t i = 0; i < lengthof(mon->stats); ++i)
+        mon->stats[i] = calculated[i + 1];
+}
+
+void CalcNativeMonStats(struct NativePartyMon* mon, uint8_t useStatExp){
+    const struct BaseData* base = GetSpeciesBaseData(mon->mon.species);
+    if(base == NULL)
+        return;
+
+    uint16_t calculated[STAT_SDEF - STAT_HP + 1];
+    for(uint8_t c = STAT_HP; c <= STAT_SDEF; ++c) {
+        calculated[c - STAT_HP] = CalcMonStat(mon->mon.statExp, mon->mon.DVs,
+                                              useStatExp, c, base->stats[c - 1],
+                                              mon->mon.level, false);
+    }
+    mon->maxHP = calculated[0];
+    for(size_t i = 0; i < lengthof(mon->stats); ++i)
+        mon->stats[i] = calculated[i + 1];
 }
 
 void CalcMonStats_BattleMon(struct BattleMon* mon){
-    uint16_t* stats = (uint16_t*)((uint8_t*)&wram->wEnemyMon + offsetof(struct BattleMon, maxHP));
     const struct BaseData* base = GetSpeciesBaseData(mon->species);
     if(base == NULL)
         return;
-    return CalcMonStats(stats, NULL, mon->dvs, FALSE, base, mon->level);
+
+    uint16_t calculated[STAT_SDEF - STAT_HP + 1];
+    CalcMonStats(calculated, NULL, mon->dvs, FALSE, base, mon->level);
+    mon->maxHP = calculated[0];
+    for(size_t i = 0; i < lengthof(mon->stats); ++i)
+        CopyBytes(mon->stats[i], &calculated[i + 1], sizeof(calculated[i + 1]));
 }
 
 //  'c' is 1-6 and points to the BaseStat
@@ -2099,11 +2136,12 @@ void CalcMonStats_BattleMon(struct BattleMon* mon){
 //  5: SpAtk
 //  6: SpDef
 uint16_t CalcMonStatC(const uint16_t* statExp, uint16_t dvs, uint8_t b, uint8_t c){
-    return CalcMonStat(statExp, dvs, b, c, wram->wBaseStats[c - 1], wram->wCurPartyLevel);
+    return CalcMonStat(statExp, dvs, b, c, wram->wBaseStats[c - 1],
+                       wram->wCurPartyLevel, true);
 }
 
 static uint16_t CalcMonStat(const uint16_t* statExp, uint16_t dvs, uint8_t b,
-                           uint8_t c, uint8_t baseStat, uint8_t level){
+                           uint8_t c, uint8_t baseStat, uint8_t level, bool statExpBigEndian){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;
@@ -2130,15 +2168,15 @@ static uint16_t CalcMonStat(const uint16_t* statExp, uint16_t dvs, uint8_t b,
     // AND_A_A;
     // IF_Z goto no_stat_exp;
     if(d) {
-        const uint16_t* exp = statExp;
-        if(c == STAT_SDEF)
-            exp--;
+        size_t statIndex = ((c == STAT_SDEF)? STAT_SATK: c) - STAT_HP;
         // ADD_HL_BC;
         // PUSH_DE;
         // LD_A_hld;
         // LD_E_A;
         // LD_D_hl;
-        uint16_t de = BigEndianToNative16(exp[c]);
+        uint16_t de = statExp[statIndex];
+        if(statExpBigEndian)
+            de = BigEndianToNative16(de);
         // FARCALL(aGetSquareRoot);
         b = GetSquareRoot(de);
         // POP_DE;

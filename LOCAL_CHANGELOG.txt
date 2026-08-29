@@ -969,6 +969,156 @@ Next recommended native-conversion task
    the old save format further.
 
 
+Date/session: 2026-08-29 - Native Pokemon generation and stat-calculation boundary
+==================================================================================
+
+Task worked on
+--------------
+Continued from the committed native Bug Contest and Day-Care ownership slices.
+Made Pokemon generation itself native so native owners no longer have to create
+a packed Crystal `PartyMon` and immediately convert it. Kept one checked legacy
+wrapper for the still-unmigrated player/opponent party arrays.
+
+Starting repository state
+-------------------------
+- HEAD was `f9bff3dce441f1a2ce26c71e64c764d33a46d5e6` on `main`.
+- The user's committed `bindings.json` change was present and was not modified.
+- `lib/libmobile` was already dirty and remains an untouched pre-existing local
+  change.
+- No commit, push, branch, reset, restore, clean, or history operation was
+  performed.
+
+Files modified
+--------------
+- `engine/pokemon/move_mon.c`: made native Pokemon generation authoritative,
+  added host-native stat calculation/storage, retained checked legacy output,
+  made party insertion transactional, corrected party-list terminator handling,
+  and removed pointer/offset assumptions from stat result storage.
+- `engine/pokemon/move_mon.h`: exposed native generation and native stat
+  calculation APIs.
+- `engine/events/bug_contest/caught_mon.c`: creates the authoritative native
+  contest Pokemon directly instead of generating a packed temporary record.
+- `LOCAL_CHANGELOG.txt`: appended this handoff.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural changes actually made
+-----------------------------------
+- `GenerateNativePartyMonStats` is now the primary generator. It writes
+  `SpeciesId`, `ItemId`, `MoveId`, native `uint32_t` experience, host-native stat
+  experience, HP, maximum HP, and battle stats directly into `NativePartyMon`.
+- `GeneratePartyMonStats` is now only a checked compatibility boundary: it
+  generates one native record and converts it once into the packed destination.
+- Native move generation and PP initialization use `FillNativeMoves` and
+  `FillNativePP`; wild battle moves/items are widened at import rather than
+  dictating the native record width.
+- Wild battle HP and stats are decoded from the packed battle record into host
+  values when entering the native generator.
+- `CalcNativeMonStats` calculates directly into host-native values. The common
+  stat formula explicitly distinguishes host-native stat experience from the
+  big-endian values in packed Crystal records.
+- Legacy PartyMon/BattleMon stat writers now calculate into a local six-stat
+  result and assign each real field explicitly; they no longer rely on pointer
+  arithmetic across adjacent struct members. BattleMon calculation now updates
+  the BattleMon passed by the caller rather than always targeting `wEnemyMon`.
+- `TryAddMonToParty` now completes generation/conversion before incrementing the
+  party count or writing names/species, so a failed legacy conversion cannot
+  leave a partially inserted Pokemon.
+
+Behavior/source corrections made
+--------------------------------
+- Stat-experience selection now uses HP/Attack/Defense/Speed/Special indexes
+  0-4 explicitly, with Sp. Def sharing the Special stat-experience field. The
+  translated C previously indexed from the real array start as though the
+  pointer were still the assembly routine's conceptual `MON_STAT_EXP - 1`,
+  causing shifted and potentially out-of-range reads when stat experience was
+  enabled.
+- Adding the sixth party Pokemon now writes the explicit `partyEnd` or
+  `wOTPartyEnd` byte instead of indexing one element beyond the six-entry
+  species array.
+
+Temporary migration bridges and exact removal conditions
+--------------------------------------------------------
+- `GeneratePartyMonStats` remains for packed player/opponent party callers.
+  Remove it when both authoritative party owners store `NativePartyMon` and
+  their creation paths call `GenerateNativePartyMonStats` directly.
+- `TryAddMonToParty` still inserts into packed `PartyMon` and byte-sized species
+  lists after checked conversion. Replace that destination when player-party
+  ownership migrates; retain conversion only for genuinely external link/mobile
+  records.
+- Wild capture generation still imports from packed `wEnemyMon` because the
+  battle runtime remains legacy-shaped. Remove that import when BattleMon
+  ownership becomes native.
+- `CalcMonStats`, `CalcMonStats_PartyMon`, `CalcMonStats_BattleMon`, and
+  `CalcMonStatC` remain packed/big-endian compatibility APIs. Remove each after
+  its remaining party, battle, link, or predef callers use native Pokemon/stat
+  state.
+
+Compatibility and save implications
+-----------------------------------
+- No save format or serialized width changed in this session.
+- Existing player/opponent party generation still receives the same packed
+  structure through an explicit checked conversion. Expanded IDs that cannot
+  enter that destination fail rather than truncate.
+- The native Bug Contest Pokemon no longer depends on packed-ID
+  representability during generation; the temporary Crystal save/party/box
+  export boundaries remain responsible for any later representability check.
+
+Static source audit performed
+-----------------------------
+- Inspected all `GeneratePartyMonStats`, `GenerateNativePartyMonStats`,
+  `CalcMonStats`, `CalcNativeMonStats`, and `CalcMonStatC` call sites.
+- Verified the three remaining `CalcMonStatC` callers pass the actual five-entry
+  packed stat-experience array, matching the corrected explicit index logic.
+- Reviewed native/legacy endian transitions for experience, HP, maximum HP,
+  stats, and stat experience.
+- Inspected the complete source diff and ran `git diff --check`; only unrelated
+  line-ending warnings for existing files were emitted.
+- Confirmed `bindings.json` and the pre-existing dirty `lib/libmobile` submodule
+  were not modified.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None. No compiler, CMake configure/build, Make/Ninja, executable, CTest, or
+  runtime smoke test was invoked.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Known source-level risks / validation notes
+-------------------------------------------
+- The native generator and stat-path refactor are source-audited but not
+  compiler- or runtime-validated.
+- Current native generation still queries the present `NUM_POKEMON` and
+  `NUM_ATTACKS` content databases. Wider IDs are preserved by the model, but
+  actual expanded records require the later native content-database expansion.
+- Player party and opponent party remain packed authoritative owners, so this
+  session removes the generation bridge for native owners but does not complete
+  the full player-party migration.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Native Contest Pokemon generation is complete and no longer round-trips
+  through `PartyMon`. The Day-Care and pending egg remain native from the prior
+  session. Player/opponent party ownership remains legacy.
+- Next migrate `PokemonData.partySpecies` and `PokemonData.partyMon` together to
+  `SpeciesId`/`NativePartyMon`. Begin with party creation, switching/removal,
+  search/menu/field-item consumers, then stage checked packed copies only at the
+  still-legacy battle, link/mobile, PC-box, and temporary-WRAM boundaries. Do not
+  introduce a mirrored party sidecar.
+
+
 Date/session: 2026-08-28 - Phase 1 continuation, native Day-Care and egg ownership
 ================================================================================
 
@@ -1147,3 +1297,14 @@ Next recommended native-conversion task
    boundaries during that transition.
 4. Migrate PC box ownership after the player party is coherent, then move
    directly into the versioned PC-only `save.dat` persistence phase.
+
+
+Latest handoff marker: 2026-08-29
+---------------------------------
+The full 2026-08-29 "Native Pokemon generation and stat-calculation boundary"
+section above is the latest session record. It follows from, and does not
+precede, the 2026-08-28 Day-Care work despite its insertion position in this
+append-only file. The current stopping point is native Pokemon generation with
+the player/opponent party ownership migration still next.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
