@@ -714,7 +714,7 @@ const struct SerialStruct Structs[] = {
     serial_struct(STRUC_BATTLETOWERDATA, BattleTowerData),
     serial_struct(STRUC_OBJECT, Object),
     serial_struct(STRUC_MAPOBJECT, MapObject),
-    serial_struct(STRUC_BOX, Box),
+    [STRUC_BOX] = {sizeof(struct NativeBox), lengthof(Struc_Box), Struc_Box},
     serial_struct(STRUC_MAILMSG, MailMsg),
     serial_struct(STRUC_OFFERMON, OfferMon),
     serial_struct(STRUC_OPTIONSDATA, OptionsData),

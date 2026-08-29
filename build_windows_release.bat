@@ -64,6 +64,11 @@ if not exist "%RELEASE_EXE%" (
 )
 
 echo.
+echo Packaging runtime assets...
+call :package_runtime_assets
+if errorlevel 1 goto :package_failed
+
+echo.
 echo Build complete:
 echo "%RELEASE_EXE%"
 echo.
@@ -85,3 +90,55 @@ if "%PAUSE_ON_FAILURE%"=="1" (
     pause >nul
 )
 exit /b 1
+
+:package_failed
+echo.
+echo ============================================================
+echo ERROR: The executable built, but runtime asset packaging failed.
+echo ============================================================
+echo.
+echo The incomplete Release folder should not be used.
+echo.
+if "%PAUSE_ON_FAILURE%"=="1" (
+    echo Press any key to close this window...
+    pause >nul
+)
+exit /b 1
+
+:package_runtime_assets
+where robocopy >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: Windows robocopy was not found.
+    exit /b 1
+)
+
+robocopy "%SUICUNE_ROOT%\audio" "%RELEASE_DIR%\audio" *.bin /S /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+
+robocopy "%SUICUNE_ROOT%\data" "%RELEASE_DIR%\data" *.bin *.json *.txt /S /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+
+robocopy "%SUICUNE_ROOT%\gfx" "%RELEASE_DIR%\gfx" *.attrmap *.bin *.pal *.png *.rle *.tilemap *.ttf /S /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+
+robocopy "%SUICUNE_ROOT%\maps" "%RELEASE_DIR%\maps" *.blk /S /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+
+robocopy "%SUICUNE_ROOT%\mobile" "%RELEASE_DIR%\mobile" *.bin /S /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+
+if not exist "%RELEASE_DIR%\bindings.json" (
+    if exist "%SUICUNE_ROOT%\bindings.json" (
+        copy /Y "%SUICUNE_ROOT%\bindings.json" "%RELEASE_DIR%\bindings.json" >nul
+        if errorlevel 1 exit /b 1
+    )
+)
+
+if not exist "%RELEASE_DIR%\server.json" (
+    if exist "%SUICUNE_ROOT%\server.json" (
+        copy /Y "%SUICUNE_ROOT%\server.json" "%RELEASE_DIR%\server.json" >nul
+        if errorlevel 1 exit /b 1
+    )
+)
+
+exit /b 0

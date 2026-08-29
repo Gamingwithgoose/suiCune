@@ -1840,11 +1840,196 @@ Next recommended action
   units will be rebuilt.
 
 
+Session: 2026-08-29 — Second reported Windows compile-error repair
+==================================================================
+
+Task worked on
+--------------
+- Repaired the three `engine/pokemon/move_mon.c` failures exposed by the user's
+  next clean Windows Release build attempt.
+
+Files modified
+--------------
+- `engine/pokemon/move_mon.c`: used the current semantic `BaseData.HP` member,
+  included `<stdlib.h>` for the checked Day-Care conversion's `abort`, and
+  copied packed legacy stat-experience values into aligned local storage before
+  passing them to the stat calculator.
+- `LOCAL_CHANGELOG.txt`: documented the reported errors and source repair.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural and compatibility implications
+--------------------------------------------
+- No compiler warning was suppressed. `PartyMon` remains a transitional packed
+  Crystal-format record, so its stat-experience array is explicitly copied by
+  value into naturally aligned storage at the calculation boundary.
+- The existing big-endian conversion inside `CalcMonStats` remains authoritative;
+  copying the encoded 16-bit values preserves existing stat behavior.
+- The HP base-stat rename and standard-library declaration are source-integration
+  corrections only and do not alter save or runtime formats.
+- No temporary migration structure or new compatibility layer was introduced.
+
+Build/runtime validation
+------------------------
+- User-reported build: FAILED before this repair on obsolete `BaseData.hp`, a
+  missing `abort` declaration, and an address-of-packed-member warning promoted
+  to an error.
+- Agent build/run/test: NOT PERFORMED — per user instruction.
+
+Suspected source-level risks and stopping point
+-----------------------------------------------
+- These reported errors are source-resolved, but later translation units or the
+  final link may expose additional failures when the user's clean build proceeds.
+- The native-conversion stopping point otherwise remains unchanged.
+
+Next recommended action
+-----------------------
+- Run `build_windows_release.bat` again and report the next compiler/linker
+  output, if any.
+
+
+Session: 2026-08-29 — NativeBox serializer-registry repair
+==========================================================
+
+Task worked on
+--------------
+- Repaired the serializer metadata failure exposed by the user's next Windows
+  Release build without reverting native decoded PC-box ownership.
+
+Files modified
+--------------
+- `util/serialize.c`: changed the `STRUC_BOX` registry entry's runtime size from
+  removed `struct Box` to `struct NativeBox`, while deliberately retaining the
+  existing `STRUC_BOX` format ID and `Struc_Box` serialization field table.
+- `LOCAL_CHANGELOG.txt`: documented the reported error and non-regressive fix.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural and compatibility implications
+--------------------------------------------
+- Native decoded `NativeBox` remains the runtime PC-box owner. No packed legacy
+  box structure, mirror, fallback, or compatibility wrapper was reintroduced.
+- `STRUC_BOX` remains the stable internal serializer identifier and `Struc_Box`
+  remains the explicit Crystal SRAM projection. Only the in-memory structure
+  size used for serializer bounds/offset validation was stale.
+- Serialized box field order and widths are unchanged: count, checked legacy
+  species-list projection, native BoxMon field projection, OT names, and
+  nicknames still use the existing descriptor.
+- No save-format change or temporary migration code was introduced.
+
+Build/runtime validation
+------------------------
+- User-reported build: FAILED before this repair because the serializer registry
+  still evaluated `sizeof(struct Box)` after that runtime type was removed.
+- Agent build/run/test: NOT PERFORMED — per user instruction.
+
+Regression review and stopping point
+------------------------------------
+- Repository references confirm all live box serializer APIs and consumers use
+  `struct NativeBox`; the stale registry size expression was the remaining
+  `struct Box` reference in the audited serializer path.
+- This fix advances the intended native ownership migration and does not undo
+  earlier PC-box work.
+- Later translation units or final linking may expose additional build failures
+  when the user's clean build proceeds.
+
+Next recommended action
+-----------------------
+- Run `build_windows_release.bat` again and report the next compiler/linker
+  output, if any.
+
+
+Session: 2026-08-29 — Windows Release runtime packaging
+=======================================================
+
+Task worked on
+--------------
+- Diagnosed the user's successful executable immediately exiting when launched
+  from the generated `Release` directory and corrected the release packaging.
+
+Files modified
+--------------
+- `build_windows_release.bat`: after a successful link, now packages the
+  runtime-only assets required by the executable into matching subdirectories
+  under `Release`.
+- `LOCAL_CHANGELOG.txt`: documented the runtime diagnosis and packaging fix.
+
+Files created
+-------------
+- None in source control. Running the build script populates generated runtime
+  asset directories under `Release`.
+
+Files deleted
+-------------
+- None.
+
+Diagnosis and exact purpose
+---------------------------
+- The successful build had produced only `Release/suiCune.exe`. Startup calls
+  `JSONLoadTables` and later native loaders using relative paths such as
+  `data/items/marts.json`, `data/pokemon/base_stats.json`, audio binaries, map
+  blocks, and graphics assets.
+- Launching the executable directly made `Release` its working directory. With
+  none of those assets present, JSON parsing reached invalid/missing input and
+  the window terminated during startup.
+- The batch file now copies only runtime formats from `audio`, `data`, `gfx`,
+  `maps`, and `mobile`, preserving their relative directory layout. It does not
+  copy C sources, headers, object files, or repository metadata.
+- Default `bindings.json` and `server.json` are copied only when absent, so a
+  user's Release-local settings are not overwritten by later rebuilds.
+- Asset copies update changed packaged assets but do not delete saves or other
+  user-created files already present in `Release`.
+
+Architectural and regression implications
+------------------------------------------
+- No game logic, native data type, PC-box ownership, serializer behavior, save
+  format, or earlier native-conversion source change was reverted or bypassed.
+- This is a distribution/build-layout correction: the current native loaders
+  continue to use their existing paths, now backed by a complete standalone
+  Release directory.
+- No hardcoded gameplay fallback, missing-asset suppression, or legacy emulator
+  path was added.
+
+Build/runtime validation
+------------------------
+- User-reported build: SUCCEEDED before this packaging correction.
+- User-reported runtime: window opened and immediately closed from the
+  executable-only Release directory.
+- Agent build/run/test: NOT PERFORMED — per user instruction.
+
+Suspected source-level risks and stopping point
+-----------------------------------------------
+- The missing startup assets are source-confirmed from the Release contents and
+  loader paths. Runtime confirmation still requires the user to rebuild so the
+  packaging step runs.
+- If a packaged build still exits, the next step is to capture its runtime
+  stderr/log output rather than infer another cause.
+- The native-conversion stopping point otherwise remains unchanged.
+
+Next recommended action
+-----------------------
+- Run `build_windows_release.bat` again. Confirm that `Release` contains
+  `audio`, `data`, `gfx`, `maps`, and `mobile` before launching
+  `Release/suiCune.exe`.
+
+
 Latest handoff marker: 2026-08-29
 ---------------------------------
-The full 2026-08-29 "Reported Windows compile-error repair" section above is the
-latest session record. `build_windows_release.bat` remains ready for user
-execution and targets `Release/suiCune.exe`. The native-conversion stopping
+The full 2026-08-29 "Windows Release runtime packaging" section above is the
+latest session record. `build_windows_release.bat` now builds and packages the
+runtime assets required by `Release/suiCune.exe`. The native-conversion stopping
 point remains consolidated normal party-species reads, with full native
 player/opponent party ownership, mutation migration, and persistent native PC
 storage still unfinished.

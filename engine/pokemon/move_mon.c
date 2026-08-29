@@ -30,6 +30,7 @@
 #include "../../util/serialize.h"
 #include "../../data/moves/moves.h"
 #include <stddef.h>
+#include <stdlib.h>
 #include "../../data/text/common.h"
 
 #define RANDY_OT_ID (1001)
@@ -390,7 +391,7 @@ bool GenerateNativePartyMonStats(struct NativePartyMon* hl, SpeciesId species, u
     // LDH_A_addr(hProduct + 3);
     // LD_de_A;
     // INC_DE;
-    hl->HP = CalcMonStat(statxp, hl->mon.DVs, FALSE, STAT_HP, base->hp, level, false);
+    hl->HP = CalcMonStat(statxp, hl->mon.DVs, FALSE, STAT_HP, base->HP, level, false);
     goto initstats;
 
 
@@ -1993,8 +1994,15 @@ void CalcMonStats_PartyMon(struct PartyMon* mon, uint8_t b){
     if(base == NULL)
         return;
 
+    // PartyMon remains a packed Crystal-format transition record. Copy its
+    // encoded stat experience values into aligned storage before passing them
+    // to the calculator; CalcMonStats performs the existing endian conversion.
+    uint16_t statExp[lengthof(mon->mon.statExp)];
+    for(size_t i = 0; i < lengthof(statExp); ++i)
+        statExp[i] = mon->mon.statExp[i];
+
     uint16_t calculated[STAT_SDEF - STAT_HP + 1];
-    CalcMonStats(calculated, mon->mon.statExp, mon->mon.DVs, b, base, mon->mon.level);
+    CalcMonStats(calculated, statExp, mon->mon.DVs, b, base, mon->mon.level);
     mon->maxHP = calculated[0];
     for(size_t i = 0; i < lengthof(mon->stats); ++i)
         mon->stats[i] = calculated[i + 1];
