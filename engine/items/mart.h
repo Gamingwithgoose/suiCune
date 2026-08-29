@@ -4,11 +4,12 @@ void HerbShop(void);
 void BargainShop(void);
 void Pharmacist(void);
 void RooftopSale(void);
-void LoadMartPointer(const item_t* ptr, uint32_t size);
-const item_t* GetMart(uint16_t de);
+void LoadMartPointer(const ItemId* ptr, size_t size);
+void LoadPricedMartPointer(const item_price_s* ptr, size_t size);
+const ItemId* GetMart(uint16_t de);
 void StandardMart(void);
 void FarReadMart(void);
-void GetMartItemPrice(item_price_s* hl, item_t a);
+void GetMartItemPrice(item_price_s* hl, ItemId item);
 void GetMartPrice(item_price_s* hl, uint16_t price);
 void ReadMart(void);
 void BuyMenu(void);
@@ -62,5 +63,5 @@ void PlayTransactionSound(void);
 void MartTextbox(const txt_cmd_s* hl);
 //#include "data/items/rooftop_sale.h"
 //#include "data/items/bargain_shop.h"
-extern item_t* Marts[NUM_MARTS+1];
+extern ItemId* Marts[NUM_MARTS+1];
 extern size_t MartsSizes[NUM_MARTS+1];

@@ -104,11 +104,12 @@ void BattleCommand_BeatUp(void){
         // LD_A_addr(wEnemyMonSpecies);
         // LD_addr_A(wCurSpecies);
         wram->wCurSpecies = wram->wEnemyMon.species;
-        // CALL(aGetBaseData);
-        GetBaseData(wram->wEnemyMon.species);
+        const struct BaseData* defenderBase = GetSpeciesBaseData(wram->wEnemyMon.species);
+        if(defenderBase == NULL)
+            goto beatup_fail;
         // LD_A_addr(wBaseDefense);
         // LD_C_A;
-        gBattleCmdState.c = wram->wBaseDefense;
+        gBattleCmdState.c = defenderBase->def;
 
         // PUSH_BC;
         // LD_A(MON_SPECIES);
@@ -116,12 +117,13 @@ void BattleCommand_BeatUp(void){
         // LD_A_hl;
         // LD_addr_A(wCurSpecies);
         wram->wCurSpecies = mon->mon.species;
-        // CALL(aGetBaseData);
-        GetBaseData(mon->mon.species);
+        const struct BaseData* attackerBase = GetSpeciesBaseData(mon->mon.species);
+        if(attackerBase == NULL)
+            goto beatup_fail;
         // LD_A_addr(wBaseAttack);
         // POP_BC;
         // LD_B_A;
-        gBattleCmdState.b = wram->wBaseAttack;
+        gBattleCmdState.b = attackerBase->atk;
 
         // PUSH_BC;
         // LD_A(MON_LEVEL);
@@ -256,11 +258,12 @@ void BattleCommand_BeatUp(void){
         // LD_A_addr(wBattleMonSpecies);
         // LD_addr_A(wCurSpecies);
         wram->wCurSpecies = wram->wBattleMon.species;
-        // CALL(aGetBaseData);
-        GetBaseData(wram->wBattleMon.species);
+        const struct BaseData* defenderBase = GetSpeciesBaseData(wram->wBattleMon.species);
+        if(defenderBase == NULL)
+            goto beatup_fail;
         // LD_A_addr(wBaseDefense);
         // LD_C_A;
-        gBattleCmdState.c = wram->wBaseDefense;
+        gBattleCmdState.c = defenderBase->def;
 
         // PUSH_BC;
         // LD_A(MON_SPECIES);
@@ -268,12 +271,13 @@ void BattleCommand_BeatUp(void){
         // LD_A_hl;
         // LD_addr_A(wCurSpecies);
         wram->wCurSpecies = mon->mon.species;
-        // CALL(aGetBaseData);
-        GetBaseData(mon->mon.species);
+        const struct BaseData* attackerBase = GetSpeciesBaseData(mon->mon.species);
+        if(attackerBase == NULL)
+            goto beatup_fail;
         // LD_A_addr(wBaseAttack);
         // POP_BC;
         // LD_B_A;
-        gBattleCmdState.b = wram->wBaseAttack;
+        gBattleCmdState.b = attackerBase->atk;
 
         // PUSH_BC;
         // LD_A(MON_LEVEL);

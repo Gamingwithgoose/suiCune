@@ -858,8 +858,9 @@ void DayCare_InitBreeding(void){
     // LD_addr_A(wEggMonSpecies);
     gPokemon.eggMon.species = wram->wCurPartySpecies;
 
-    // CALL(aGetBaseData);
-    GetBaseData(gPokemon.eggMon.species);
+    const struct BaseData* eggBase = GetSpeciesBaseData(gPokemon.eggMon.species);
+    if(eggBase == NULL)
+        return;
     // LD_HL(wEggMonNickname);
     // LD_DE(mDayCare_InitBreeding_String_EGG);
     // CALL(aCopyName2);
@@ -889,7 +890,7 @@ void DayCare_InitBreeding(void){
     // LD_A_addr(wCurPartyLevel);
     // LD_D_A;
     // CALLFAR(aCalcExpAtLevel);
-    uint32_t exp = CalcExpAtLevel(wram->wCurPartyLevel);
+    uint32_t exp = CalcExpAtLevelWithGrowthRate(eggBase->growthRate, wram->wCurPartyLevel);
     // LD_HL(wEggMonExp);
     // LDH_A_addr(hMultiplicand);
     // LD_hli_A;
@@ -1006,7 +1007,7 @@ SkipDVs:
     // LD_A_addr(wBaseEggSteps);
     // LD_HL(wEggMonHappiness);
     // LD_hli_A;
-    gPokemon.eggMon.happiness = wram->wBaseEggSteps;
+    gPokemon.eggMon.happiness = eggBase->eggSteps;
     // XOR_A_A;
     // LD_hli_A;
     gPokemon.eggMon.pokerusStatus = 0;

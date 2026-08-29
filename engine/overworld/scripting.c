@@ -56,6 +56,14 @@
 #include "../../mobile/mobile_41.h"
 #include <assert.h>
 
+static bool SetLegacyScriptItem(ItemId item) {
+    return TryItemIdToLegacy(item, &wram->wCurItem);
+}
+
+static bool SetLegacyScriptSpecies(SpeciesId species) {
+    return TrySpeciesIdToLegacy(species, &wram->wCurPartySpecies);
+}
+
 static const struct TextCmd* lScriptText = NULL;
 Script_fn_t gDeferredScriptAddr = NULL;
 
@@ -835,7 +843,7 @@ void Script_battletowertext(script_s* s, uint8_t text){
     // RET;
 }
 
-void Script_verbosegiveitem(script_s* s, item_t item, uint8_t quantity){
+void Script_verbosegiveitem(script_s* s, ItemId item, uint8_t quantity){
     (void)s;
     // CALL(aScript_giveitem);
     Script_giveitem(s, item, quantity);
@@ -878,7 +886,7 @@ Full:
     SCRIPT_END
 }
 
-void Script_verbosegiveitemvar(script_s* s, item_t item, uint8_t action){
+void Script_verbosegiveitemvar(script_s* s, ItemId item, uint8_t action){
     // CALL(aGetScriptByte);
     // CP_A(ITEM_FROM_MEM);
     // IF_NZ goto ok;
@@ -886,7 +894,11 @@ void Script_verbosegiveitemvar(script_s* s, item_t item, uint8_t action){
 
 // ok:
     // LD_addr_A(wCurItem);
-    wram->wCurItem = (item != ITEM_FROM_MEM)? item: wram->wScriptVar;
+    item = (item != ITEM_FROM_MEM)? item: wram->wScriptVar;
+    if(!SetLegacyScriptItem(item)) {
+        wram->wScriptVar = FALSE;
+        return;
+    }
     // CALL(aGetScriptByte);
     // CALL(aGetVarAction);
     // LD_A_de;
@@ -990,7 +1002,7 @@ uint8_t* GetPocketName(void){
 // INCLUDE "data/items/pocket_names.asm"
 }
 
-uint8_t* CurItemName(item_t item){
+uint8_t* CurItemName(ItemId item){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);
@@ -2431,7 +2443,7 @@ void Script_checkver(void){
     // return Script_getmonname();
 }
 
-void Script_getmonname(script_s* s, uint8_t buf, species_t species){
+void Script_getmonname(script_s* s, uint8_t buf, SpeciesId species){
     (void)s;
     // CALL(aGetScriptByte);
     // AND_A_A;
@@ -2471,14 +2483,14 @@ static void CopyConvertedText(uint8_t a, const uint8_t* de){
     CopyName2(hl, de);
 }
 
-void Script_getitemname(script_s* s, item_t item, uint8_t buf){
+void Script_getitemname(script_s* s, ItemId item, uint8_t buf){
     (void)s;
     // CALL(aGetScriptByte);
     // AND_A_A;  // USE_SCRIPT_VAR
     // IF_NZ goto ok;
     if(item == NO_ITEM) {
         // LD_A_addr(wScriptVar);
-        item = (item_t)wram->wScriptVar;
+        item = wram->wScriptVar;
     }
 
 // ok:
@@ -2655,7 +2667,7 @@ void Script_checkpokemail(script_s* s, const char* text){
     // RET;
 }
 
-void Script_giveitem(script_s* s, item_t item, uint8_t quantity){
+void Script_giveitem(script_s* s, ItemId item, uint8_t quantity){
     (void)s;
     // CALL(aGetScriptByte);
     // CP_A(ITEM_FROM_MEM);
@@ -2666,7 +2678,10 @@ void Script_giveitem(script_s* s, item_t item, uint8_t quantity){
 
 // ok:
     // LD_addr_A(wCurItem);
-    wram->wCurItem = item;
+    if(!SetLegacyScriptItem(item)) {
+        wram->wScriptVar = FALSE;
+        return;
+    }
     // CALL(aGetScriptByte);
     // LD_addr_A(wItemQuantityChange);
     wram->wItemQuantityChange = quantity;
@@ -2685,7 +2700,7 @@ void Script_giveitem(script_s* s, item_t item, uint8_t quantity){
     return;
 }
 
-void Script_takeitem(script_s* s, item_t item, uint8_t quantity){
+void Script_takeitem(script_s* s, ItemId item, uint8_t quantity){
     (void)s;
     // XOR_A_A;
     // LD_addr_A(wScriptVar);
@@ -2709,14 +2724,15 @@ void Script_takeitem(script_s* s, item_t item, uint8_t quantity){
     // RET;
 }
 
-void Script_checkitem(script_s* s, item_t item){
+void Script_checkitem(script_s* s, ItemId item){
     (void)s;
     // XOR_A_A;
     // LD_addr_A(wScriptVar);
     wram->wScriptVar = FALSE;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = item;
+    if(!SetLegacyScriptItem(item))
+        return;
     // LD_HL(wNumItems);
     // CALL(aCheckItem);
     if(!CheckItem(GetItemPocket(ITEM_POCKET), item))
@@ -2872,7 +2888,7 @@ void Script_checktime(script_s* s, uint8_t time){
     // RET;
 }
 
-void Script_checkpoke(script_s* s, species_t a){
+void Script_checkpoke(script_s* s, SpeciesId species){
     (void)s;
     // XOR_A_A;
     // LD_addr_A(wScriptVar);
@@ -2882,7 +2898,7 @@ void Script_checkpoke(script_s* s, species_t a){
     // LD_DE(1);
     // CALL(aIsInArray);
     for(uint32_t i = 0; i < lengthof(gPokemon.partySpecies); ++i) {
-        if(gPokemon.partySpecies[i] == a) {
+        if(gPokemon.partySpecies[i] == species) {
             wram->wScriptVar = TRUE;
             return;
         }
@@ -2970,17 +2986,21 @@ void Script_checkphonecall(script_s* s){
     wram->wScriptVar = (gPlayer.specialPhoneCallID != 0)? TRUE: FALSE;
 }
 
-void Script_givepoke(script_s* s, species_t species, uint8_t lvl, item_t item, bool ext, const char* nickname, const char* otName){
+void Script_givepoke(script_s* s, SpeciesId species, uint8_t lvl, ItemId item, bool ext, const char* nickname, const char* otName){
     (void)s;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = species;
+    LegacyItemId legacyItem;
+    if(!SetLegacyScriptSpecies(species) || !TryItemIdToLegacy(item, &legacyItem)) {
+        wram->wScriptVar = 0;
+        return;
+    }
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurPartyLevel);
     wram->wCurPartyLevel = lvl;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = item;
+    wram->wCurItem = legacyItem;
     // CALL(aGetScriptByte);
     // AND_A_A;
     // LD_B_A;
@@ -3001,7 +3021,7 @@ void Script_givepoke(script_s* s, species_t species, uint8_t lvl, item_t item, b
     // RET;
 }
 
-void Script_givepokesimple(script_s* s, species_t species, uint8_t lvl, item_t item){
+void Script_givepokesimple(script_s* s, SpeciesId species, uint8_t lvl, ItemId item){
     return Script_givepoke(s, species, lvl, item, false, NULL, NULL);
 }
 
@@ -3009,7 +3029,7 @@ void Script_givepokesimple(script_s* s, species_t species, uint8_t lvl, item_t i
 //  Does not seem to matter in the code since the
 //  scripts check party length before giving the egg
 //  anyway.
-void Script_giveegg(script_s* s, species_t species, uint8_t lvl){
+void Script_giveegg(script_s* s, SpeciesId species, uint8_t lvl){
     (void)s;
     // XOR_A_A;  // PARTYMON
     // LD_addr_A(wScriptVar);
@@ -3018,7 +3038,8 @@ void Script_giveegg(script_s* s, species_t species, uint8_t lvl){
     wram->wMonType = PARTYMON;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = species;
+    if(!SetLegacyScriptSpecies(species))
+        return;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurPartyLevel);
     wram->wCurPartyLevel = lvl;

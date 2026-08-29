@@ -44,24 +44,20 @@ static bool CheckBreedmonCompatibility_CheckBreedingGroupCompatibility(void){
 //  they are not compatible.
     // LD_A_addr(wBreedMon2Species);
     // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.breedMon2.species;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wCurSpecies);
+    const struct BaseData* breed2Base = GetSpeciesBaseData(gPokemon.breedMon2.species);
     // LD_A_addr(wBaseEggGroups);
     // CP_A(EGG_NONE * 0x11);
     // IF_Z goto Incompatible;
-    if(wram->wBaseEggGroups == EGG_NONE * 0x11)
+    if(breed2Base == NULL || breed2Base->eggGroups == EGG_NONE * 0x11)
         return false;
 
     // LD_A_addr(wBreedMon1Species);
     // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.breedMon1.species;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wCurSpecies);
+    const struct BaseData* breed1Base = GetSpeciesBaseData(gPokemon.breedMon1.species);
     // LD_A_addr(wBaseEggGroups);
     // CP_A(EGG_NONE * 0x11);
     // IF_Z goto Incompatible;
-    if(wram->wBaseEggGroups == EGG_NONE * 0x11)
+    if(breed1Base == NULL || breed1Base->eggGroups == EGG_NONE * 0x11)
         return false;
 
 //  Ditto is automatically compatible with everything.
@@ -72,19 +68,16 @@ static bool CheckBreedmonCompatibility_CheckBreedingGroupCompatibility(void){
     if(gPokemon.breedMon2.species == DITTO)
         return true;
     // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.breedMon2.species;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wCurSpecies);
     // LD_A_addr(wBaseEggGroups);
     // PUSH_AF;
     // AND_A(0xf);
     // LD_B_A;
-    uint8_t b = wram->wBaseEggGroups & 0xf;
+    uint8_t b = breed2Base->eggGroups & 0xf;
     // POP_AF;
     // AND_A(0xf0);
     // SWAP_A;
     // LD_C_A;
-    uint8_t c = (wram->wBaseEggGroups & 0xf0) >> 4;
+    uint8_t c = (breed2Base->eggGroups & 0xf0) >> 4;
 
     // LD_A_addr(wBreedMon1Species);
     // CP_A(DITTO);
@@ -92,21 +85,18 @@ static bool CheckBreedmonCompatibility_CheckBreedingGroupCompatibility(void){
     if(gPokemon.breedMon1.species == DITTO)
         return true;
     // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.breedMon1.species;
     // PUSH_BC;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wCurSpecies);
     // POP_BC;
     // LD_A_addr(wBaseEggGroups);
     // PUSH_AF;
     // AND_A(0xf);
     // LD_D_A;
-    uint8_t d = wram->wBaseEggGroups & 0xf;
+    uint8_t d = breed1Base->eggGroups & 0xf;
     // POP_AF;
     // AND_A(0xf0);
     // SWAP_A;
     // LD_E_A;
-    uint8_t e = (wram->wBaseEggGroups & 0xf0) >> 4;
+    uint8_t e = (breed1Base->eggGroups & 0xf0) >> 4;
 
     // LD_A_D;
     // CP_A_B;
@@ -718,26 +708,29 @@ static bool GetEggMove(const move_t* de){
         // goto loop4;
     }
 
-    const move_t* tmhm = TMHMMoves;
+    size_t tmhmIndex = 0;
 
-inherit_tmhm:
+inherit_tmhm:;
     // LD_HL(mTMHMMoves);
     //const move_t* tmhm = TMHMMoves;
 
-    do {
+    while(tmhmIndex < TMHMMoveCount) {
     // loop5:
         // LD_A(BANK(aTMHMMoves));
         // CALL(aGetFarByte);
         // INC_HL;
         // AND_A_A;
         // IF_Z goto done;
-        if(*tmhm == NO_MOVE)
-            return false;
         // LD_B_A;
         // LD_A_de;
         // CP_A_B;
         // IF_NZ goto loop5;
-    } while(*tmhm != *de);
+        if(TMHMMoves[tmhmIndex] == *de)
+            break;
+        tmhmIndex++;
+    }
+    if(tmhmIndex == TMHMMoveCount)
+        return false;
     // LD_addr_A(wPutativeTMHMMove);
     // PREDEF(pCanLearnTMHMMove);
     uint8_t c = CanLearnTMHMMove(wram->wCurPartySpecies, *de);

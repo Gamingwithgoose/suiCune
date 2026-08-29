@@ -535,3 +535,254 @@ Next recommended native-conversion task
    `TypeId`, leaving `BaseData` only at the Crystal import/WRAM boundary.
 3. After the live Pokemon split, migrate move/item script operands explicitly
    instead of widening bytecode or retaining lowercase aliases indefinitely.
+
+
+Date/session: 2026-08-28 - Phase 1 continuation, native content records and API propagation
+===========================================================================================
+
+Task worked on
+--------------
+Continued the Phase 1 semantic-ID migration from the exact existing working
+tree. This was stopped at the user's requested handoff point after completing
+the currently active BaseData, growth/stat, TM/HM, mart, script-API, and battle
+query edits. The original large Phase A-I request is only partially complete.
+
+Starting repository state
+-------------------------
+- The working tree already contained the in-progress Phase 1 edits represented
+  by the source files listed below. They were preserved and completed as one
+  coherent continuation rather than discarded or replaced.
+- `lib/libmobile` was already dirty and remains user-owned and untouched.
+- No branch, commit, tag, push, reset, restore, clean, or history operation was
+  performed.
+
+Files modified
+--------------
+- `LOCAL_CHANGELOG.txt`: appended this complete session handoff; it remains the
+  only report file.
+- `constants/types.h`: centralized checked semantic-to-legacy ID conversions;
+  made `BaseData` a native, unpacked content record with `DexId`, `TypeId`, and
+  `ItemId`; added byte-exact `LegacyBaseData`; removed the unused duplicate
+  `BaseMon` declaration.
+- `data/json_load.c`: loads native mart IDs and base-data Dex/item IDs with
+  16-bit validation, added the omitted base-data held-item loader, and validates
+  byte-sized TypeId input.
+- `data/items/marts.c`, `data/items/marts.h`: changed the native default-mart
+  table to `ItemId`.
+- `data/moves/tmhm_moves.c`, `data/moves/tmhm_moves.h`: changed the native
+  TM/HM move table to `MoveId` and exposed an explicit native-size count.
+- `home/pokemon.c`, `home/pokemon.h`: added native `GetSpeciesBaseData`, added
+  checked native-to-legacy BaseData export, retained `GetBaseData` only as the
+  explicit WRAM-cache boundary, and widened species-facing cry/Pokemon APIs.
+- `home/names.c`: made expanded/unsupported item, TM/HM, and move name requests
+  bounded instead of indexing current Crystal tables out of range.
+- `engine/pokemon/experience.c`, `engine/pokemon/experience.h`: added growth-rate
+  and species-based native experience calculations; retained the WRAM-based
+  entry point for legacy callers.
+- `engine/pokemon/move_mon.c`, `engine/pokemon/move_mon.h`: widened party creation
+  entry points to `SpeciesId`; validates legacy record representability before
+  mutating party state; uses native BaseData for experience, egg steps, and stat
+  calculations; carries base stats and level explicitly; retained the legacy
+  WRAM stat wrapper for link-era callers; corrected null stat-exp pointer
+  handling in the no-stat-exp path.
+- `engine/pokemon/types.c`, `engine/pokemon/types.h`: use native species BaseData
+  for type display and semantic `MoveId`/`TypeId` parameters with current-table
+  bounds.
+- `engine/pokemon/breeding.c`: reads egg groups from native BaseData and traverses
+  the TM/HM table using `size_t` plus an explicit count.
+- `engine/pokemon/evolve.c`: uses the centralized checked species/move legacy
+  conversions at the still-packed Pokemon-record boundary.
+- `engine/pokemon/print_move_description.c`,
+  `engine/pokemon/print_move_description.h`: accept `MoveId` and bound lookup to
+  the currently available move-description table.
+- `engine/pokemon/caught_data.c`: removed an unused legacy BaseData WRAM-cache
+  load from the bug-contest transfer path.
+- `engine/events/daycare.c`: uses native BaseData for egg growth rate and steps.
+- `engine/events/npc_trade.c`: uses centralized checked species/item conversion
+  at the still-legacy trade/Pokemon-record boundary.
+- `engine/events/bug_contest/caught_mon.c`: removed the obsolete BaseData WRAM
+  cache load now that party generation queries native BaseData.
+- `engine/battle/core.c`: migrated selected battle initialization, type/stat,
+  held-item, catch-rate, base-exp, and effectiveness queries to native BaseData;
+  held items still entering `BattleMon` are checked at that legacy boundary.
+- `engine/battle/move_effects/beat_up.c`: reads attacker/defender base stats
+  directly from native BaseData rather than the shared WRAM cache.
+- `engine/battle/read_trainer_party.c`: replaced repeated casts/checks with the
+  centralized checked conversions at legacy party-record construction.
+- `engine/link/time_capsule.c`: validates type data from native BaseData while
+  preserving the byte-oriented Time Capsule record.
+- `engine/pokedex/pokedex.c`: performs type filtering from native BaseData.
+- `engine/items/tmhm2.c`, `engine/items/tmhm2.h`: migrated species/move APIs to
+  semantic IDs, use native BaseData compatibility bits, use a native-size index,
+  and bound TM/HM lookup by the explicit table count.
+- `engine/items/tmhm.c`: explicitly converts a native TM/HM move back to the
+  still-byte-oriented legacy UI API and uses `MoveId` for name-only state.
+- `engine/items/mart.c`, `engine/items/mart.h`: migrated native mart sources to
+  `ItemId`; separated normal and priced-mart pointers instead of type-punning;
+  validates capacity and representability at the legacy scrolling-menu record;
+  preserves room for its byte terminator; indexes selected bargain/rooftop sale
+  prices through the correctly typed priced-mart source.
+- `engine/overworld/scripting.c`, `engine/overworld/scripting.h`: widened safe
+  native C script-facing item/species APIs (names, give/take/check item,
+  give/check Pokemon, and egg/gift operations) while keeping actual byte WRAM
+  handoffs checked and localized.
+- `engine/debug/color_picker.c`: uses `MoveId` for a TM/HM name-only local.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed work
+--------------
+- `BaseData` is now a native content record. Its Dex number and held items no
+  longer inherit the packed Crystal byte widths, and normal migrated consumers
+  no longer copy the WRAM base-data cache before querying species properties.
+- `LegacyBaseData` is the explicit exact-layout representation, with a
+  `BASE_DATA_SIZE` assertion and a centralized checked export routine.
+- Native experience/stat calculation paths now receive actual growth/base data
+  and level instead of depending on mutable WRAM cache state.
+- Native mart sources and TM/HM move tables carry semantic IDs and native-size
+  counts. Their genuinely byte-oriented menu/UI destinations are checked.
+- The listed native C scripting interfaces now accept semantic IDs without any
+  global script-bytecode widening.
+- Several battle, breeding, daycare, Pokédex, Time Capsule validation, and
+  bug-contest paths now query native BaseData directly.
+
+Partially completed work
+------------------------
+- Phase C/D semantic propagation is partial. Many normal APIs still use the
+  lowercase compatibility aliases because their owners are the packed live
+  Pokemon/battle/WRAM model.
+- Phase E is partial: safe C function signatures were widened, but script
+  bytecode operands and byte WRAM variables remain legacy by design.
+- Phase F is partial: native trainer content already carries semantic Pokemon
+  IDs and this pass centralized conversion at party construction, but trainer
+  identity and all downstream party/battle storage were not fully migrated.
+- Phase G is partial: touched TM/HM and mart traversal uses native-size counts;
+  other sentinel/count tables were only classified, not broadly changed.
+- Phase I is partial: native BaseData is used for Time Capsule validation, but
+  packed Pokemon link/mobile/Time Capsule record conversion remains unfinished.
+
+Untouched remaining work from the original request
+--------------------------------------------------
+- Phase A's authoritative native live Pokemon model was not implemented.
+  `PokemonData`, `BoxMon`, `PartyMon`, `BattleMon`, party/daycare/box state, and
+  battle staging remain packed Crystal-width records with explicit Legacy IDs.
+- No native `FormId`, `AbilityId`, `NatureId`, or `PersonalityValue` fields were
+  added to live Pokemon state because doing so without migrating ownership would
+  create a prohibited parallel/sidecar model.
+- Phase H save/SRAM isolation was inspected but not changed in this pass. The
+  existing serializer still serializes the packed live `PokemonData` records.
+- Full battle-to-party synchronization, boxed-Pokemon ownership, mail held-item
+  ownership, move-learning storage, evolution storage, and link/mobile Pokemon
+  conversions remain constrained by the live packed records.
+- No global lowercase-alias replacement, script-engine redesign, trainer-AI
+  redesign, save-format redesign, or network redesign was attempted.
+
+Architectural changes actually made
+-----------------------------------
+- Native species content and exact Crystal BaseData layout now have distinct
+  types and an explicit checked boundary.
+- Shared stat/growth calculations can operate on native content without WRAM
+  base-data cache authority.
+- Normal/priced marts no longer rely on incompatible pointer reinterpretation.
+- Native table traversal added explicit counts where touched rather than relying
+  on a byte-valued sentinel.
+- No second authoritative Pokemon runtime representation was introduced.
+
+Remaining legacy/transitional bridges and removal conditions
+-------------------------------------------------------------
+- `GetBaseData` remains a native-to-`LegacyBaseData` WRAM cache adapter.
+  Remove it only after every remaining `wBase*` consumer has migrated to native
+  BaseData or an explicitly external Crystal boundary.
+- `CalcExpAtLevel` and `CalcMonStatC` remain WRAM-based compatibility entry
+  points. Remove them after remaining predef/link/legacy callers pass growth,
+  base stat, and level explicitly.
+- `TrySpeciesIdToLegacy`, `TryMoveIdToLegacy`, `TryItemIdToLegacy`, and
+  `TryDexIdToLegacy` are permanent boundary helpers while Crystal formats are
+  supported; remove individual call sites only when their destinations become
+  native, not merely to hide an unrepresentable value.
+- Script WRAM setters remain because `wCurItem` and `wCurPartySpecies` are byte
+  fields. Remove them after native script runtime state owns those operands or
+  restrict them solely to a decoded legacy-bytecode boundary.
+- Mart scrolling-menu narrowing remains because that menu list is byte-stride
+  legacy state. Remove it when the menu list itself stores `ItemId` and all menu
+  traversal uses its native stride.
+- `GetTMHMItemMove` still returns `move_t` for a legacy caller. Remove its
+  narrowing after that UI/caller chain accepts `MoveId` end to end.
+- Trainer, evolution, and NPC-trade conversion helpers remain at packed
+  `PartyMon`/`BoxMon` construction. Remove them only after those records are
+  replaced by native runtime Pokemon and conversion moves to save/link export.
+
+Investigated but not implemented
+--------------------------------
+- The complete ownership/call graph for `BoxMon`, `PartyMon`, `BattleMon`, and
+  `PokemonData` was inspected across raw `CopyBytes`, fixed structure lengths,
+  party/box/daycare operations, serialization, link, Mobile, Time Capsule, and
+  GB-address translation. An isolated widening was rejected because the same
+  packed records are simultaneously live runtime state and exact compatibility
+  data; changing one field would silently change strides and binary copies.
+- `util/serialize.c` was inspected. It explicitly describes the current legacy
+  Pokemon fields but still serializes the packed live structures, so no honest
+  native load/save conversion could be added without first changing runtime
+  ownership.
+- Remaining lowercase IDs, `UINT8_MAX`, `0xff`, `255`, byte casts, and
+  Box/Party/Battle/BaseData occurrences were searched and classified. Hardware
+  bytes, PP/levels/flags/indexes, exact protocols, and legacy terminators were
+  deliberately not mass-widened.
+
+Compatibility and save/link implications
+-----------------------------------------
+- Existing Crystal-range content remains representable. Expanded BaseData and
+  mart/TM source IDs are retained natively until they reach a currently legacy
+  destination; unrepresentable values are rejected instead of truncated.
+- Crystal save layout is unchanged. Expanded live Pokemon IDs still cannot be
+  saved because live Pokemon itself remains legacy; no sidecar or high-bit hack
+  was introduced.
+- Link, Mobile, and Time Capsule record widths are unchanged. No protocol was
+  redesigned and no compatibility format was widened.
+
+Suspected source-level risks and regressions
+--------------------------------------------
+- No compiler or runtime validation was permitted. Header/signature propagation
+  and the intentionally changed native `BaseData` layout require the user's
+  next build to validate all platform/compiler branches.
+- `GetSpeciesBaseData` intentionally supports only the current loaded
+  `NUM_POKEMON` database. Future expanded content needs an explicit database
+  count/resource API; unsupported IDs currently return no record.
+- Remaining legacy callers of `GetBaseData` still receive the historical
+  Bulbasaur fallback for invalid non-egg IDs. Migrated native callers receive
+  `NULL` instead. This difference is intentional but not runtime-tested.
+- Legacy-boundary failure behavior is not yet uniform: gameplay/script helpers
+  generally report failure, while impossible base-cache/mart export currently
+  logs and aborts. A later boundary-policy pass should unify this only after the
+  native Pokemon owner exists.
+- No confirmed regression was found by source/diff inspection.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped with the native BaseData/content-query conversion coherent and the
+  packed live Pokemon model deliberately unchanged. The original Phase A-I
+  request is partially complete, not complete.
+- Next, migrate one ownership-complete slice of `PokemonData`: define the native
+  runtime Box/Party Pokemon representation, make the player party/daycare state
+  authoritative in that representation, and add centralized checked conversion
+  to the existing packed Crystal serializer/link records. Before changing any
+  stride, enumerate and migrate every raw copy/fixed-offset user of that slice.
+  Do not add a mirrored sidecar and do not widen `BoxMon` in place.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None. Only source search and non-destructive Git/diff inspection were used.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction.

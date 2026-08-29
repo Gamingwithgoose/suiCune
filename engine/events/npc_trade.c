@@ -22,19 +22,21 @@
 static void NPCTrade_TradeAnimation(void);
 
 static LegacySpeciesId NPCTradeSpeciesToLegacy(SpeciesId species) {
-    if(species > UINT8_MAX) {
+    LegacySpeciesId legacy;
+    if(!TrySpeciesIdToLegacy(species, &legacy)) {
         log_err("NPC trade species ID %u cannot enter the legacy Pokemon record.\n", species);
         abort();
     }
-    return (LegacySpeciesId)species;
+    return legacy;
 }
 
 static LegacyItemId NPCTradeItemToLegacy(ItemId item) {
-    if(item > UINT8_MAX) {
+    LegacyItemId legacy;
+    if(!TryItemIdToLegacy(item, &legacy)) {
         log_err("NPC trade item ID %u cannot enter the legacy Pokemon record.\n", item);
         abort();
     }
-    return (LegacyItemId)item;
+    return legacy;
 }
 
 void NPCTrade(uint8_t e){

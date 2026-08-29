@@ -11,12 +11,14 @@ void PrintMonTypes(uint8_t* hl){
     // PUSH_HL;
     // CALL(aGetBaseData);
     // POP_HL;
-    GetBaseData(wram->wCurSpecies);
+    const struct BaseData* base = GetSpeciesBaseData(wram->wCurSpecies);
+    if(base == NULL)
+        return;
 
     // PUSH_HL;
     // LD_A_addr(wBaseType1);
     // CALL(aPrintMonTypes_Print);
-    PrintType(hl, wram->wBaseType1);
+    PrintType(hl, base->type1);
 
 // Single-typed monsters really
 // have two of the same type.
@@ -26,14 +28,14 @@ void PrintMonTypes(uint8_t* hl){
     // CP_A_B;
     // POP_HL;
     // IF_Z goto hide_type_2;
-    if(wram->wBaseType1 != wram->wBaseType2) {
+    if(base->type1 != base->type2) {
         // LD_BC(SCREEN_WIDTH);
         // ADD_HL_BC;
 
     // Print:
         // LD_B_A;
         // JR(mPrintType);
-        PrintType(hl + SCREEN_WIDTH, wram->wBaseType2);
+        PrintType(hl + SCREEN_WIDTH, base->type2);
     }
 
 
@@ -51,7 +53,7 @@ void PrintMonTypes(uint8_t* hl){
 }
 
 //  Print the type of move b at hl.
-void PrintMoveType(uint8_t* hl, move_t b){
+void PrintMoveType(uint8_t* hl, MoveId b){
     // PUSH_HL;
     // LD_A_B;
     // DEC_A;
@@ -66,11 +68,11 @@ void PrintMoveType(uint8_t* hl, move_t b){
 
     // LD_B_A;
 
-    return PrintType(hl, Moves[b].type);
+    return PrintType(hl, (b <= NUM_ATTACKS)? Moves[b].type: CURSE_TYPE);
 }
 
 //  Print type b at hl.
-void PrintType(uint8_t* hl, uint8_t b){
+void PrintType(uint8_t* hl, TypeId b){
     // LD_A_B;
     // PUSH_HL;
     // ADD_A_A;

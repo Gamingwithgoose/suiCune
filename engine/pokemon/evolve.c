@@ -24,19 +24,21 @@
 #include <stdlib.h>
 
 static LegacySpeciesId EvolutionSpeciesToLegacy(SpeciesId species) {
-    if(species > UINT8_MAX) {
+    LegacySpeciesId legacy;
+    if(!TrySpeciesIdToLegacy(species, &legacy)) {
         log_err("Evolution species ID %u cannot enter the legacy Pokemon record.\n", species);
         abort();
     }
-    return (LegacySpeciesId)species;
+    return legacy;
 }
 
 static LegacyMoveId LearnsetMoveToLegacy(MoveId move) {
-    if(move > UINT8_MAX) {
+    LegacyMoveId legacy;
+    if(!TryMoveIdToLegacy(move, &legacy)) {
         log_err("Learnset move ID %u cannot enter the legacy Pokemon record.\n", move);
         abort();
     }
-    return (LegacyMoveId)move;
+    return legacy;
 }
 
 void EvolvePokemon(void){

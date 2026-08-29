@@ -1,4 +1,4 @@
 void PrintMonTypes(uint8_t* hl);
-void PrintMoveType(uint8_t* hl, move_t b);
-void PrintType(uint8_t* hl, uint8_t b);
+void PrintMoveType(uint8_t* hl, MoveId b);
+void PrintType(uint8_t* hl, TypeId b);
 void GetTypeName(uint8_t idx);

@@ -1,3 +1,3 @@
-uint8_t CanLearnTMHMMove(species_t species, move_t move);
-move_t GetTMHMMove(uint8_t tmhm);
+uint8_t CanLearnTMHMMove(SpeciesId species, MoveId move);
+MoveId GetTMHMMove(uint8_t tmhm);
 //#include "data/moves/tmhm_moves.h"

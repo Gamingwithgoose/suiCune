@@ -3,7 +3,7 @@
 #include "../../home/text.h"
 #include "../../data/moves/descriptions.h"
 
-void PrintMoveDescription(tile_t* hl, move_t move){
+void PrintMoveDescription(tile_t* hl, MoveId move){
     // PUSH_HL;
     // LD_HL(mMoveDescriptions);
     // LD_A_addr(wCurSpecies);
@@ -17,7 +17,7 @@ void PrintMoveDescription(tile_t* hl, move_t move){
     // LD_D_hl;
     // POP_HL;
     // JP(mPlaceString);
-    PlaceStringSimple(U82C(MoveDescriptions[move]), hl);
+    PlaceStringSimple(U82C(MoveDescriptions[(move <= NUM_ATTACKS)? move: NO_MOVE]), hl);
 // INCLUDE "data/moves/descriptions.asm"
 
 }

@@ -10,11 +10,6 @@
 #include "../../../data/text/common.h"
 
 static void BugContest_SetCaughtContestMon_generatestats(void) {
-    // LD_A_addr(wTempEnemyMonSpecies);
-    // LD_addr_A(wCurSpecies);
-    // LD_addr_A(wCurPartySpecies);
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wTempEnemyMonSpecies);
     // XOR_A_A;
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // LD_HL(wContestMon);

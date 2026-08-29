@@ -78,7 +78,11 @@ void ConvertCurItemIntoCurTMHM(void){
 move_t GetTMHMItemMove(item_t item){
     // CALL(aConvertCurItemIntoCurTMHM);
     // PREDEF(pGetTMHMMove);
-    return GetTMHMMove(GetTMHMNumber(item));
+    MoveId move = GetTMHMMove(GetTMHMNumber(item));
+    LegacyMoveId legacyMove;
+    if(!TryMoveIdToLegacy(move, &legacyMove))
+        return NO_MOVE;
+    return legacyMove;
     // RET;
 }
 
@@ -688,7 +692,7 @@ uint8_t TMHM_DisplayPocketItems(void){
 
     // okay:
         // PREDEF(pGetTMHMMove);
-        move_t move = GetTMHMMove(wram->wTempTMHM);
+        MoveId move = GetTMHMMove(wram->wTempTMHM);
         // LD_A_addr(wNamedObjectIndex);
         // LD_addr_A(wPutativeTMHMMove);
         // CALL(aGetMoveName);

@@ -13,27 +13,30 @@ static void TrainerType3(const struct TrainerParty* de);
 static void TrainerType4(const struct TrainerParty* de);
 
 static LegacySpeciesId TrainerSpeciesToLegacy(SpeciesId species) {
-    if(species > UINT8_MAX) {
+    LegacySpeciesId legacy;
+    if(!TrySpeciesIdToLegacy(species, &legacy)) {
         log_err("Trainer species ID %u cannot enter the legacy party record.\n", species);
         abort();
     }
-    return (LegacySpeciesId)species;
+    return legacy;
 }
 
 static LegacyMoveId TrainerMoveToLegacy(MoveId move) {
-    if(move > UINT8_MAX) {
+    LegacyMoveId legacy;
+    if(!TryMoveIdToLegacy(move, &legacy)) {
         log_err("Trainer move ID %u cannot enter the legacy party record.\n", move);
         abort();
     }
-    return (LegacyMoveId)move;
+    return legacy;
 }
 
 static LegacyItemId TrainerItemToLegacy(ItemId item) {
-    if(item > UINT8_MAX) {
+    LegacyItemId legacy;
+    if(!TryItemIdToLegacy(item, &legacy)) {
         log_err("Trainer item ID %u cannot enter the legacy party record.\n", item);
         abort();
     }
-    return (LegacyItemId)item;
+    return legacy;
 }
 
 void ReadTrainerParty(void){

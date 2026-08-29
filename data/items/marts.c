@@ -330,7 +330,7 @@
 //     REVIVAL_HERB,
 // };
 
-const item_t DefaultMart[] = {
+const ItemId DefaultMart[] = {
     POKE_BALL,
     POTION,
 };

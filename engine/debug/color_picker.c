@@ -1167,7 +1167,7 @@ static void DebugColor_PrintTMHMMove(void){
     // LD_addr_A(wTempTMHM);
     wram->wTempTMHM = wram->wDebugColorCurTMHM + 1;
     // PREDEF(pGetTMHMMove);
-    move_t move = GetTMHMMove(wram->wDebugColorCurTMHM + 1);
+    MoveId move = GetTMHMMove(wram->wDebugColorCurTMHM + 1);
     // LD_A_addr(wTempTMHM);
     // LD_addr_A(wPutativeTMHMMove);
     // CALL(aGetMoveName);

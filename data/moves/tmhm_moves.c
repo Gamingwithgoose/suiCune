@@ -5,7 +5,7 @@
 
 #define TMMOVE(_a) [_a##_TMNUM-1] = _a
 
-const move_t TMHMMoves[] = {
+const MoveId TMHMMoves[] = {
 // entries correspond to *_TMNUM constants (see constants/item_constants.asm)
     // table_width 1, TMHMMoves
 
@@ -89,4 +89,5 @@ const move_t TMHMMoves[] = {
     NO_MOVE
 };
 static_assert(lengthof(TMHMMoves) == NUM_TM_HM_TUTOR+1, "");
+const size_t TMHMMoveCount = NUM_TM_HM_TUTOR;
 	// db 0 ; end

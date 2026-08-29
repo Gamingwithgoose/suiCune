@@ -5274,7 +5274,7 @@ void IsThePlayerMonTypesEffectiveAgainstOTMon(uint8_t b){
     // ADD_HL_BC;
     // LD_A_hl;
     // DEC_A;
-    species_t species = wram->wOTPartySpecies[b];
+    SpeciesId species = wram->wOTPartySpecies[b];
     // LD_HL(mBaseData + BASE_TYPES);
     // LD_BC(BASE_DATA_SIZE);
     // CALL(aAddNTimes);
@@ -5282,7 +5282,10 @@ void IsThePlayerMonTypesEffectiveAgainstOTMon(uint8_t b){
     // LD_BC(BASE_CATCH_RATE - BASE_TYPES);
     // LD_A(BANK(aBaseData));
     // CALL(aFarCopyBytes);
-    CopyBytes(wram->wEnemyMon.types, BasePokemonData + (species - 1), BASE_CATCH_RATE - BASE_TYPES);
+    const struct BaseData* base = GetSpeciesBaseData(species);
+    if(base == NULL)
+        return;
+    CopyBytes(wram->wEnemyMon.types, base->types, sizeof(wram->wEnemyMon.types));
     // LD_A_addr(wBattleMonType1);
     // LD_addr_A(wPlayerMoveStruct + MOVE_TYPE);
     wram->wPlayerMoveStruct.type = wram->wBattleMon.type1;
@@ -5633,8 +5636,6 @@ void ShowSetEnemyMonAndSendOutAnimation(void){
     wram->wCurPartySpecies = wram->wTempEnemyMonSpecies;
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = wram->wTempEnemyMonSpecies;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wTempEnemyMonSpecies);
     // LD_A(OTPARTYMON);
     // LD_addr_A(wMonType);
     wram->wMonType = OTPARTYMON;
@@ -6141,14 +6142,15 @@ void InitBattleMon(void){
     wram->wCurPartySpecies = wram->wBattleMon.species;
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = wram->wBattleMon.species;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wBattleMon.species);
+    const struct BaseData* base = GetSpeciesBaseData(wram->wBattleMon.species);
+    if(base == NULL)
+        return;
     // LD_A_addr(wBaseType1);
     // LD_addr_A(wBattleMonType1);
-    wram->wBattleMon.type1 = wram->wBaseType1;
+    wram->wBattleMon.type1 = base->type1;
     // LD_A_addr(wBaseType2);
     // LD_addr_A(wBattleMonType2);
-    wram->wBattleMon.type2 = wram->wBaseType2;
+    wram->wBattleMon.type2 = base->type2;
     // LD_HL(wPartyMonNicknames);
     // LD_A_addr(wCurBattleMon);
     // CALL(aSkipNames);
@@ -6267,8 +6269,9 @@ void InitEnemyMon(void){
     // LD_A_addr(wEnemyMonSpecies);
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = wram->wEnemyMon.species;
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wEnemyMon.species);
+    const struct BaseData* base = GetSpeciesBaseData(wram->wEnemyMon.species);
+    if(base == NULL)
+        return;
     // LD_HL(wOTPartyMonNicknames);
     // LD_A_addr(wCurPartyMon);
     // CALL(aSkipNames);
@@ -6287,11 +6290,11 @@ void InitEnemyMon(void){
     // LD_DE(wEnemyMonType1);
     // LD_A_hli;
     // LD_de_A;
-    wram->wEnemyMon.type1 = wram->wBaseType1;
+    wram->wEnemyMon.type1 = base->type1;
     // INC_DE;
     // LD_A_hl;
     // LD_de_A;
-    wram->wEnemyMon.type2 = wram->wBaseType2;
+    wram->wEnemyMon.type2 = base->type2;
 // The enemy mon's base Sp. Def isn't needed since its base
 // Sp. Atk is also used to calculate Sp. Def stat experience.
     // LD_HL(wBaseStats);
@@ -6302,7 +6305,7 @@ void InitEnemyMon(void){
         // LD_A_hli;
         // LD_de_A;
         // INC_DE;
-        wram->wEnemyMonBaseStats[b] = wram->wBaseStats[b];
+        wram->wEnemyMonBaseStats[b] = base->stats[b];
         // DEC_B;
         // IF_NZ goto loop;
     }
@@ -9560,13 +9563,14 @@ void LoadEnemyMon(void){
     wram->wCurPartySpecies = wram->wTempEnemyMonSpecies;
 
 //  Grab the BaseData for this species
-    // CALL(aGetBaseData);
-    GetBaseData(wram->wTempEnemyMonSpecies);
+    const struct BaseData* base = GetSpeciesBaseData(wram->wTempEnemyMonSpecies);
+    if(base == NULL)
+        return;
 
 //  Let's get the item:
 
 //  Is the item predetermined?
-    item_t a;
+    ItemId a;
     // LD_A_addr(wBattleMode);
     // DEC_A;
     // IF_Z goto WildItem;
@@ -9581,7 +9585,7 @@ void LoadEnemyMon(void){
         // LD_A_addr(wBaseItem1);
         // IF_Z goto UpdateItem;
         if(wram->wBattleType == BATTLETYPE_FORCEITEM) {
-            a = wram->wBaseItem1;
+            a = base->item1;
         }
 
     //  Failing that, it's all up to chance
@@ -9606,10 +9610,10 @@ void LoadEnemyMon(void){
         // IF_NC goto UpdateItem;
         // LD_A_addr(wBaseItem2);
         else if(BattleRandom() < (8 percent)) {   // 8% of 25% = 2% Item2
-            a = wram->wBaseItem2;
+            a = base->item2;
         }
         else {
-            a = wram->wBaseItem1;
+            a = base->item1;
         }
     }
     else {
@@ -9624,7 +9628,10 @@ void LoadEnemyMon(void){
 
 // UpdateItem:
     // LD_addr_A(wEnemyMonItem);
-    wram->wEnemyMon.item = a;
+    if(!TryItemIdToLegacy(a, &wram->wEnemyMon.item)) {
+        log_err("Enemy held item ID %u cannot enter the legacy battle record.\n", a);
+        return;
+    }
 
 //  Initialize DVs
 
@@ -9980,10 +9987,10 @@ Happiness:
     // LD_A_hli;
     // LD_de_A;
     // INC_DE;
-    wram->wEnemyMon.type1 = wram->wBaseType1;
+    wram->wEnemyMon.type1 = base->type1;
     // LD_A_hl;
     // LD_de_A;
-    wram->wEnemyMon.type2 = wram->wBaseType2;
+    wram->wEnemyMon.type2 = base->type2;
 
 //  Get moves
     // LD_DE(wEnemyMonMoves);
@@ -10063,7 +10070,7 @@ Happiness:
         // LD_A_hli;
         // LD_de_A;
         // INC_DE;
-        wram->wEnemyMonBaseStats[i] = wram->wBaseStats[i];
+        wram->wEnemyMonBaseStats[i] = base->stats[i];
         // DEC_B;
         // IF_NZ goto loop;
     }
@@ -10071,11 +10078,11 @@ Happiness:
     // LD_A_addr(wBaseCatchRate);
     // LD_de_A;
     // INC_DE;
-    wram->wEnemyMonCatchRate = wram->wBaseCatchRate;
+    wram->wEnemyMonCatchRate = base->catchRate;
 
     // LD_A_addr(wBaseExp);
     // LD_de_A;
-    wram->wEnemyMonBaseExp = wram->wBaseExp;
+    wram->wEnemyMonBaseExp = base->exp;
 
     // LD_A_addr(wTempEnemyMonSpecies);
     // LD_addr_A(wNamedObjectIndex);

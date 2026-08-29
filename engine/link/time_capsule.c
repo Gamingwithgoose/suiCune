@@ -64,21 +64,22 @@ bool ValidateOTTrademon(uint8_t mon){
 
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = a;
-    // CALL(aGetBaseData);
-    GetBaseData(a);
+    const struct BaseData* base = GetSpeciesBaseData(a);
+    if(base == NULL)
+        return false;
     // LD_HL(wLinkOTPartyMonTypes);
     // ADD_HL_BC;
     // ADD_HL_BC;
     // LD_A_addr(wBaseType1);
     // CP_A_hl;
     // IF_NZ goto abnormal;
-    if(wram->wBaseType1 != wram->wLinkOTPartyMonType[mon][0])
+    if(base->type1 != wram->wLinkOTPartyMonType[mon][0])
         return false;
     // INC_HL;
     // LD_A_addr(wBaseType2);
     // CP_A_hl;
     // IF_NZ goto abnormal;
-    if(wram->wBaseType2 != wram->wLinkOTPartyMonType[mon][1])
+    if(base->type2 != wram->wLinkOTPartyMonType[mon][1])
         return false;
 
 

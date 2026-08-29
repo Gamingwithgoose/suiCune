@@ -2821,8 +2821,9 @@ static void Pokedex_SearchForMons_Search(uint8_t a){
             continue;
         // PUSH_HL;
         // PUSH_DE;
-        // CALL(aGetBaseData);
-        GetBaseData(*hl);
+        const struct BaseData* base = GetSpeciesBaseData(*hl);
+        if(base == NULL)
+            continue;
         // POP_DE;
         // POP_HL;
         // LD_A_addr(wDexConvertedMonType);
@@ -2833,7 +2834,7 @@ static void Pokedex_SearchForMons_Search(uint8_t a){
         // LD_A_addr(wBaseType2);
         // CP_A_B;
         // IF_NZ goto next_mon;
-        if(wram->wDexConvertedMonType != wram->wBaseType1 && wram->wDexConvertedMonType != wram->wBaseType2)
+        if(wram->wDexConvertedMonType != base->type1 && wram->wDexConvertedMonType != base->type2)
             continue;
 
     // match_found:

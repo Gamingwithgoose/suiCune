@@ -12,8 +12,9 @@
 #include "../data/pokemon/pic_pointers.h"
 #include "../data/pokemon/unown_pic_pointers.h"
 #include "../data/pokemon/cries.h"
+#include <stdlib.h>
 
-bool IsAPokemon(species_t species) {
+bool IsAPokemon(SpeciesId species) {
     // Pokemon index 0 is not a pokemon
     if(species == 0) return false;
 
@@ -147,7 +148,7 @@ void v_PrepMonFrontpic(tile_t* hl){
     wram->wCurPartySpecies = 1;
 }
 
-void PlayStereoCry(species_t species){
+void PlayStereoCry(SpeciesId species){
     // PUSH_AF;
     // LD_A(1);
     // LD_addr_A(wStereoPanningMask);
@@ -162,7 +163,7 @@ void PlayStereoCry(species_t species){
 
 //  Don't wait for the cry to end.
 //  Used during pic animations.
-void PlayStereoCry2(species_t species){
+void PlayStereoCry2(SpeciesId species){
     // PUSH_AF;
     // LD_A(1);
     // LD_addr_A(wStereoPanningMask);
@@ -172,7 +173,7 @@ void PlayStereoCry2(species_t species){
     return v_PlayMonCry(species);
 }
 
-void PlayMonCry(species_t species){
+void PlayMonCry(SpeciesId species){
     // CALL(aPlayMonCry2);
     PlayMonCry2(species);
     // CALL(aWaitSFX);
@@ -181,7 +182,7 @@ void PlayMonCry(species_t species){
 }
 
 //  Don't wait for the cry to end.
-void PlayMonCry2(species_t species){
+void PlayMonCry2(SpeciesId species){
     // PUSH_AF;
     // XOR_A_A;
     // LD_addr_A(wStereoPanningMask);
@@ -194,7 +195,7 @@ void PlayMonCry2(species_t species){
     // RET;
 }
 
-void v_PlayMonCry(species_t species){
+void v_PlayMonCry(SpeciesId species){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;
@@ -224,8 +225,8 @@ void v_PlayMonCry(species_t species){
 }
 
 //  Load cry bc.
-const struct PokemonCry* LoadCry(species_t a){
-    int16_t index = GetCryIndex(a);
+const struct PokemonCry* LoadCry(SpeciesId species){
+    int16_t index = GetCryIndex(species);
     if(index < 0) 
         return NULL;
     uint16_t i = (uint16_t)index;
@@ -238,10 +239,10 @@ const struct PokemonCry* LoadCry(species_t a){
     return hl;
 }
 
-int16_t GetCryIndex(species_t index){
-    if(index == 0 || index >= (NUM_POKEMON + 1))
+int16_t GetCryIndex(SpeciesId species){
+    if(species == 0 || species >= (NUM_POKEMON + 1))
         return -1;
-    return index;
+    return (int16_t)species;
 }
 
 //  Print wTempMonLevel at hl
@@ -297,7 +298,36 @@ void GetNthMove(void){
     // RET;
 }
 
-void GetBaseData(species_t species){
+const struct BaseData* GetSpeciesBaseData(SpeciesId species) {
+    if(species == 0 || species == EGG || species > NUM_POKEMON)
+        return NULL;
+    return BasePokemonData + (species - 1);
+}
+
+bool ConvertBaseDataToLegacy(struct LegacyBaseData* dest, const struct BaseData* src) {
+    if(!TryDexIdToLegacy(src->dexNo, &dest->dexNo)
+    || !TryItemIdToLegacy(src->item1, &dest->items[0])
+    || !TryItemIdToLegacy(src->item2, &dest->items[1]))
+        return false;
+
+    CopyBytes(dest->stats, src->stats, sizeof(dest->stats));
+    CopyBytes(dest->types, src->types, sizeof(dest->types));
+    dest->catchRate = src->catchRate;
+    dest->exp = src->exp;
+    dest->gender = src->gender;
+    dest->unknown1 = src->unknown1;
+    dest->eggSteps = src->eggSteps;
+    dest->unknown2 = src->unknown2;
+    dest->picSize = src->picSize;
+    dest->unusedFrontpic = src->unusedFrontpic;
+    dest->unusedBackpic = src->unusedBackpic;
+    dest->growthRate = src->growthRate;
+    dest->eggGroups = src->eggGroups;
+    CopyBytes(dest->TMHM, src->TMHM, sizeof(dest->TMHM));
+    return true;
+}
+
+void GetBaseData(SpeciesId species){
     // printf("%s:: %d\n", __func__, species);
 //  Egg doesn't have BaseData
     if(species == EGG)
@@ -315,18 +345,23 @@ void GetBaseData(species_t species){
     else 
     {
     // If the species value is OOB, get Bulbasaur's data as a failsafe.
-        if(species > NUM_POKEMON || species == 0)
+        if(species == 0 || species > NUM_POKEMON)
             species = BULBASAUR;
+        const struct BaseData* hl = GetSpeciesBaseData(species);
     //  Get BaseData
         //DEC_A;
-        const struct BaseData* hl = BasePokemonData + (species - 1);
         //LD_BC(BASE_DATA_SIZE);
         //LD_HL(mBaseData);
         //CALL(aAddNTimes);
         //LD_DE(wCurBaseData);
         //LD_BC(BASE_DATA_SIZE);
         //CALL(aCopyBytes);
-        CopyBytes(&wram->wBaseDexNo, hl, sizeof(struct BaseData));
+        struct LegacyBaseData legacy;
+        if(!ConvertBaseDataToLegacy(&legacy, hl)) {
+            log_err("Species %u base data cannot enter the legacy WRAM cache.\n", species);
+            abort();
+        }
+        CopyBytes(&wram->wBaseDexNo, &legacy, sizeof(legacy));
         // If our pic size is 0, we haven't initialized it yet.
         if(hl->picSize == 0) {
             // We dynamically get the base pic size by loading the frontpic and counting how many tiles
@@ -353,7 +388,10 @@ void GetBaseData(species_t species){
     }
 
     //  Replace Pokedex # with species
-    wram->wBaseDexNo = species;
+    if(!TrySpeciesIdToLegacy(species, &wram->wBaseDexNo)) {
+        log_err("Species %u cannot enter the legacy WRAM base-data cache.\n", species);
+        abort();
+    }
 }
 
 //  Get nickname a from list hl.

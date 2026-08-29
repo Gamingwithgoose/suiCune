@@ -28,10 +28,6 @@ void CheckPartyFullAfterContest(void){
         return;
     }
 
-    // LD_addr_A(wCurPartySpecies);
-    // LD_addr_A(wCurSpecies);
-    // CALL(aGetBaseData);
-    GetBaseData(gPokemon.contestMon.mon.species);
     // LD_HL(wPartyCount);
     // LD_A_hl;
     // CP_A(PARTY_LENGTH);

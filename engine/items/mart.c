@@ -24,6 +24,7 @@
 #include "../../data/items/marts.h"
 #include "../../data/items/bargain_shop.h"
 #include "../../data/items/rooftop_sale.h"
+#include <stdlib.h>
 
 enum {
     MARTTEXT_HOW_MANY,
@@ -46,10 +47,11 @@ enum {
 
 #define STANDARDMART_EXIT (-1)
 
-static const item_t* sMartPointer;
+static const ItemId* sMartPointer;
+static const item_price_s* sPricedMartPointer;
 static struct {
     uint8_t count;
-    item_t items[16];
+    LegacyItemId items[16];
 } sCurMart;
 static item_price_s sMartItems[16];
 
@@ -58,7 +60,7 @@ struct MartDialogGroup {
     uint8_t group;
 };
 
-item_t* Marts[NUM_MARTS+1];
+ItemId* Marts[NUM_MARTS+1];
 size_t MartsSizes[NUM_MARTS+1];
 
 const struct MartDialogGroup* GetMartDialogGroup(uint8_t type);
@@ -71,7 +73,7 @@ uint32_t GetMartSize(uint16_t de) {
 
 void OpenMartDialog(uint8_t type, uint16_t id){
     // CALL(aGetMart);
-    const item_t* mart = GetMart(id);
+    const ItemId* mart = GetMart(id);
     // LD_A_C;
     // LD_addr_A(wMartType);
     wram->wMartType = type;
@@ -124,7 +126,7 @@ void BargainShop(void){
     // LD_B(BANK(aBargainShopData));
     // LD_DE(mBargainShopData);
     // CALL(aLoadMartPointer);
-    LoadMartPointer((const item_t*)BargainShopData, BargainShopData_Size);
+    LoadPricedMartPointer(BargainShopData, BargainShopData_Size);
     // CALL(aReadMart);
     ReadMart();
     // CALL(aLoadStandardMenuHeader);
@@ -180,7 +182,7 @@ void RooftopSale(void){
 
 // ok:
     // CALL(aLoadMartPointer);
-    LoadMartPointer((const item_t*)de, de_size);
+    LoadPricedMartPointer(de, de_size);
     // CALL(aReadMart);
     ReadMart();
     // CALL(aLoadStandardMenuHeader);
@@ -196,7 +198,7 @@ void RooftopSale(void){
     // RET;
 }
 
-void LoadMartPointer(const item_t* ptr, uint32_t size){
+void LoadMartPointer(const ItemId* ptr, size_t size){
     // LD_A_B;
     // LD_addr_A(wMartPointerBank);
     // LD_A_E;
@@ -204,8 +206,11 @@ void LoadMartPointer(const item_t* ptr, uint32_t size){
     // LD_A_D;
     // LD_addr_A(wMartPointer + 1);
     sMartPointer = ptr;
+    sPricedMartPointer = NULL;
     // LD_HL(wCurMartCount);
-    wram->wCurMartCount = size;
+    if(size >= lengthof(sCurMart.items) || size > UINT8_MAX)
+        abort();
+    wram->wCurMartCount = (uint8_t)size;
     //assert ['wCurMartCount + 1 == wCurMartItems'];
     // XOR_A_A;
     // LD_BC(16);
@@ -222,7 +227,20 @@ void LoadMartPointer(const item_t* ptr, uint32_t size){
     // RET;
 }
 
-const item_t* GetMart(uint16_t de){
+void LoadPricedMartPointer(const item_price_s* ptr, size_t size){
+    if(size >= lengthof(sCurMart.items) || size > UINT8_MAX)
+        abort();
+    sPricedMartPointer = ptr;
+    sMartPointer = NULL;
+    wram->wCurMartCount = (uint8_t)size;
+    ByteFill(&sCurMart, sizeof(sCurMart), 0);
+    sCurMart.count = (uint8_t)size;
+    wram->wMartJumptableIndex = STANDARDMART_HOWMAYIHELPYOU;
+    wram->wBargainShopFlags = 0;
+    wram->wFacingDirection = 0;
+}
+
+const ItemId* GetMart(uint16_t de){
     // LD_A_E;
     // CP_A(NUM_MARTS);
     // IF_C goto IsAMart;
@@ -371,8 +389,8 @@ void FarReadMart(void){
     // LD_H_hl;
     // LD_L_A;
     // LD_DE(wCurMartCount);
-    const item_t* hl = (const item_t*)sMartPointer;
-    item_t* de = sCurMart.items;
+    const ItemId* hl = sMartPointer;
+    LegacyItemId* de = sCurMart.items;
 
     uint32_t i = 0;
     for(i = 0; i < wram->wCurMartCount; ++i) {
@@ -380,14 +398,17 @@ void FarReadMart(void){
         // LD_A_addr(wMartPointerBank);
         // CALL(aGetFarByte);
         // LD_de_A;
-        de[i] = hl[i];
+        if(!TryItemIdToLegacy(hl[i], de + i)) {
+            log_err("Mart item ID %u cannot enter the legacy scrolling-menu record.\n", hl[i]);
+            abort();
+        }
         // INC_HL;
         // INC_DE;
         // CP_A(-1);
         // IF_NZ goto CopyMart;
     }
 
-    de[i] = (item_t)-1;
+    de[i] = LEGACY_ITEM_LIST_END;
     // LD_HL(wMartItem1BCD);
     // LD_DE(wCurMartItems);
     de = sCurMart.items;
@@ -412,7 +433,7 @@ void FarReadMart(void){
 }
 
 //  Return the price of item a in BCD at hl and in tiles at wStringBuffer1.
-void GetMartItemPrice(item_price_s* hl, item_t a){
+void GetMartItemPrice(item_price_s* hl, ItemId a){
     // PUSH_HL;
     // LD_addr_A(wCurItem);
     // FARCALL(aGetItemPrice);
@@ -484,13 +505,13 @@ void ReadMart(void){
     // LD_H_hl;
     // LD_L_A;
     // PUSH_HL;
-    const item_price_s* hl = (const item_price_s*)sMartPointer;
+    const item_price_s* hl = sPricedMartPointer;
 //  set hl to the first item
     // INC_HL;
     // LD_BC(wMartItem1BCD);
     item_price_s* bc = sMartItems;
     // LD_DE(wCurMartItems);
-    item_t* de = sCurMart.items;
+    LegacyItemId* de = sCurMart.items;
 
     uint32_t i = 0;
     while(i < wram->wCurMartCount) {
@@ -498,7 +519,10 @@ void ReadMart(void){
     //  copy the items to wCurMartItems
         // LD_A_hli;
         // LD_de_A;
-        de[i] = hl[i].id;
+        if(!TryItemIdToLegacy(hl[i].id, de + i)) {
+            log_err("Priced mart item ID %u cannot enter the legacy scrolling-menu record.\n", hl[i].id);
+            abort();
+        }
         // INC_DE;
     //  -1 is the terminator
         // CP_A(-1);
@@ -525,7 +549,7 @@ void ReadMart(void){
         i++;
     }
 
-    de[i] = (item_t)-1;
+    de[i] = LEGACY_ITEM_LIST_END;
 // done:
     // POP_HL;
     // LD_A_hl;
@@ -816,7 +840,7 @@ bool BargainShopAskPurchaseQuantity(void){
     // ADD_HL_DE;
     // ADD_HL_DE;
     // INC_HL;
-    const item_price_s* hl = (const item_price_s*)sMartPointer;
+    const item_price_s* hl = sPricedMartPointer + wram->wMartItemID;
     uint16_t price = hl->price;
     // LD_A_hli;
     // LDH_addr_A(hMoneyTemp + 2);
@@ -845,7 +869,7 @@ static uint16_t RooftopSaleAskPurchaseQuantity_GetSalePrice(void){
     // ADD_HL_DE;
     // ADD_HL_DE;
     // INC_HL;
-    const item_price_s* hl = (const item_price_s*)sMartPointer;
+    const item_price_s* hl = sPricedMartPointer + wram->wMartItemID;
     // LD_E_hl;
     // INC_HL;
     // LD_D_hl;

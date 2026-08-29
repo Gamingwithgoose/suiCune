@@ -7,7 +7,9 @@ uint8_t CalcLevel(struct PartyMon* mon){
     // LD_A_addr(wTempMonSpecies);
     // LD_addr_A(wCurSpecies);
     // CALL(aGetBaseData);
-    GetBaseData(mon->mon.species);
+    const struct BaseData* base = GetSpeciesBaseData(mon->mon.species);
+    if(base == NULL)
+        return 1;
     // LD_D(1);
     uint8_t d = 1;
 
@@ -21,7 +23,7 @@ uint8_t CalcLevel(struct PartyMon* mon){
         if(d == MAX_LEVEL + 1)
             break;
         // CALL(aCalcExpAtLevel);
-        uint32_t exp = CalcExpAtLevel(d);
+        uint32_t exp = CalcExpAtLevelWithGrowthRate(base->growthRate, d);
         uint32_t mon_exp = (mon->mon.exp[2] | (mon->mon.exp[1] << 8) | (mon->mon.exp[0] << 16));
         // PUSH_HL;
         // LD_HL(wTempMonExp + 2);
@@ -50,7 +52,7 @@ uint8_t CalcLevel(struct PartyMon* mon){
     return d;
 }
 
-uint32_t CalcExpAtLevel(uint8_t d){
+uint32_t CalcExpAtLevelWithGrowthRate(uint8_t growthRate, uint8_t d){
 //  (a/b)*n**3 + c*n**2 + d*n - e
     // LD_A_addr(wBaseGrowthRate);
     // ADD_A_A;
@@ -59,7 +61,7 @@ uint32_t CalcExpAtLevel(uint8_t d){
     // LD_B(0);
     // LD_HL(mGrowthRates);
     // ADD_HL_BC;
-    struct GrowthRate g = GrowthRates[wram->wBaseGrowthRate];
+    struct GrowthRate g = GrowthRates[growthRate];
 //  Cube the level
     // CALL(aCalcExpAtLevel_LevelSquared);
     // LD_A_D;
@@ -207,4 +209,15 @@ uint32_t CalcExpAtLevel(uint8_t d){
 
 // INCLUDE "data/growth_rates.asm"
 
+}
+
+uint32_t CalcExpAtLevelForSpecies(SpeciesId species, uint8_t level) {
+    const struct BaseData* base = GetSpeciesBaseData(species);
+    if(base == NULL)
+        return 0;
+    return CalcExpAtLevelWithGrowthRate(base->growthRate, level);
+}
+
+uint32_t CalcExpAtLevel(uint8_t level) {
+    return CalcExpAtLevelWithGrowthRate(wram->wBaseGrowthRate, level);
 }

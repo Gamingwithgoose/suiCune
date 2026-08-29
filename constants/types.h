@@ -104,6 +104,34 @@ typedef uint8_t LegacyDexId;
 typedef uint8_t LegacyMoveId;
 typedef uint8_t LegacyItemId;
 
+static inline bool TrySpeciesIdToLegacy(SpeciesId value, LegacySpeciesId* dest) {
+    if(value > UINT8_MAX)
+        return false;
+    *dest = (LegacySpeciesId)value;
+    return true;
+}
+
+static inline bool TryDexIdToLegacy(DexId value, LegacyDexId* dest) {
+    if(value > UINT8_MAX)
+        return false;
+    *dest = (LegacyDexId)value;
+    return true;
+}
+
+static inline bool TryMoveIdToLegacy(MoveId value, LegacyMoveId* dest) {
+    if(value > UINT8_MAX)
+        return false;
+    *dest = (LegacyMoveId)value;
+    return true;
+}
+
+static inline bool TryItemIdToLegacy(ItemId value, LegacyItemId* dest) {
+    if(value > UINT8_MAX)
+        return false;
+    *dest = (LegacyItemId)value;
+    return true;
+}
+
 #define SPECIES_LIST_END ((SpeciesId)UINT16_MAX)
 #define ITEM_LIST_END ((ItemId)UINT16_MAX)
 #define MOVE_LIST_END ((MoveId)UINT16_MAX)
@@ -295,59 +323,6 @@ Object2
 // };
 
 #if defined(__cplusplus) || defined(_MSC_VER)
-struct BaseMon
-#else
-struct __attribute__((packed)) BaseMon
-#endif
-{
-    LegacyDexId dexNo;
-    union
-    {
-        uint8_t stats[6];
-        struct 
-        {
-            uint8_t hp;
-            uint8_t atk;
-            uint8_t def;
-            uint8_t spd;
-            uint8_t sat;
-            uint8_t sdf;
-        };
-    };
-    union
-    {
-        uint8_t types[2];
-        struct
-        {
-            uint8_t type_1;
-            uint8_t type_2;
-        };
-    };
-    uint8_t catchRate;
-    uint8_t exp;
-    union 
-    {
-        uint8_t items[2];
-        struct
-        {
-            uint8_t item_1;
-            uint8_t item_2;
-        };
-    };
-    uint16_t gender;
-    uint16_t eggSteps;
-
-    uint8_t picSize;
-    uint16_t frontPic;
-    uint16_t backPic;
-
-    uint8_t growthRate;
-    uint8_t eggGroups;
-    uint8_t TMHM[(NUM_TM_HM_TUTOR + 7) / 8];
-};
-
-
-#if defined(__cplusplus) || defined(_MSC_VER)
 struct SpriteData
 #else
 struct __attribute__((packed)) SpriteData
@@ -360,10 +335,9 @@ struct __attribute__((packed)) SpriteData
     uint8_t palette;
 };
 
-#pragma pack(push, 1)
 struct BaseData
 {
-    LegacyDexId dexNo;
+    DexId dexNo;
     union {
         uint8_t stats[6];
         struct {
@@ -376,19 +350,19 @@ struct BaseData
         };
     };
     union {
-        uint8_t types[2];
+        TypeId types[2];
         struct {
-            uint8_t type1;
-            uint8_t type2;
+            TypeId type1;
+            TypeId type2;
         };
     };
     uint8_t catchRate;
     uint8_t exp;
     union {
-        LegacyItemId items[2];
+        ItemId items[2];
         struct {
-            LegacyItemId item1;
-            LegacyItemId item2;
+            ItemId item1;
+            ItemId item2;
         };
     };
     uint8_t gender;
@@ -402,7 +376,29 @@ struct BaseData
     uint8_t eggGroups;
     uint8_t TMHM[((NUM_TM_HM_TUTOR) + 7) / 8];
 };
+
+#pragma pack(push, 1)
+struct LegacyBaseData
+{
+    LegacyDexId dexNo;
+    uint8_t stats[6];
+    uint8_t types[2];
+    uint8_t catchRate;
+    uint8_t exp;
+    LegacyItemId items[2];
+    uint8_t gender;
+    uint8_t unknown1;
+    uint8_t eggSteps;
+    uint8_t unknown2;
+    uint8_t picSize;
+    uint16_t unusedFrontpic;
+    uint16_t unusedBackpic;
+    uint8_t growthRate;
+    uint8_t eggGroups;
+    uint8_t TMHM[((NUM_TM_HM_TUTOR) + 7) / 8];
+};
 #pragma pack(pop)
+static_assert(sizeof(struct LegacyBaseData) == BASE_DATA_SIZE, "");
 
 struct TrainerClassAttr
 {

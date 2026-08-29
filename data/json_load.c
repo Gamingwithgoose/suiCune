@@ -53,15 +53,17 @@ void JSONLoadMarts(void) {
 
     for(json_object_element_t* it = root_object->start; it != NULL; it = it->next) {
         json_array_t* arr = json_value_as_array(it->value);
-        item_t* mart = malloc(sizeof(item_t) * arr->length);
-        uint8_t i = 0;
+        ItemId* mart = malloc(sizeof(ItemId) * arr->length);
+        size_t i = 0;
         for(json_array_element_t* arr_it = arr->start; arr_it != NULL; arr_it = arr_it->next) {
             u32_flag_s res2 = JSONStringToConstant(arr_it->value);
             if(!res2.flag) {
                 mart[i++] = NO_ITEM;
             }
             else {
-                mart[i++] = res2.a;
+                if(res2.a > UINT16_MAX)
+                    abort();
+                mart[i++] = (ItemId)res2.a;
             }
         }
         u32_flag_s res = FindConstantValueByString(it->name->string);
@@ -234,9 +236,9 @@ void JSONLoadPokemonBaseStats(struct BaseData* data) {
             if(strcmp(fkey, "dexNo") == 0) {
                 u32_flag_s res = JSONStringToConstant(mon_field_it->value);
                 if(res.flag) {
-                    if(res.a > UINT8_MAX)
+                    if(res.a > UINT16_MAX)
                         abort();
-                    data[i].dexNo = (LegacyDexId)res.a;
+                    data[i].dexNo = (DexId)res.a;
                 }
             }
             else if(strcmp(fkey, "gender") == 0) {
@@ -255,6 +257,16 @@ void JSONLoadPokemonBaseStats(struct BaseData* data) {
                 int_flag_s res = JSONValueToInt(mon_field_it->value);
                 if(res.flag)
                     data[i].exp = (uint8_t)res.a;
+            }
+            else if(strcmp(fkey, "items") == 0) {
+                json_array_t* items_arr = json_value_as_array(mon_field_it->value);
+                uint32_t j = 0;
+                for(json_array_element_t* items_it = items_arr->start; items_it && j < 2; j++, items_it = items_it->next) {
+                    u32_flag_s res = JSONStringToConstant(items_it->value);
+                    if(!res.flag || res.a > UINT16_MAX)
+                        abort();
+                    data[i].items[j] = (ItemId)res.a;
+                }
             }
             else if(strcmp(fkey, "eggSteps") == 0) {
                 int_flag_s res = JSONValueToInt(mon_field_it->value);
@@ -283,16 +295,21 @@ void JSONLoadPokemonBaseStats(struct BaseData* data) {
                 if(types_arr->length == 1) {
                     u32_flag_s res = JSONStringToConstant(types_arr->start->value);
                     if(res.flag) {
-                        data[i].types[0] = (uint8_t)res.a;
-                        data[i].types[1] = (uint8_t)res.a;
+                        if(res.a > UINT8_MAX)
+                            abort();
+                        data[i].types[0] = (TypeId)res.a;
+                        data[i].types[1] = (TypeId)res.a;
                     }
                 }
                 else {
                     uint32_t j = 0;
                     for(json_array_element_t* types_it = types_arr->start; types_it && j < 2; j++, types_it = types_it->next) {
                         u32_flag_s res = JSONStringToConstant(types_it->value);
-                        if(res.flag)
-                            data[i].types[j] = res.a;
+                        if(res.flag) {
+                            if(res.a > UINT8_MAX)
+                                abort();
+                            data[i].types[j] = (TypeId)res.a;
+                        }
                     }
                 }
             }

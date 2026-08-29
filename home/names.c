@@ -413,6 +413,10 @@ uint8_t* GetItemName(ItemId a){
 
     // CP_A(TM01);
     // IF_NC goto TM;
+    if(a > UINT8_MAX) {
+        U82CB(wram->wStringBuffer1, ITEM_NAME_LENGTH, "?@");
+        return wram->wStringBuffer1;
+    }
     if(a >= TM01)
     {
     // TM:
@@ -422,8 +426,12 @@ uint8_t* GetItemName(ItemId a){
     else 
     {
         // LD_addr_A(wCurSpecies);
-        if(a <= UINT8_MAX)
-            wram->wCurSpecies = (LegacyItemId)a;
+        LegacyItemId legacyItem;
+        if(!TryItemIdToLegacy(a, &legacyItem)) {
+            U82CB(wram->wStringBuffer1, ITEM_NAME_LENGTH, "?@");
+            return wram->wStringBuffer1;
+        }
+        wram->wCurSpecies = legacyItem;
 
         // LD_A(ITEM_NAME);
         // LD_addr_A(wNamedObjectType);
@@ -451,6 +459,10 @@ uint8_t* GetTMHMName(ItemId a){
     // CP_A(HM01);
     // PUSH_AF;
     // IF_C goto TM;
+    if(a < TM01 || a > MT03) {
+        U82CB(wram->wStringBuffer1, ITEM_NAME_LENGTH, "?@");
+        return wram->wStringBuffer1;
+    }
     if(a < HM01)
     {
         // LD_HL(mGetTMHMName_TMText);
@@ -553,7 +565,7 @@ uint8_t* GetMoveName(MoveId move){
 
     // CALL(aGetName);
     ByteFill(wram->wStringBuffer1, sizeof(wram->wStringBuffer1), CHAR_TERM);
-    if(move >= 1)
+    if(move >= 1 && move <= NUM_ATTACKS)
         return U82CA(wram->wStringBuffer1, MoveNames[move - 1]);
     // LD_DE(wStringBuffer1);
     return wram->wStringBuffer1;
