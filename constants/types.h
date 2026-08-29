@@ -335,6 +335,10 @@ struct __attribute__((packed)) SpriteData
     uint8_t palette;
 };
 
+#if defined(__cplusplus) || defined(_MSC_VER)
+#pragma pack(push)
+#pragma pack()
+#endif
 struct BaseData
 {
     DexId dexNo;
@@ -376,6 +380,9 @@ struct BaseData
     uint8_t eggGroups;
     uint8_t TMHM[((NUM_TM_HM_TUTOR) + 7) / 8];
 };
+#if defined(__cplusplus) || defined(_MSC_VER)
+#pragma pack(pop)
+#endif
 
 #pragma pack(push, 1)
 struct LegacyBaseData
@@ -476,6 +483,76 @@ PartyMon
         };
     };
 };
+
+#if defined(__cplusplus) || defined(_MSC_VER)
+#pragma pack(push)
+#pragma pack()
+#endif
+// Native runtime Pokemon records. These are intentionally not packed and are
+// not constrained to Crystal's byte-sized content IDs. Numeric values that
+// represent actual quantities are kept in host-native form. The legacy
+// BoxMon/PartyMon records above remain temporary conversion targets for
+// unmigrated WRAM/SRAM/link paths only.
+struct NativeBoxMon
+{
+    SpeciesId species;
+    ItemId item;
+    MoveId moves[NUM_MOVES];
+    uint16_t id;
+    uint32_t exp;
+    union
+    {
+        uint16_t statExp[5];
+        struct
+        {
+            uint16_t hpExp;
+            uint16_t atkExp;
+            uint16_t defExp;
+            uint16_t spdExp;
+            uint16_t spcExp;
+        };
+    };
+    // DVs retain the existing nibble/byte interpretation used by GetUnownLetter
+    // and stat code while ownership migrates; they are not a content ID.
+    uint16_t DVs;
+    uint8_t PP[NUM_MOVES];
+    uint8_t happiness;
+    uint8_t pokerusStatus;
+    union
+    {
+        uint8_t caughtData[2];
+        struct
+        {
+            uint8_t caughtTimeLevel;
+            uint8_t caughtGenderLocation;
+        };
+    };
+    uint8_t level;
+};
+
+struct NativePartyMon
+{
+    struct NativeBoxMon mon;
+    uint8_t status;
+    uint8_t unused;
+    uint16_t HP;
+    uint16_t maxHP;
+    union
+    {
+        uint16_t stats[5];
+        struct
+        {
+            uint16_t attack;
+            uint16_t defense;
+            uint16_t speed;
+            uint16_t spclAtk;
+            uint16_t spclDef;
+        };
+    };
+};
+#if defined(__cplusplus) || defined(_MSC_VER)
+#pragma pack(pop)
+#endif
 
 #if defined(__cplusplus) || defined(_MSC_VER)
 struct 
@@ -2280,8 +2357,8 @@ struct PokemonData {
     uint8_t eggMonNickname[MON_NAME_LENGTH];
     uint8_t eggMonOT[NAME_LENGTH];
     struct BoxMon eggMon;
-    LegacySpeciesId bugContestSecondPartySpecies;
-    struct PartyMon contestMon;
+    SpeciesId bugContestSecondPartySpecies;
+    struct NativePartyMon contestMon;
     uint8_t dunsparceMapGroup;
     uint8_t dunsparceMapNumber;
     uint8_t fishingSwarmFlag;

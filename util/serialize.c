@@ -23,7 +23,9 @@ enum FieldType {
     TY_U8,
     TY_U16LE,
     TY_U16BE,
+    TY_U24BE,
     TY_SPECIES,
+    TY_SPECIES_OR_END,
     TY_ITEM,
     TY_MOVE,
     TY_LEGACY_SPECIES,
@@ -45,6 +47,8 @@ enum {
     STRUC_U8ITEM,
     STRUC_BOXMON,
     STRUC_PARTYMON,
+    STRUC_NATIVEBOXMON,
+    STRUC_NATIVEPARTYMON,
     STRUC_NICKNAMEDMON,
     STRUC_TRADEMON,
     STRUC_ROAMER,
@@ -100,6 +104,35 @@ const struct SerialField Struc_PartyMon[] = {
     FLD(TY_U16LE, HP),
     FLD(TY_U16LE, maxHP),
     FLD_ARR_(TY_U16LE, stats)
+};
+#undef FLD_TYPE
+
+#define FLD_TYPE struct NativeBoxMon
+const struct SerialField Struc_NativeBoxMon[] = {
+    FLD(TY_SPECIES, species),
+    FLD(TY_ITEM, item),
+    FLD_ARR_(TY_MOVE, moves),
+    FLD(TY_U16LE, id),
+    FLD(TY_U24BE, exp),
+    FLD_ARR_(TY_U16BE, statExp),
+    FLD(TY_U16LE, DVs),
+    FLD_ARR_(TY_U8, PP),
+    FLD(TY_U8, happiness),
+    FLD(TY_U8, pokerusStatus),
+    FLD(TY_U8, caughtTimeLevel),
+    FLD(TY_U8, caughtGenderLocation),
+    FLD(TY_U8, level),
+};
+#undef FLD_TYPE
+
+#define FLD_TYPE struct NativePartyMon
+const struct SerialField Struc_NativePartyMon[] = {
+    FLD_STR(STRUC_NATIVEBOXMON, mon),
+    FLD(TY_U8, status),
+    FLD(TY_U8, unused),
+    FLD(TY_U16BE, HP),
+    FLD(TY_U16BE, maxHP),
+    FLD_ARR_(TY_U16BE, stats),
 };
 #undef FLD_TYPE
 
@@ -642,8 +675,8 @@ const struct SerialField Struc_PokemonData[] = {
     FLD_ARR_(TY_U8, eggMonNickname),
     FLD_ARR_(TY_U8, eggMonOT),
     FLD_STR(STRUC_BOXMON, eggMon),
-    FLD(TY_LEGACY_SPECIES, bugContestSecondPartySpecies),
-    FLD_STR(STRUC_PARTYMON, contestMon),
+    FLD(TY_SPECIES_OR_END, bugContestSecondPartySpecies),
+    FLD_STR(STRUC_NATIVEPARTYMON, contestMon),
     FLD(TY_U8, dunsparceMapGroup),
     FLD(TY_U8, dunsparceMapNumber),
     FLD(TY_U8, fishingSwarmFlag),
@@ -672,6 +705,8 @@ const struct SerialStruct Structs[] = {
     serial_struct(STRUC_U8ITEM, U8Item),
     serial_struct(STRUC_BOXMON, BoxMon),
     serial_struct(STRUC_PARTYMON, PartyMon),
+    serial_struct(STRUC_NATIVEBOXMON, NativeBoxMon),
+    serial_struct(STRUC_NATIVEPARTYMON, NativePartyMon),
     serial_struct(STRUC_NICKNAMEDMON, NicknamedMon),
     serial_struct(STRUC_TRADEMON, TradeMon),
     serial_struct(STRUC_ROAMER, Roamer),
@@ -710,9 +745,30 @@ uint8_t* Serialize_Field(uint8_t* dst, const struct SerialField* fld, const void
             for(uint32_t i = 0; i < fld->count; ++i) 
                 dst = Serialize_U16_BE(dst, *FLD_PTR_IDX(data, fld->offset, i, uint16_t));
             return dst;
+        case TY_U24BE:
+            for(uint32_t i = 0; i < fld->count; ++i) {
+                uint32_t value = *FLD_PTR_IDX(data, fld->offset, i, uint32_t);
+                if(value > 0x00ffffffu) {
+                    fprintf(stderr, "Cannot serialize 24-bit Pokemon value %u into the temporary Crystal save field.\n", value);
+                    abort();
+                }
+                *(dst++) = (uint8_t)(value >> 16);
+                *(dst++) = (uint8_t)(value >> 8);
+                *(dst++) = (uint8_t)value;
+            }
+            return dst;
         case TY_SPECIES: 
             for(uint32_t i = 0; i < fld->count; ++i) 
                 dst = Serialize_Species(dst, *FLD_PTR_IDX(data, fld->offset, i, SpeciesId));
+            return dst;
+        case TY_SPECIES_OR_END:
+            for(uint32_t i = 0; i < fld->count; ++i) {
+                SpeciesId species = *FLD_PTR_IDX(data, fld->offset, i, SpeciesId);
+                if(species == SPECIES_LIST_END)
+                    *(dst++) = LEGACY_SPECIES_LIST_END;
+                else
+                    dst = Serialize_Species(dst, species);
+            }
             return dst;
         case TY_ITEM: 
             for(uint32_t i = 0; i < fld->count; ++i) 
@@ -904,9 +960,23 @@ const uint8_t* Deserialize_Field(void* data, const struct SerialField* fld, cons
             for(uint32_t i = 0; i < fld->count; ++i) 
                 src = Deserialize_U16_BE(FLD_PTR_IDX(data, fld->offset, i, uint16_t), src);
             return src;
+        case TY_U24BE:
+            for(uint32_t i = 0; i < fld->count; ++i) {
+                *FLD_PTR_IDX(data, fld->offset, i, uint32_t) =
+                    ((uint32_t)src[0] << 16) | ((uint32_t)src[1] << 8) | src[2];
+                src += 3;
+            }
+            return src;
         case TY_SPECIES: 
             for(uint32_t i = 0; i < fld->count; ++i) 
                 src = Deserialize_Species(FLD_PTR_IDX(data, fld->offset, i, SpeciesId), src);
+            return src;
+        case TY_SPECIES_OR_END:
+            for(uint32_t i = 0; i < fld->count; ++i) {
+                SpeciesId* species = FLD_PTR_IDX(data, fld->offset, i, SpeciesId);
+                *species = (*src == LEGACY_SPECIES_LIST_END)? SPECIES_LIST_END: *src;
+                src++;
+            }
             return src;
         case TY_ITEM: 
             for(uint32_t i = 0; i < fld->count; ++i) 

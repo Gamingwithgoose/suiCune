@@ -3,6 +3,7 @@
 #include "../../../home/flag.h"
 #include "../../../home/random.h"
 #include "../../../data/events/bug_contest_flags.h"
+#include <stdlib.h>
 
 void SelectRandomBugContestContestants(void){
 //  Select five random people to participate in the current contest.
@@ -114,7 +115,8 @@ void ContestDropOffMons(void){
     //  ... backing up the second mon index somewhere...
         // LD_A_hl;
         // LD_addr_A(wBugContestSecondPartySpecies);
-        gPokemon.bugContestSecondPartySpecies = gPokemon.partySpecies[1];
+        gPokemon.bugContestSecondPartySpecies =
+            (gPokemon.partySpecies[1] == LEGACY_SPECIES_LIST_END)? SPECIES_LIST_END: gPokemon.partySpecies[1];
     //  ... and replacing it with the terminator byte
         // LD_hl(-1);
         gPokemon.partySpecies[1] = (species_t)-1;
@@ -138,7 +140,16 @@ void ContestReturnMons(void){
     species_t* hl = gPokemon.partySpecies + 1;
     // LD_A_addr(wBugContestSecondPartySpecies);
     // LD_hl_A;
-    *hl = gPokemon.bugContestSecondPartySpecies;
+    LegacySpeciesId restoredSpecies;
+    if(gPokemon.bugContestSecondPartySpecies == SPECIES_LIST_END) {
+        restoredSpecies = LEGACY_SPECIES_LIST_END;
+    }
+    else if(!TrySpeciesIdToLegacy(gPokemon.bugContestSecondPartySpecies, &restoredSpecies)) {
+        log_err("Bug Contest backup species %u cannot return to the still-legacy party list.\n",
+                (unsigned)gPokemon.bugContestSecondPartySpecies);
+        abort();
+    }
+    *hl = restoredSpecies;
 //  Restore the party count, which must be recomputed.
     // LD_B(1);
     uint8_t b = 1;

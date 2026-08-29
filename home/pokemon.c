@@ -12,6 +12,7 @@
 #include "../data/pokemon/pic_pointers.h"
 #include "../data/pokemon/unown_pic_pointers.h"
 #include "../data/pokemon/cries.h"
+#include "../util/misc.h"
 #include <stdlib.h>
 
 bool IsAPokemon(SpeciesId species) {
@@ -302,6 +303,87 @@ const struct BaseData* GetSpeciesBaseData(SpeciesId species) {
     if(species == 0 || species == EGG || species > NUM_POKEMON)
         return NULL;
     return BasePokemonData + (species - 1);
+}
+
+bool ConvertBoxMonToNative(struct NativeBoxMon* dest, const struct BoxMon* src) {
+    if(dest == NULL || src == NULL)
+        return false;
+
+    dest->species = src->species;
+    dest->item = src->item;
+    for(size_t i = 0; i < NUM_MOVES; ++i)
+        dest->moves[i] = src->moves[i];
+    dest->id = src->id;
+    dest->exp = ((uint32_t)src->exp[0] << 16) | ((uint32_t)src->exp[1] << 8) | src->exp[2];
+    for(size_t i = 0; i < lengthof(dest->statExp); ++i)
+        dest->statExp[i] = BigEndianToNative16(src->statExp[i]);
+    dest->DVs = src->DVs;
+    CopyBytes(dest->PP, src->PP, sizeof(dest->PP));
+    dest->happiness = src->happiness;
+    dest->pokerusStatus = src->pokerusStatus;
+    CopyBytes(dest->caughtData, src->caughtData, sizeof(dest->caughtData));
+    dest->level = src->level;
+    return true;
+}
+
+bool ConvertNativeBoxMonToLegacy(struct BoxMon* dest, const struct NativeBoxMon* src) {
+    if(dest == NULL || src == NULL || src->exp > 0x00ffffffu)
+        return false;
+
+    LegacySpeciesId species;
+    LegacyItemId item;
+    LegacyMoveId moves[NUM_MOVES];
+    if(!TrySpeciesIdToLegacy(src->species, &species)
+    || !TryItemIdToLegacy(src->item, &item))
+        return false;
+    for(size_t i = 0; i < NUM_MOVES; ++i) {
+        if(!TryMoveIdToLegacy(src->moves[i], &moves[i]))
+            return false;
+    }
+
+    // All narrowing is validated before the legacy destination is mutated.
+    dest->species = species;
+    dest->item = item;
+    CopyBytes(dest->moves, moves, sizeof(dest->moves));
+    dest->id = src->id;
+    dest->exp[0] = (uint8_t)(src->exp >> 16);
+    dest->exp[1] = (uint8_t)(src->exp >> 8);
+    dest->exp[2] = (uint8_t)src->exp;
+    for(size_t i = 0; i < lengthof(src->statExp); ++i)
+        dest->statExp[i] = NativeToBigEndian16(src->statExp[i]);
+    dest->DVs = src->DVs;
+    CopyBytes(dest->PP, src->PP, sizeof(dest->PP));
+    dest->happiness = src->happiness;
+    dest->pokerusStatus = src->pokerusStatus;
+    CopyBytes(dest->caughtData, src->caughtData, sizeof(dest->caughtData));
+    dest->level = src->level;
+    return true;
+}
+
+bool ConvertPartyMonToNative(struct NativePartyMon* dest, const struct PartyMon* src) {
+    if(dest == NULL || src == NULL || !ConvertBoxMonToNative(&dest->mon, &src->mon))
+        return false;
+
+    dest->status = src->status;
+    dest->unused = src->unused;
+    dest->HP = BigEndianToNative16(src->HP);
+    dest->maxHP = BigEndianToNative16(src->maxHP);
+    for(size_t i = 0; i < lengthof(dest->stats); ++i)
+        dest->stats[i] = BigEndianToNative16(src->stats[i]);
+    return true;
+}
+
+bool ConvertNativePartyMonToLegacy(struct PartyMon* dest, const struct NativePartyMon* src) {
+    if(dest == NULL || src == NULL || !ConvertNativeBoxMonToLegacy(&dest->mon, &src->mon))
+        return false;
+
+    dest->status = src->status;
+    dest->unused = src->unused;
+    dest->HP = NativeToBigEndian16(src->HP);
+    dest->maxHP = NativeToBigEndian16(src->maxHP);
+    for(size_t i = 0; i < lengthof(src->stats); ++i)
+        dest->stats[i] = NativeToBigEndian16(src->stats[i]);
+    return true;
 }
 
 bool ConvertBaseDataToLegacy(struct LegacyBaseData* dest, const struct BaseData* src) {

@@ -11,6 +11,7 @@
 #include "../../home/names.h"
 #include "../../util/serialize.h"
 #include "../../data/text/common.h"
+#include <stdlib.h>
 
 static void SetBoxmonOrEggmonCaughtData(struct BoxMon* boxmon, uint8_t level);
 static void SetGiftMonCaughtData(struct BoxMon* hl, uint8_t b);
@@ -26,6 +27,12 @@ void CheckPartyFullAfterContest(void){
         wram->wScriptVar = BUGCONTEST_NO_CATCH;
         // RET;
         return;
+    }
+
+    struct PartyMon legacyContest = {0};
+    if(!ConvertNativePartyMonToLegacy(&legacyContest, &gPokemon.contestMon)) {
+        log_err("Bug Contest Pokemon cannot enter the still-legacy party/box path.\n");
+        abort();
     }
 
     // LD_HL(wPartyCount);
@@ -52,7 +59,7 @@ void CheckPartyFullAfterContest(void){
             // LD_DE(wBufferMon);
             // LD_BC(BOXMON_STRUCT_LENGTH);
             // CALL(aCopyBytes);
-            CopyBytes(&wram->wBufferMon, &gPokemon.contestMon, sizeof(wram->wBufferMon));
+            CopyBytes(&wram->wBufferMon, &legacyContest, sizeof(wram->wBufferMon));
             // LD_HL(wPlayerName);
             // LD_DE(wBufferMonOT);
             // LD_BC(NAME_LENGTH);
@@ -130,9 +137,9 @@ void CheckPartyFullAfterContest(void){
     // ADD_HL_BC;
     // LD_A_addr(wContestMonSpecies);
     // LD_hli_A;
-    gPokemon.partySpecies[i] = gPokemon.contestMon.mon.species;
+    gPokemon.partySpecies[i] = legacyContest.mon.species;
     // LD_addr_A(wCurSpecies);
-    wram->wCurSpecies = gPokemon.contestMon.mon.species;
+    wram->wCurSpecies = legacyContest.mon.species;
     // LD_A(-1);
     // LD_hl_A;
     gPokemon.partySpecies[i+1] = (species_t)-1;
@@ -146,7 +153,7 @@ void CheckPartyFullAfterContest(void){
     // LD_HL(wContestMon);
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // CALL(aCopyBytes);
-    CopyBytes(gPokemon.partyMon + i, &gPokemon.contestMon, sizeof(gPokemon.contestMon));
+    CopyBytes(gPokemon.partyMon + i, &legacyContest, sizeof(legacyContest));
     // LD_A_addr(wPartyCount);
     // DEC_A;
     // LD_HL(wPartyMonOTs);

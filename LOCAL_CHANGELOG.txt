@@ -786,3 +786,184 @@ Test commands executed
 Build/test results
 ------------------
 Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Date/session: 2026-08-28 - Phase 1 native Pokemon ownership slice and application icon
+======================================================================================
+
+Task worked on
+--------------
+Started the first contained authoritative native-Pokemon ownership slice from
+`a7f13824` after the previous Codex handoff. The Bug Catching Contest's retained
+caught Pokemon is now stored as a native runtime Pokemon instead of a packed
+Crystal `PartyMon`, while explicit temporary conversion remains only where that
+Pokemon must enter still-unmigrated party/box/WRAM/save structures. Also replaced
+the project application icon with the user-supplied Celebi artwork and wired the
+Windows resource into the CMake target.
+
+Starting repository state
+-------------------------
+- HEAD was `a7f13824318fb9b3b4d0dfa6bd69e055c797675f` ("Continued from last job").
+- `lib/libmobile` was already dirty and remains user-owned and untouched.
+- No branch, commit, push, reset, restore, clean, or history operation was
+  performed.
+
+Files modified
+--------------
+- `.gitattributes`: marks `*.ico` as binary so Git cannot line-ending-normalize
+  or otherwise text-filter the Windows icon resource.
+- `CMakeLists.txt`: enables the RC language on Windows and adds `icon.rc` to the
+  executable target so CMake-built Windows executables embed the project icon.
+- `constants/types.h`: explicitly keeps native `BaseData` at default compiler
+  packing even inside the surrounding Crystal pack region; adds unpacked
+  `NativeBoxMon`/`NativePartyMon` runtime records with semantic Species/Item/Move
+  IDs, native 24-bit-experience representation in `uint32_t`, and host-native
+  stat-exp/HP/stat values; changes the Bug Contest retained Pokemon and backed-up
+  second-party species to native representations.
+- `home/pokemon.c`, `home/pokemon.h`: adds centralized checked conversion between
+  packed `BoxMon`/`PartyMon` records and native Pokemon records. Native-to-legacy
+  conversion validates every narrowing content ID and 24-bit experience range
+  before mutating the legacy destination.
+- `util/serialize.c`: teaches the temporary Crystal serializer how to project a
+  native Bug Contest Pokemon back into the existing 32-byte BoxMon / 48-byte
+  PartyMon save representation without making the native runtime structure
+  packed; adds explicit 24-bit big-endian field handling and a native species
+  list-entry serializer for the Bug Contest backup terminator.
+- `engine/events/bug_contest/caught_mon.c`: the caught contest Pokemon becomes
+  native immediately after the still-legacy party generator returns.
+- `engine/pokemon/caught_data.c`: converts the native contest Pokemon to a
+  temporary legacy record only when it must enter the still-legacy party/box
+  path; raw copying between differently shaped native/legacy records was
+  removed.
+- `engine/events/bug_contest/contest_2.c`: stores the backed-up second party
+  species as `SpeciesId` with a native terminator and performs checked conversion
+  only when restoring the still-legacy party list.
+- `engine/events/bug_contest/judging.c`: contest scoring now reads host-native HP
+  and stat values directly; conversion to the byte-sized WRAM judging result is
+  explicit and checked.
+- `engine/events/bug_contest/display_stats.c`: explicitly creates the temporary
+  big-endian numeric view required by the still-legacy number-printing API.
+- `icon.png`: replaced with a 32x32 transparent Celebi icon derived from the
+  user-supplied artwork using nearest-neighbor scaling.
+- `icon.ico`: replaced with a multi-resolution Windows icon containing 16, 24,
+  32, 48, 64, 128, and 256 pixel sizes.
+- `LOCAL_CHANGELOG.txt`: appended this handoff.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural changes actually made
+-----------------------------------
+- `NativeBoxMon` and `NativePartyMon` are the first explicit unpacked runtime
+  Pokemon records. Species, held item, and moves use `SpeciesId`, `ItemId`, and
+  `MoveId` rather than Crystal byte IDs.
+- Native experience is represented as a normal `uint32_t` value instead of a
+  three-byte array. Native stat experience, current/max HP, and calculated stats
+  are represented as host-native `uint16_t` values instead of values stored in
+  the byte order expected by the old Game Boy-oriented record.
+- The Bug Contest caught Pokemon is now authoritative in `NativePartyMon` form.
+  There is no mirrored native/legacy sidecar for it.
+- The Bug Contest second-party-species backup now uses `SpeciesId` and the native
+  `SPECIES_LIST_END` terminator rather than preserving the byte terminator as
+  runtime identity.
+- Native-to-legacy Pokemon conversion is centralized and validates all narrowing
+  before writing the legacy destination.
+- `BaseData`, which was already intended to be a native record, is now explicitly
+  protected from the surrounding pack(1) region on MSVC/C++ builds; exact
+  Crystal layout remains isolated to `LegacyBaseData`.
+
+Temporary migration bridges and exact removal conditions
+--------------------------------------------------------
+- `BugContest_SetCaughtContestMon_generatestats` still calls
+  `GeneratePartyMonStats` with a temporary packed `PartyMon`, then converts the
+  result to `NativePartyMon`. Remove this bridge when party/Pokemon generation
+  writes the native runtime record directly.
+- `CheckPartyFullAfterContest` converts the native contest Pokemon back to a
+  temporary `PartyMon` before inserting it into the current player party or box.
+  Remove this bridge when player party and box ownership migrate to native
+  Pokemon records.
+- Bug Contest judging still narrows the native species into
+  `wBugContestTemp.mon` because the WRAM judging record remains byte-shaped.
+  Remove that conversion when judging/result state leaves WRAM ownership.
+- `util/serialize.c` still serializes the native contest Pokemon into the old
+  Crystal save byte layout. This is strictly temporary scaffolding for the
+  current save system and must be deleted when the authoritative PC `save.dat`
+  serializer replaces Crystal SRAM persistence.
+- `NativeBoxMon::DVs` deliberately retains the existing two-byte/nibble
+  interpretation because current DV/Unown/stat algorithms consume that
+  representation. It is not a content-ID limit. Revisit only when those
+  algorithms are migrated to a clearer native DV abstraction.
+
+Save/compatibility implications
+-------------------------------
+- The existing Crystal SRAM byte layout is temporarily preserved for the Bug
+  Contest fields so the current save path is not silently changed mid-migration.
+- This preservation is NOT a long-term compatibility requirement. The project is
+  PC-only; original hardware, `.sav`, PKHeX, MBC/SRAM, and Game Boy binary-format
+  compatibility are not final targets. The temporary serializer projection exists
+  only until native `save.dat` becomes authoritative.
+- If a future native Bug Contest Pokemon uses an ID or experience value that the
+  temporary Crystal destination cannot represent, the boundary rejects it rather
+  than truncating or hiding bits.
+
+Application icon implications
+-----------------------------
+- `icon.png` remains the runtime SDL window-icon source on non-Windows paths that
+  use it.
+- `icon.ico` is the embedded Windows resource used by `icon.rc`.
+- CMake now includes that resource for Windows builds; the Makefile's existing
+  `icon.o`/windres path remains unchanged.
+
+Static source audit performed
+-----------------------------
+- Re-read every `gPokemon.contestMon` and `bugContestSecondPartySpecies` call site
+  after the type change; no remaining call site passes the native record directly
+  to an API requiring `PartyMon`/`BoxMon`.
+- Checked the legacy/native serializer projections by field width: both old and
+  native-projection BoxMon serialization are 32 bytes; both PartyMon forms
+  serialize to 48 bytes.
+- Inspected the final source diff and ran `git diff --check`; no whitespace/error
+  report remained.
+- Confirmed the pre-existing `lib/libmobile` dirty state was not modified.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None. No game, compiler, CMake configure, Make/Ninja, CTest, smoke test, or
+  runtime executable was invoked.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Known source-level risks / items for user validation
+----------------------------------------------------
+- This changes the in-memory `PokemonData` layout, which is intended because
+  `PokemonData` is a serialized native C owner rather than an exact WRAM overlay.
+  The unchanged serializer output width is intended to preserve the temporary
+  old save path until `save.dat` replaces it.
+- The new CMake Windows resource wiring has not been compiled in this session.
+- The native Pokemon conversion helpers and serializer field descriptors have
+  been source-audited but not compiler- or runtime-validated.
+
+Next recommended native-conversion task
+---------------------------------------
+1. Use `NativePartyMon`/`NativeBoxMon` as the model for the authoritative player
+   party migration: migrate party Pokemon ownership and party species identity
+   together, rather than widening `partySpecies` alone and creating divergent
+   state.
+2. Move party creation/generation, move/held-item access, battle staging and
+   post-battle synchronization onto the native records; keep temporary checked
+   conversion only at still-unmigrated box/WRAM paths.
+3. Migrate boxes and daycare after the player-party slice is coherent.
+4. Once live Pokemon ownership is native, implement the versioned PC-only
+   `save.dat` format and remove Crystal SRAM/MBC persistence instead of extending
+   the old save format further.

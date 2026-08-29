@@ -7,6 +7,7 @@
 #include "../../../home/gfx.h"
 #include "../../../home/clear_sprites.h"
 #include "../../../home/pokemon.h"
+#include "../../../util/misc.h"
 #include "../../../data/text/common.h"
 
 void DisplayCaughtContestMonStats(void){
@@ -95,7 +96,8 @@ void DisplayCaughtContestMonStats(void){
     // LD_DE(wContestMonMaxHP);
     // LD_BC((2 << 8) | 3);
     // CALL(aPrintNum);
-    PrintNum(coord(11, 4, wram->wTilemap), &gPokemon.contestMon.maxHP, 2, 3);
+    uint16_t contestMaxHP = NativeToBigEndian16(gPokemon.contestMon.maxHP);
+    PrintNum(coord(11, 4, wram->wTilemap), &contestMaxHP, 2, 3);
 
     // hlcoord(11, 10, wTilemap);
     // LD_DE(wEnemyMonMaxHP);

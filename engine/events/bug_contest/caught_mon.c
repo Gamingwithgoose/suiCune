@@ -8,6 +8,7 @@
 #include "../../../home/copy.h"
 #include "../../pokemon/move_mon.h"
 #include "../../../data/text/common.h"
+#include <stdlib.h>
 
 static void BugContest_SetCaughtContestMon_generatestats(void) {
     // XOR_A_A;
@@ -15,11 +16,14 @@ static void BugContest_SetCaughtContestMon_generatestats(void) {
     // LD_HL(wContestMon);
     // CALL(aByteFill);
     ByteFill(&gPokemon.contestMon, sizeof(gPokemon.contestMon), 0);
-    // XOR_A_A;
-    // LD_addr_A(wMonType);
-    // LD_HL(wContestMon);
-    // JP(mGeneratePartyMonStats);
-    GeneratePartyMonStats(&gPokemon.contestMon, wram->wTempEnemyMonSpecies, wram->wCurPartyLevel, PARTYMON, wram->wBattleMode);
+    // GeneratePartyMonStats still targets the packed Crystal-era PartyMon.
+    // Keep that dependency localized here until party generation itself is native.
+    struct PartyMon legacy = {0};
+    if(!GeneratePartyMonStats(&legacy, wram->wTempEnemyMonSpecies, wram->wCurPartyLevel, PARTYMON, wram->wBattleMode)
+    || !ConvertPartyMonToNative(&gPokemon.contestMon, &legacy)) {
+        log_err("Unable to create native Bug Contest Pokemon from the legacy generator.\n");
+        abort();
+    }
 }
 
 void BugContest_SetCaughtContestMon(void){

@@ -1050,6 +1050,11 @@ add_executable(${PROJECT_NAME}
   wram.c
 )
 
+if(WIN32)
+  enable_language(RC)
+  target_sources(${PROJECT_NAME} PRIVATE icon.rc)
+endif()
+
 if(FEATURE_MOBILE)
   add_library(libmobile
     lib/libmobile/callback.c

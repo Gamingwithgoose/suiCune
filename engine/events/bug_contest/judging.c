@@ -12,6 +12,7 @@
 #include "../../../home/random.h"
 #include "../../../data/text/common.h"
 #include "../../../data/events/bug_contest_winners.h"
+#include <stdlib.h>
 
 uint8_t v_BugContestJudging(void){
     // CALL(aContestScore);
@@ -229,7 +230,11 @@ void BugContest_JudgeContestants(uint16_t playerScore){
     wram->wBugContestTemp.winnerID = BUG_CONTEST_PLAYER;
     // LD_A_addr(wContestMon);
     // LD_hli_A;
-    wram->wBugContestTemp.mon = gPokemon.contestMon.mon.species;
+    if(!TrySpeciesIdToLegacy(gPokemon.contestMon.mon.species, &wram->wBugContestTemp.mon)) {
+        log_err("Bug Contest species %u cannot enter the legacy judging result record.\n",
+                (unsigned)gPokemon.contestMon.mon.species);
+        abort();
+    }
     // LDH_A_addr(hProduct);
     // LD_hli_A;
     // LDH_A_addr(hProduct + 1);
@@ -441,24 +446,24 @@ uint16_t ContestScore(void){
     // CALL(aContestScore_AddContestStat);
     // LD_A_addr(wContestMonMaxHP + 1);
     // CALL(aContestScore_AddContestStat);
-    score += (BigEndianToNative16(gPokemon.contestMon.maxHP) & 0xff) * 4;
+    score += (gPokemon.contestMon.maxHP & 0xff) * 4;
 
 // Stats
     // LD_A_addr(wContestMonAttack + 1);
     // CALL(aContestScore_AddContestStat);
-    score += BigEndianToNative16(gPokemon.contestMon.attack) & 0xff;
+    score += gPokemon.contestMon.attack & 0xff;
     // LD_A_addr(wContestMonDefense + 1);
     // CALL(aContestScore_AddContestStat);
-    score += BigEndianToNative16(gPokemon.contestMon.defense) & 0xff;
+    score += gPokemon.contestMon.defense & 0xff;
     // LD_A_addr(wContestMonSpeed + 1);
     // CALL(aContestScore_AddContestStat);
-    score += BigEndianToNative16(gPokemon.contestMon.speed) & 0xff;
+    score += gPokemon.contestMon.speed & 0xff;
     // LD_A_addr(wContestMonSpclAtk + 1);
     // CALL(aContestScore_AddContestStat);
-    score += BigEndianToNative16(gPokemon.contestMon.spclAtk) & 0xff;
+    score += gPokemon.contestMon.spclAtk & 0xff;
     // LD_A_addr(wContestMonSpclDef + 1);
     // CALL(aContestScore_AddContestStat);
-    score += BigEndianToNative16(gPokemon.contestMon.spclDef) & 0xff;
+    score += gPokemon.contestMon.spclDef & 0xff;
 
 // DVs
     // LD_A_addr(wContestMonDVs + 0);
@@ -500,7 +505,7 @@ uint16_t ContestScore(void){
     // SRL_A;
     // SRL_A;
     // CALL(aContestScore_AddContestStat);
-    score += (BigEndianToNative16(gPokemon.contestMon.HP) & 0xff) >> 3;
+    score += (gPokemon.contestMon.HP & 0xff) >> 3;
 
 // Whether it's holding an item
     // LD_A_addr(wContestMonItem);
