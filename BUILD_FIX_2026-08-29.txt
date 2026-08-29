@@ -1,0 +1,11 @@
+suiCune Windows Release build fix - 2026-08-29
+
+Fixed engine/items/tmhm2.c:
+- CanLearnTMHMMove() received const BaseData from GetSpeciesBaseData().
+- base->TMHM is therefore const uint8_t*, but SmallFarFlagAction() takes uint8_t*.
+- With -Werror, passing base->TMHM to SmallFarFlagAction() failed as discarded-qualifiers.
+- The CHECK_FLAG call was replaced with an equivalent direct read-only bit test.
+- No const cast and no weakening/removal of -Werror.
+
+Also replaced build_windows_release.bat with the logging/pause-on-failure version.
+It writes build_windows_release.log and keeps a double-clicked window open on failure.

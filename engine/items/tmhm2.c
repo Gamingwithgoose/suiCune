@@ -50,7 +50,7 @@ uint8_t CanLearnTMHMMove(SpeciesId species, MoveId move){
     // PREDEF(pSmallFarFlagAction);
     if(c > UINT16_MAX)
         return 0;
-    uint8_t res = SmallFarFlagAction(base->TMHM, (uint16_t)c, CHECK_FLAG);
+    uint8_t res = base->TMHM[c >> 3] & (uint8_t)(1u << (c & 7));
     // POP_DE;
     // RET;
     return res;

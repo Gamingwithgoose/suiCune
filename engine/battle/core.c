@@ -13306,19 +13306,16 @@ static uint16_t* GetRoamMonDVs(species_t a){
     // LD_HL(wRoamMon1DVs);
     // RET_Z ;
     if(a == gPokemon.roamMon1.species)
-        // return &gPokemon.roamMon1.DVs;
-        return (uint16_t*)(((uint8_t*)&gPokemon.roamMon1) + offsetof(struct Roamer, DVs));
+        return &gPokemon.roamMon1.DVs;
     // LD_A_addr(wRoamMon2Species);
     // CP_A_B;
     // LD_HL(wRoamMon2DVs);
     // RET_Z ;
     else if(a == gPokemon.roamMon2.species)
-        // return &gPokemon.roamMon2.DVs;
-        return (uint16_t*)(((uint8_t*)&gPokemon.roamMon2) + offsetof(struct Roamer, DVs));
+        return &gPokemon.roamMon2.DVs;
     // LD_HL(wRoamMon3DVs);
     // RET;
-    // return &gPokemon.roamMon3.DVs;
-    return (uint16_t*)(((uint8_t*)&gPokemon.roamMon3) + offsetof(struct Roamer, DVs));
+    return &gPokemon.roamMon3.DVs;
 }
 
 static SpeciesId* GetRoamMonSpecies(SpeciesId a){

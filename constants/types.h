@@ -848,12 +848,10 @@ MailMsg
 };
 static_assert(sizeof(struct MailMsg) == MAIL_STRUCT_LENGTH, "");
 
-#if defined(__cplusplus) || defined(_MSC_VER)
-struct
-#else
-struct __attribute__((packed))
-#endif
-Roamer
+// Native roaming-Pokemon state. Crystal save layout is handled explicitly by
+// Serialize_Roamer/Deserialize_Roamer, so this runtime structure must retain
+// normal alignment for its widened semantic IDs and DVs.
+struct Roamer
 {
     SpeciesId species;
     uint8_t level;

@@ -1097,6 +1097,52 @@ Build/test results
 Build/runtime validation: NOT PERFORMED — per user instruction.
 
 
+Session: 2026-08-29 — Windows Release build script
+===================================================
+
+Task worked on
+--------------
+- Added a user-invoked Windows-only Release build script.
+
+Files modified
+--------------
+- `LOCAL_CHANGELOG.txt`: documented the build-script addition.
+
+Files created
+-------------
+- `build_windows_release.bat`: locates an MSYS2 UCRT64 environment, creates the
+  repository `Release` directory, performs a clean optimized Windows build, and
+  writes the resulting executable to `Release/suiCune.exe`.
+
+Files deleted
+-------------
+- None.
+
+Purpose and compatibility implications
+--------------------------------------
+- The script follows the repository's documented MSYS2/Make Windows toolchain
+  and requests `RELEASE=1` with parallel compilation.
+- It overrides only the linker output prefix so the Windows executable is
+  emitted into `Release`; it does not change project source, runtime behavior,
+  save data, native architecture, or non-Windows build configuration.
+- The script expects the UCRT64 GCC, Make, SDL2, SDL2_net, and PhysFS packages
+  described by `README.md`. It checks the conventional `C:\msys64` location or
+  an explicitly configured `MSYS2_ROOT`.
+
+Build commands executed
+-----------------------
+- None.
+
+Test commands executed
+----------------------
+- None.
+
+Build/test results
+------------------
+Build/runtime validation: NOT PERFORMED — per user instruction. The batch file
+was source-inspected only and is intended for the user to execute.
+
+
 Session: 2026-08-29 — Player-party species authority consolidation
 ==================================================================
 
@@ -1732,12 +1778,74 @@ Next recommended native-conversion task
    directly into the versioned PC-only `save.dat` persistence phase.
 
 
+Session: 2026-08-29 — Reported Windows compile-error repair
+===========================================================
+
+Task worked on
+--------------
+- Repaired the two source failures reported by the user's first Windows Release
+  build attempt.
+
+Files modified
+--------------
+- `constants/types.h`: removed obsolete packed layout from native `Roamer`
+  runtime state. Its Crystal save representation already uses explicit field
+  serialization and does not require packed in-memory layout.
+- `engine/battle/core.c`: replaced byte-offset casts for roamer DVs with normal
+  aligned field pointers; widened roamer species pointers are now valid because
+  `Roamer` has native alignment.
+- `engine/battle/move_effects/beat_up.c`: updated four Beat Up base-stat reads to
+  the current `BaseData.attack` and `BaseData.defense` field names.
+- `LOCAL_CHANGELOG.txt`: documented the reported errors and source repair.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural and compatibility implications
+--------------------------------------------
+- `Roamer` is native runtime state containing a widened `SpeciesId`; retaining
+  a packed Game Boy-style C layout made addresses of its 16-bit fields formally
+  unaligned. Normal alignment removes that obsolete memory-layout dependency
+  instead of suppressing `-Waddress-of-packed-member`.
+- `Serialize_Roamer` and `Deserialize_Roamer` remain the explicit Crystal-format
+  boundary, so the serialized field order/width is unchanged by removing the
+  runtime packing attribute.
+- No temporary migration code or compiler-warning suppression was introduced.
+- Beat Up behavior is unchanged; the code now names the existing semantic base
+  Attack and Defense fields correctly.
+
+Build/runtime validation
+------------------------
+- User-reported build: FAILED before this repair in `engine/battle/core.c` on
+  packed-member address warnings promoted to errors, and in Beat Up on obsolete
+  `BaseData.atk`/`BaseData.def` member names.
+- Agent build/run/test: NOT PERFORMED — per user instruction.
+
+Suspected source-level risks and stopping point
+-----------------------------------------------
+- The reported errors are source-resolved, but the user's build must continue
+  to reveal whether later translation units contain additional integration
+  errors that were previously hidden by Make's parallel early failure.
+- The native-conversion stopping point otherwise remains unchanged.
+
+Next recommended action
+-----------------------
+- Run `build_windows_release.bat` again and report the next compiler/linker
+  output, if any. The script performs a clean build, so the repaired translation
+  units will be rebuilt.
+
+
 Latest handoff marker: 2026-08-29
 ---------------------------------
-The full 2026-08-29 "Player-party species authority consolidation" section
-above is the latest session record. It follows the native decoded PC-box work
-despite the historical section ordering in this append-only file. The current
-stopping point is consolidated normal party-species reads, with full native
+The full 2026-08-29 "Reported Windows compile-error repair" section above is the
+latest session record. `build_windows_release.bat` remains ready for user
+execution and targets `Release/suiCune.exe`. The native-conversion stopping
+point remains consolidated normal party-species reads, with full native
 player/opponent party ownership, mutation migration, and persistent native PC
 storage still unfinished.
 

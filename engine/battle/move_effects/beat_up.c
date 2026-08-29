@@ -109,7 +109,7 @@ void BattleCommand_BeatUp(void){
             goto beatup_fail;
         // LD_A_addr(wBaseDefense);
         // LD_C_A;
-        gBattleCmdState.c = defenderBase->def;
+        gBattleCmdState.c = defenderBase->defense;
 
         // PUSH_BC;
         // LD_A(MON_SPECIES);
@@ -123,7 +123,7 @@ void BattleCommand_BeatUp(void){
         // LD_A_addr(wBaseAttack);
         // POP_BC;
         // LD_B_A;
-        gBattleCmdState.b = attackerBase->atk;
+        gBattleCmdState.b = attackerBase->attack;
 
         // PUSH_BC;
         // LD_A(MON_LEVEL);
@@ -263,7 +263,7 @@ void BattleCommand_BeatUp(void){
             goto beatup_fail;
         // LD_A_addr(wBaseDefense);
         // LD_C_A;
-        gBattleCmdState.c = defenderBase->def;
+        gBattleCmdState.c = defenderBase->defense;
 
         // PUSH_BC;
         // LD_A(MON_SPECIES);
@@ -277,7 +277,7 @@ void BattleCommand_BeatUp(void){
         // LD_A_addr(wBaseAttack);
         // POP_BC;
         // LD_B_A;
-        gBattleCmdState.b = attackerBase->atk;
+        gBattleCmdState.b = attackerBase->attack;
 
         // PUSH_BC;
         // LD_A(MON_LEVEL);
