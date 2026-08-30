@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "unown_puzzle.h"
 #include "../../home/copy.h"
 #include "../../home/delay.h"
@@ -268,18 +269,18 @@ static void UnownPuzzleJumptable_Function(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(START);
     // JP_NZ (mUnownPuzzle_Quit);
-    if(hram.hJoyPressed & START)
+    if(NativeInputLogicalPressed() & START)
         return UnownPuzzle_Quit();
     // LDH_A_addr(hJoyPressed);
     // AND_A(A_BUTTON);
     // JP_NZ (mUnownPuzzle_A);
-    if(hram.hJoyPressed & A_BUTTON)
+    if(NativeInputLogicalPressed() & A_BUTTON)
         return UnownPuzzle_A();
     // LD_HL(hJoyLast);
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto d_up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // d_up:
         // LD_HL(wUnownPuzzleCursorPosition);
         // LD_A_hl;
@@ -295,7 +296,7 @@ static void UnownPuzzleJumptable_Function(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto d_down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // d_down:
         // LD_HL(wUnownPuzzleCursorPosition);
         // LD_A_hl;
@@ -324,7 +325,7 @@ static void UnownPuzzleJumptable_Function(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto d_left;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
     // d_left:
         // LD_HL(wUnownPuzzleCursorPosition);
         // LD_A_hl;
@@ -366,7 +367,7 @@ static void UnownPuzzleJumptable_Function(void){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto d_right;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // d_right:
         // LD_HL(wUnownPuzzleCursorPosition);
         // LD_A_hl;

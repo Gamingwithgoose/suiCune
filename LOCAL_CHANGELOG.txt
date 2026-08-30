@@ -1107,6 +1107,204 @@ consumers outside those shared paths.
 Build/runtime validation: NOT PERFORMED — per user instruction.
 
 
+Session: 2026-08-30 — Complete logical-input consumer migration
+=================================================================
+
+Task worked on
+--------------
+- Finished the active Phase 7 logical-input migration by auditing and
+  converting every remaining live C consumer of the legacy logical HRAM input
+  bytes.
+
+Files modified
+--------------
+- `home/joypad.c`: removed the last logical-input HRAM mirror writer; the
+  existing native logical input-frame state and semantic reset/update APIs are
+  now the sole runtime authority.
+- `engine/debug/color_picker.c`, `engine/events/battle_tower/battle_tower.c`,
+  `engine/events/halloffame.c`, `engine/events/mom.c`,
+  `engine/events/print_unown.c`, `engine/games/card_flip.c`,
+  `engine/games/unown_puzzle.c`, `engine/link/lan.c`, `engine/link/link.c`,
+  `engine/link/link_trade.c`, `engine/menus/debug_field_menu.c`,
+  `engine/menus/debugmenu.c`, `engine/menus/intro_menu.c`,
+  `engine/menus/naming_screen.c`, `engine/menus/trainer_card.c`,
+  `engine/movie/evolution_animation.c`, `engine/movie/intro.c`,
+  `engine/movie/splash.c`, `engine/overworld/events.c`,
+  `engine/overworld/player_movement.c`, `engine/pokedex/pokedex.c`,
+  `engine/pokegear/pokegear.c`, `engine/pokemon/bills_pc.c`,
+  `engine/pokemon/mail_2.c`, `engine/pokemon/party_menu.c`,
+  `engine/pokemon/stats_screen.c`, `engine/printer/printer.c`,
+  `engine/rtc/reset_password.c`, `engine/rtc/timeset.c`, `home/flag.c`,
+  `mobile/fixed_words.c`, `mobile/mobile_12.c`, `mobile/mobile_12_2.c`,
+  `mobile/mobile_40.c`, `mobile/mobile_45_stadium.c`, `mobile/mobile_46.c`,
+  `mobile/mobile_5c.c`, `mobile/mobile_5e.c`, and `mobile/mobile_5f.c`:
+  migrated logical held, pressed, released, and last-input reads to the native
+  input API without changing their button masks or control flow.
+- `hram.h`, `hram.c`: replaced the four named logical-input fields with a
+  four-byte `legacyLogicalInputReserved` span, retaining the validated packed
+  HRAM offsets but removing these fields as executable runtime state.
+- `LOCAL_CHANGELOG.txt`: recorded this completed slice.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- All live C logical game-input consumers now read `NativeInputState` through
+  `NativeInputLogicalHeld`, `NativeInputLogicalPressed`,
+  `NativeInputLogicalReleased`, and `NativeInputLogicalLast`.
+- `home/joypad.c` no longer mirrors logical input into HRAM. Physical
+  `hJoypad*` fields remain a separate, still-packed compatibility concern.
+- The old `hJoyReleased`, `hJoyPressed`, `hJoyDown`, and `hJoyLast` slots are
+  no longer named runtime fields; only their four-byte location remains to
+  preserve the current offset-validated HRAM representation.
+- `v_StatsScreenDPad` now accepts a value rather than an address into the old
+  HRAM mirror, eliminating its final pointer-shaped dependency on that state.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyLogicalInputReserved[4]` is a layout-only bridge. Remove it when the
+  packed HRAM structure and its offset validation are replaced by native game
+  state, and no legacy import/debug/tooling requirement depends on this span.
+- The global address-map names and historical ASM comments remain source
+  references only; they are not live C runtime consumers. Remove or regenerate
+  those representations only as part of the larger packed-memory retirement.
+
+Compatibility and save-format implications
+------------------------------------------
+- Logical button semantics, auto-input behavior, and menu/input control flow
+  are preserved. No save, link, mobile-data, or input-binding format changed.
+
+Investigated and deliberately not implemented
+----------------------------------------------
+- Did not remove the entire HRAM structure or the physical `hJoypad*` fields:
+  their packed layout is still used elsewhere in the legacy runtime and that
+  is a distinct migration task.
+- Did not begin player-party ownership conversion. The existing party model
+  requires an explicit native egg/hatch state before its packed species list
+  can be retired safely.
+
+Completed work
+--------------
+- Native logical input-frame ownership and every live C logical-input reader
+  are fully migrated for this slice.
+
+Partially completed work
+------------------------
+- Native input as a whole still retains physical HRAM compatibility fields and
+  lacks a remapping UI; those are separate remaining tasks.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership with first-class egg state, native save
+  serialization, remaining packed-memory retirement, rendering/entity/map/
+  script/audio conversion, and the later roadmap phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing the final live logical HRAM input consumer and
+  demoting its four legacy bytes to a layout-only reservation.
+- Next: design the native player-party owner with an explicit egg/hatch field,
+  then migrate party creation, hatching, storage, and serialization together.
+
+
+Latest handoff marker: 2026-08-30 — logical HRAM input retired
+----------------------------------------------------------------
+The logical input runtime no longer depends on the four named logical HRAM
+bytes. `NativeInputState` is authoritative; the former HRAM positions are a
+reserved packed-layout span only.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Session: 2026-08-30 — Native logical input consumers: overworld and UI group
+===============================================================================
+
+Task worked on
+--------------
+- Continued Phase 7 by migrating the overworld input path and a coherent group
+  of ordinary menus, event UIs, minigames, and movie input consumers from
+  logical HRAM mirror reads to the native logical-input API.
+
+Starting state
+--------------
+- The prior native physical/logical/scripted input owners were present in the
+  repository. `lib/libmobile` remained the sole pre-existing dirty path and
+  was not modified.
+
+Files modified
+--------------
+- `engine/overworld/events.c`, `engine/overworld/player_movement.c`: migrated
+  action/menu, debug-combination, encounter suppression, movement, and bike
+  speed input reads to native logical state.
+- `engine/menus/intro_menu.c`, `engine/menus/naming_screen.c`, and
+  `engine/menus/trainer_card.c`: migrated title/debug combinations, naming,
+  mail composition, and Trainer Card input reads.
+- `engine/events/battle_tower/battle_tower.c`, `engine/events/halloffame.c`,
+  `engine/events/mom.c`, and `engine/events/print_unown.c`: migrated their
+  event-menu input reads.
+- `engine/games/card_flip.c`, `engine/games/unown_puzzle.c`,
+  `engine/movie/evolution_animation.c`, `engine/movie/intro.c`, and
+  `engine/movie/splash.c`: migrated minigame/movie input reads.
+- `engine/pokedex/pokedex.c`: migrated all Pokédex navigation, search, and
+  entry input reads to native logical state.
+- `LOCAL_CHANGELOG.txt`: recorded the completed consumer group.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- The migrated gameplay paths no longer treat `hJoyDown`, `hJoyPressed`, or
+  `hJoyLast` as their input authority. They read the normal native logical
+  input state populated by `GetJoypad` and scripted input.
+- Overworld movement copies native logical held input into its still-legacy
+  `wCurInput` destination only at that explicit downstream compatibility point.
+
+Temporary migration bridges and removal conditions
+---------------------------------------------------
+- Logical HRAM bytes remain output mirrors for remaining C readers and any
+  layout-dependent compatibility consumer. Remove each field only after all
+  remaining readers have migrated and the packed HRAM layout no longer needs
+  that byte.
+- `wCurInput` remains a legacy WRAM movement destination. Remove that bridge
+  when native player/movement state replaces the WRAM movement model.
+
+Partially completed work
+------------------------
+- Logical input ownership is native, and the overworld, ordinary menu/event,
+  minigame/movie, and Pokédex consumer groups are native. PC/party, RTC, link,
+  mobile, and debug consumers still read HRAM mirrors.
+
+Untouched remaining work
+------------------------
+- Remaining input consumers; first-class native player-party egg/hatch state;
+  native party ownership; native persistence; and all later conversion phases.
+
+Compatibility and save-format implications
+------------------------------------------
+- Input bit assignments, menu repeat behavior, scripted input, and save data
+  are unchanged. No serializer or persistent format changed.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Suspected risks and exact stopping point
+----------------------------------------
+- This source slice has not been compiled after the changes. The next user
+  build remains necessary to detect strict-warning integration issues.
+- Stopped after completing the overworld/UI and Pokédex consumer groups. Next:
+  migrate the PC/party, RTC, and link consumer groups before starting the
+  native party ownership slice.
+
+
 Build-feedback correction: 2026-08-30
 --------------------------------------
 - User-provided `build_windows_release.log` showed a `-Werror=parentheses`
@@ -3135,3 +3333,44 @@ the native API. The current stopping point is the remaining read-only mirror
 consumers outside those shared paths.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Final update: 2026-08-30 — logical HRAM input retired
+=======================================================
+
+Completed work
+--------------
+- Converted every remaining live C read of `hJoyReleased`, `hJoyPressed`,
+  `hJoyDown`, and `hJoyLast` to the existing native logical-input API across
+  PC/party, Pokégear, RTC, link, mobile, debug, overworld, UI, and movie code.
+- Removed the final logical HRAM mirror writes from `home/joypad.c`.
+- Demoted those four packed HRAM slots to `legacyLogicalInputReserved[4]`; the
+  four bytes retain only the offset-validated legacy layout.
+- Updated `v_StatsScreenDPad` to accept a logical-input value rather than a
+  pointer into the retired HRAM field.
+
+Partially completed work
+------------------------
+- Physical `hJoypad*` compatibility fields and the broader packed HRAM model
+  remain. They are not part of this completed logical-input slice.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership with explicit egg/hatch state, native saves,
+  remaining packed-memory retirement, and all subsequent roadmap phases.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyLogicalInputReserved[4]` remains only while the packed HRAM layout is
+  offset-validated. Remove it when that layout is replaced and no legacy
+  tooling/import requirement needs the span.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- The logical HRAM input migration is complete. Next, design a native
+  player-party owner with explicit egg/hatch state before migrating party
+  creation, hatching, storage, and serialization.

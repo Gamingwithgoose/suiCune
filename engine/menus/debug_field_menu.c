@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "menu_2.h"
 #include "../../home/menu.h"
 #include "../../home/delay.h"
@@ -112,26 +113,26 @@ static void DebugAddPokemonMenu(void) {
     uint8_t level = 2;
     while(1) {
         GetJoypad();
-        if(hram.hJoyPressed & (B_BUTTON))
+        if(NativeInputLogicalPressed() & (B_BUTTON))
             break;
 
-        if(hram.hJoyPressed & (D_DOWN)) {
+        if(NativeInputLogicalPressed() & (D_DOWN)) {
             if(species == BULBASAUR) species = NUM_POKEMON;
             else --species;
         }
-        if(hram.hJoyPressed & (D_UP)) {
+        if(NativeInputLogicalPressed() & (D_UP)) {
             if(species == NUM_POKEMON) species = BULBASAUR;
             else ++species;
         }
 
-        if(hram.hJoyPressed & (D_LEFT)) {
+        if(NativeInputLogicalPressed() & (D_LEFT)) {
             if(level > 5) --level; else level = 100;
         }
-        if(hram.hJoyPressed & (D_RIGHT)) {
+        if(NativeInputLogicalPressed() & (D_RIGHT)) {
             if(level < 100) ++level; else level = 5;
         }
 
-        if(hram.hJoyPressed & (A_BUTTON)) {
+        if(NativeInputLogicalPressed() & (A_BUTTON)) {
             PlayClickSFX();
             WaitSFX();
             CloseWindow();
@@ -185,26 +186,26 @@ static void DebugWildBattleMenu(void) {
     uint8_t level = 2;
     while(1) {
         GetJoypad();
-        if(hram.hJoyPressed & (B_BUTTON))
+        if(NativeInputLogicalPressed() & (B_BUTTON))
             break;
 
-        if(hram.hJoyPressed & (D_DOWN)) {
+        if(NativeInputLogicalPressed() & (D_DOWN)) {
             if(species == BULBASAUR) species = NUM_POKEMON;
             else --species;
         }
-        if(hram.hJoyPressed & (D_UP)) {
+        if(NativeInputLogicalPressed() & (D_UP)) {
             if(species == NUM_POKEMON) species = BULBASAUR;
             else ++species;
         }
 
-        if(hram.hJoyPressed & (D_LEFT)) {
+        if(NativeInputLogicalPressed() & (D_LEFT)) {
             if(level > 5) --level; else level = 100;
         }
-        if(hram.hJoyPressed & (D_RIGHT)) {
+        if(NativeInputLogicalPressed() & (D_RIGHT)) {
             if(level < 100) ++level; else level = 5;
         }
 
-        if(hram.hJoyPressed & (A_BUTTON)) {
+        if(NativeInputLogicalPressed() & (A_BUTTON)) {
             PlayClickSFX();
             WaitSFX();
             CloseWindow();
@@ -270,19 +271,19 @@ static void DebugFlagMenu(void) {
     uint16_t flag = EVENT_TEMPORARY_UNTIL_MAP_RELOAD_1;
     while(1) {
         GetJoypad();
-        if(hram.hJoyPressed & (B_BUTTON))
+        if(NativeInputLogicalPressed() & (B_BUTTON))
             break;
 
-        if(hram.hJoyPressed & (D_DOWN)) {
+        if(NativeInputLogicalPressed() & (D_DOWN)) {
             if(flag == 0) flag = EVENT_BATTLE_TOWER_OUTSIDE_SAILOR;
             else flag--;
         }
-        if(hram.hJoyPressed & (D_UP)) {
+        if(NativeInputLogicalPressed() & (D_UP)) {
             if(flag == EVENT_BATTLE_TOWER_OUTSIDE_SAILOR) flag = 0;
             else flag++;
         }
 
-        if(hram.hJoyPressed & (A_BUTTON)) {
+        if(NativeInputLogicalPressed() & (A_BUTTON)) {
             PlayClickSFX();
             if(EventFlagAction(flag, CHECK_FLAG))
                 EventFlagAction(flag, RESET_FLAG);

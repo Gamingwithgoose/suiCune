@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "lan.h"
 #include "../../charmap.h"
 #include "../../home/copy.h"
@@ -149,7 +150,7 @@ void LANConnection_Host(void) {
         DelayFrame();
 
         GetJoypad();
-        uint8_t pad = hram.hJoyPressed;
+        uint8_t pad = NativeInputLogicalPressed();
         if(pad & B_BUTTON) {
             CloseWindow();
             PrintText(Text_Cancelled);
@@ -311,13 +312,13 @@ void LANConnection_Join(void) {
                 return;
             }
         }
-        else if(hram.hJoyPressed & D_DOWN) {
+        else if(NativeInputLogicalPressed() & D_DOWN) {
             selection++;
             if(selection > candidateCount)
                 selection = 0;
             PlaceLANConnectionMenuCursor(selection);
         }
-        else if(hram.hJoyPressed & D_UP) {
+        else if(NativeInputLogicalPressed() & D_UP) {
             if(selection == 0)
                 selection = candidateCount;
             else

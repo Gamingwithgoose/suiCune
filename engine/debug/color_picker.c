@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "color_picker.h"
 #include "../../home/audio.h"
 #include "../../home/copy.h"
@@ -428,7 +429,7 @@ static void DebugColorMain(void){
         // LD_A_hl;
         // AND_A(SELECT);
         // IF_NZ goto NextMon;
-        if(hram.hJoyLast & SELECT) {
+        if(NativeInputLogicalLast() & SELECT) {
         // NextMon:
             // CALL(aDebugColor_BackupSpriteColors);
             DebugColor_BackupSpriteColors();
@@ -448,7 +449,7 @@ static void DebugColorMain(void){
         // LD_A_hl;
         // AND_A(START);
         // IF_NZ goto PreviousMon;
-        if(hram.hJoyLast & START) {
+        if(NativeInputLogicalLast() & START) {
         // PreviousMon:
             // CALL(aDebugColor_BackupSpriteColors);
             DebugColor_BackupSpriteColors();
@@ -836,7 +837,7 @@ static void DebugColor_Joypad(void){
     // LDH_A_addr(hJoyLast);
     // AND_A(B_BUTTON);
     // IF_NZ goto tmhm;
-    if(hram.hJoyLast & B_BUTTON) {
+    if(NativeInputLogicalLast() & B_BUTTON) {
     // tmhm:
     //  Enter the TM/HM checker.
         if(wram->wDebugColorIsTrainer)
@@ -850,7 +851,7 @@ static void DebugColor_Joypad(void){
     // LDH_A_addr(hJoyLast);
     // AND_A(A_BUTTON);
     // IF_NZ goto toggle_shiny;
-    if(hram.hJoyLast & A_BUTTON) {
+    if(NativeInputLogicalLast() & A_BUTTON) {
     // toggle_shiny:
     //  Toggle between the normal and shiny mon colors.
         // LD_A_addr(wDebugColorIsTrainer);
@@ -902,12 +903,12 @@ static void DebugColor_SelectColorBox(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugColor_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugColor_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto light;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // light:
         // XOR_A_A;  // FALSE
         // LD_addr_A(wDebugColorCurColor);
@@ -921,7 +922,7 @@ static void DebugColor_SelectColorBox(void){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto dark;
-    if(hram.hJoyLast & D_RIGHT) {
+    if(NativeInputLogicalLast() & D_RIGHT) {
     // dark:
         // LD_A(TRUE);
         // LD_addr_A(wDebugColorCurColor);
@@ -940,12 +941,12 @@ static void DebugColor_ChangeRedValue(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugColor_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugColor_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugColor_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugColor_PreviousRGBColor();
     // LD_HL(wDebugRedChannel);
     // JR(mDebugColor_UpdateRGBColor);
@@ -957,12 +958,12 @@ static void DebugColor_ChangeGreenValue(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugColor_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugColor_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugColor_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugColor_PreviousRGBColor();
     // LD_HL(wDebugGreenChannel);
     // JR(mDebugColor_UpdateRGBColor);
@@ -974,7 +975,7 @@ static void DebugColor_ChangeBlueValue(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugColor_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugColor_PreviousRGBColor();
     // LD_HL(wDebugBlueChannel);
 // fallthrough
@@ -986,7 +987,7 @@ static void DebugColor_UpdateRGBColor(uint8_t* hl){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_RIGHT);
     // IF_NZ goto increment;
-    if(hram.hJoyLast & D_RIGHT) {
+    if(NativeInputLogicalLast() & D_RIGHT) {
     // increment:
         // LD_A_hl;
         // CP_A(31);
@@ -1000,7 +1001,7 @@ static void DebugColor_UpdateRGBColor(uint8_t* hl){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_LEFT);
     // IF_NZ goto decrement;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
     // decrement:
         // LD_A_hl;
         // AND_A_A;
@@ -1064,7 +1065,7 @@ static void DebugColor_TMHMJoypad(void){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto cancel;
-    if(hram.hJoyPressed & B_BUTTON) {
+    if(NativeInputLogicalPressed() & B_BUTTON) {
     // cancel:
         // LD_A(DEBUGCOLORMAIN_INITSCREEN);
         // LD_addr_A(wJumptableIndex);
@@ -1080,7 +1081,7 @@ static void DebugColor_TMHMJoypad(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_A_addr(wDebugColorCurTMHM);
         // CP_A(NUM_TM_HM_TUTOR - 1);
@@ -1100,7 +1101,7 @@ static void DebugColor_TMHMJoypad(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_A_addr(wDebugColorCurTMHM);
         // AND_A_A;
@@ -1713,7 +1714,7 @@ static void DebugColorMain2(void){
     // LD_A_hl;
     // AND_A(SELECT);
     // IF_NZ goto next_palette;
-    if(hram.hJoyLast & SELECT) {
+    if(NativeInputLogicalLast() & SELECT) {
     // next_palette:
         // LD_HL(wDebugTilesetCurPalette);
         // LD_A_hl;
@@ -1778,7 +1779,7 @@ static void DebugColorMain2(void){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto cancel;
-    if(hram.hJoyLast & B_BUTTON) {
+    if(NativeInputLogicalLast() & B_BUTTON) {
     // cancel:
         // CALL(aClearSprites);
         ClearSprites();
@@ -1870,12 +1871,12 @@ static void DebugTileset_SelectColorBox(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugTileset_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugTileset_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // left:
         // LD_A_addr(wDebugTilesetCurColor);
         // DEC_A;
@@ -1885,7 +1886,7 @@ static void DebugTileset_SelectColorBox(void){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // right:
         // LD_A_addr(wDebugTilesetCurColor);
         // INC_A;
@@ -1916,12 +1917,12 @@ static void DebugTileset_ChangeRedValue(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugTileset_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugTileset_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugTileset_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugTileset_PreviousRGBColor();
     // LD_HL(wDebugRedChannel);
     // JR(mDebugTileset_UpdateRGBColor);
@@ -1933,12 +1934,12 @@ static void DebugTileset_ChangeGreenValue(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mDebugTileset_NextRGBColor);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return DebugTileset_NextRGBColor();
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugTileset_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugTileset_PreviousRGBColor();
     // LD_HL(wDebugGreenChannel);
     // JR(mDebugTileset_UpdateRGBColor);
@@ -1950,7 +1951,7 @@ static void DebugTileset_ChangeBlueValue(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mDebugTileset_PreviousRGBColor);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return DebugTileset_PreviousRGBColor();
     // LD_HL(wDebugBlueChannel);
 // fallthrough
@@ -1962,7 +1963,7 @@ static void DebugTileset_UpdateRGBColor(uint8_t* hl){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_RIGHT);
     // IF_NZ goto increment;
-    if(hram.hJoyLast & D_RIGHT){
+    if(NativeInputLogicalLast() & D_RIGHT){
     // increment:
         // LD_A_hl;
         // CP_A(31);
@@ -1976,7 +1977,7 @@ static void DebugTileset_UpdateRGBColor(uint8_t* hl){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_LEFT);
     // IF_NZ goto decrement;
-    else if(hram.hJoyLast & D_LEFT){
+    else if(NativeInputLogicalLast() & D_LEFT){
     // decrement:
         // LD_A_hl;
         // AND_A_A;

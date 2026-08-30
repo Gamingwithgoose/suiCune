@@ -716,7 +716,7 @@ void EZChat_MasterLoop(void){
         JoyTextDelay();
         // LDH_A_addr(hJoyPressed);
         // LDH_addr_A(hJoypadPressed);
-        NativeInputOverridePressed(hram.hJoyPressed);
+        NativeInputOverridePressed(NativeInputLogicalPressed());
         // LD_A_addr(wJumptableIndex);
         // BIT_A(7);
         // IF_NZ goto exit;
@@ -1278,7 +1278,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x40);
     // IF_NZ goto asm_11c47c;
-    else if(hram.hJoyLast & D_UP) {
+    else if(NativeInputLogicalLast() & D_UP) {
     // asm_11c47c:
         // LD_A_hl;
         // CP_A(0x3);
@@ -1310,7 +1310,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x80);
     // IF_NZ goto asm_11c484;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // asm_11c484:
         // LD_A_hl;
         // CP_A(0x6);
@@ -1325,7 +1325,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x20);
     // IF_NZ goto asm_11c48c;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
     // asm_11c48c:
         // LD_A_hl;
         // AND_A_A;
@@ -1348,7 +1348,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x10);
     // IF_NZ goto asm_11c498;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // asm_11c498:
         // LD_A_hl;
         // CP_A(0x2);
@@ -1573,7 +1573,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    else if(hram.hJoyLast & D_UP) {
+    else if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_A_hl;
         // CP_A(0x3);
@@ -1626,7 +1626,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_A_hl;
         // CP_A(0xf);
@@ -1696,7 +1696,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
     // .left
         // ld a, [hl]
         a = *hl;
@@ -1718,7 +1718,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // .right
         // ld a, [hl]
         a = *hl;
@@ -2160,7 +2160,7 @@ void Function11c675(void){
         // LD_A_de;
         // AND_A(D_UP);
         // IF_NZ goto asm_11c708;
-        if(hram.hJoyLast & D_UP) {
+        if(NativeInputLogicalLast() & D_UP) {
         // up:
             // ld a, [hl]
             // sub EZCHAT_WORDS_PER_ROW
@@ -2178,7 +2178,7 @@ void Function11c675(void){
         // LD_A_de;
         // AND_A(D_DOWN);
         // IF_NZ goto asm_11c731;
-        else if(hram.hJoyLast & D_DOWN) {
+        else if(NativeInputLogicalLast() & D_DOWN) {
             // ld a, [hl]
             // add EZCHAT_WORDS_PER_ROW
             // cp EZCHAT_WORDS_IN_MENU
@@ -2196,7 +2196,7 @@ void Function11c675(void){
         // LD_A_de;
         // AND_A(D_LEFT);
         // IF_NZ goto asm_11c746;
-        else if(hram.hJoyLast & D_LEFT) {
+        else if(NativeInputLogicalLast() & D_LEFT) {
         // .left
             // ld a, [hl]
             // and a ; cp a, 0
@@ -2215,7 +2215,7 @@ void Function11c675(void){
         // LD_A_de;
         // AND_A(D_RIGHT);
         // IF_NZ goto asm_11c755;
-        else if(hram.hJoyLast & D_RIGHT) {
+        else if(NativeInputLogicalLast() & D_RIGHT) {
         // .right
             // ld a, [hl]
             // and 1
@@ -4522,7 +4522,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    else if(hram.hJoyLast & D_UP) {
+    else if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_A_hl;
         // CP_A(0xff);
@@ -4537,7 +4537,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
         if(neighbors.down == EZCHAT_SORTED_NULL)
             return;
         // LD_addr_A(wcd22);
@@ -4548,7 +4548,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
         if(neighbors.left == EZCHAT_SORTED_NULL)
             return;
         // LD_addr_A(wcd22);
@@ -4559,7 +4559,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
         if(neighbors.right == EZCHAT_SORTED_NULL)
             return;
         // LD_addr_A(wcd22);

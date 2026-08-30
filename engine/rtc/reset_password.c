@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "reset_password.h"
 #include "../../home/audio.h"
 #include "../../home/tilemap.h"
@@ -359,7 +360,7 @@ bool ClockResetPassword(void){
             // LD_B_A;
             // AND_A(A_BUTTON);
             // IF_NZ goto confirm;
-            if(hram.hJoyLast & A_BUTTON) {
+            if(NativeInputLogicalLast() & A_BUTTON) {
             // confirm:
                 // CALL(aClockResetPassword_ConvertDecIDToBytes);
                 uint16_t entered = ClockResetPassword_ConvertDecIDToBytes();
@@ -385,9 +386,9 @@ bool ClockResetPassword(void){
             // LD_A_B;
             // AND_A(D_PAD);
             // IF_Z goto loop2;
-        } while((hram.hJoyLast & (D_PAD)) == 0);
+        } while((NativeInputLogicalLast() & (D_PAD)) == 0);
         // CALL(aClockResetPassword_dpadinput);
-        ClockResetPassword_dpadinput(hram.hJoyLast);
+        ClockResetPassword_dpadinput(NativeInputLogicalLast());
         // LD_C(3);
         // CALL(aDelayFrames);
         DelayFrames(3);

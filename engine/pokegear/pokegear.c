@@ -786,7 +786,7 @@ static void PokegearClock_Joypad(void) {
     // LD_A_hl;
     // AND_A(A_BUTTON | B_BUTTON | START | SELECT);
     // IF_NZ goto quit;
-    if(hram.hJoyLast & (A_BUTTON | B_BUTTON | START | SELECT)) {
+    if(NativeInputLogicalLast() & (A_BUTTON | B_BUTTON | START | SELECT)) {
     // quit:
         // LD_HL(wJumptableIndex);
         // SET_hl(7);
@@ -797,7 +797,7 @@ static void PokegearClock_Joypad(void) {
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // RET_Z ;
-    if(!(hram.hJoyLast & D_RIGHT))
+    if(!(NativeInputLogicalLast() & D_RIGHT))
         return;
     // LD_A_addr(wPokegearFlags);
     // BIT_A(POKEGEAR_MAP_CARD_F);
@@ -952,7 +952,7 @@ static void PokegearMap_ContinueMap_DPad(u8_pair_s de) {
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_HL(wPokegearMapCursorLandmark);
         // LD_A_hl;
@@ -973,7 +973,7 @@ static void PokegearMap_ContinueMap_DPad(u8_pair_s de) {
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_HL(wPokegearMapCursorLandmark);
         // LD_A_hl;
@@ -1015,7 +1015,7 @@ static void PokegearMap_ContinueMap(u8_pair_s de){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto cancel;
-    if(hram.hJoyLast & B_BUTTON) {
+    if(NativeInputLogicalLast() & B_BUTTON) {
     // cancel:
         // LD_HL(wJumptableIndex);
         // SET_hl(7);
@@ -1026,7 +1026,7 @@ static void PokegearMap_ContinueMap(u8_pair_s de){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    if(hram.hJoyLast & D_RIGHT) {
+    if(NativeInputLogicalLast() & D_RIGHT) {
     // right:
         // LD_A_addr(wPokegearFlags);
         // BIT_A(POKEGEAR_PHONE_CARD_F);
@@ -1053,7 +1053,7 @@ static void PokegearMap_ContinueMap(u8_pair_s de){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // left:
         // LD_C(POKEGEARSTATE_CLOCKINIT);
         // LD_B(POKEGEARCARD_CLOCK);
@@ -1209,7 +1209,7 @@ static void PokegearRadio_Joypad(void){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto cancel;
-    if(hram.hJoyLast & B_BUTTON) {
+    if(NativeInputLogicalLast() & B_BUTTON) {
     // cancel:
         // LD_HL(wJumptableIndex);
         // SET_hl(7);
@@ -1220,7 +1220,7 @@ static void PokegearRadio_Joypad(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // left:
         // LD_A_addr(wPokegearFlags);
         // BIT_A(POKEGEAR_PHONE_CARD_F);
@@ -1295,7 +1295,7 @@ static void PokegearPhone_Init(void){
 static void PokegearPhone_Joypad(void){
     // LD_HL(hJoyPressed);
     // LD_A_hl;
-    uint8_t pressed = hram.hJoyPressed;
+    uint8_t pressed = NativeInputLogicalPressed();
     // AND_A(B_BUTTON);
     // IF_NZ goto b;
     if(pressed & B_BUTTON) {
@@ -1352,7 +1352,7 @@ static void PokegearPhone_Joypad(void){
     }
     // LD_HL(hJoyLast);
     // LD_A_hl;
-    uint8_t last = hram.hJoyLast;
+    uint8_t last = NativeInputLogicalLast();
     // AND_A(D_LEFT);
     // IF_NZ goto left;
     if(last & D_LEFT) {
@@ -1479,7 +1479,7 @@ static void PokegearPhone_FinishPhoneCall(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(A_BUTTON | B_BUTTON);
     // RET_Z ;
-    if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) == 0)
+    if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) == 0)
         return;
     // FARCALL(aHangUp);
     HangUp();
@@ -1498,7 +1498,7 @@ static void PokegearPhone_GetDPad(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_HL(wPokegearPhoneCursorPosition);
         // LD_A_hl;
@@ -1523,7 +1523,7 @@ static void PokegearPhone_GetDPad(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_HL(wPokegearPhoneCursorPosition);
         // LD_A_hl;
@@ -1832,7 +1832,7 @@ bool PokegearPhoneContactSubmenu(void){
         // POP_DE;
         // LD_HL(hJoyPressed);
         // LD_A_hl;
-        uint8_t pressed = hram.hJoyPressed;
+        uint8_t pressed = NativeInputLogicalPressed();
         // AND_A(D_UP);
         // IF_NZ goto d_up;
         if(pressed & D_UP) {
@@ -1888,7 +1888,7 @@ bool PokegearPhoneContactSubmenu(void){
             // LDH_A_addr(hJoyPressed);
             // AND_A(B_BUTTON);
             // IF_NZ goto Cancel;
-            if(hram.hJoyPressed & B_BUTTON)
+            if(NativeInputLogicalPressed() & B_BUTTON)
                 goto Cancel;
             // LD_A_addr(wPokegearPhoneSubmenuCursor);
             // LD_E_A;
@@ -2071,7 +2071,7 @@ static void AnimateTuningKnob_TuningKnob(void) {
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    if(hram.hJoyLast & D_DOWN) {
+    if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_HL(wRadioTuningKnob);
         // LD_A_hl;
@@ -2087,7 +2087,7 @@ static void AnimateTuningKnob_TuningKnob(void) {
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    else if(hram.hJoyLast & D_UP) {
+    else if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_HL(wRadioTuningKnob);
         // LD_A_hl;
@@ -2726,14 +2726,14 @@ static void v_TownMap_loop(uint8_t d, uint8_t e){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // RET_NZ ;
-        if(hram.hJoyPressed & B_BUTTON)
+        if(NativeInputLogicalPressed() & B_BUTTON)
             return;
 
         // LD_HL(hJoyLast);
         // LD_A_hl;
         // AND_A(D_UP);
         // IF_NZ goto pressed_up;
-        if(hram.hJoyLast & D_UP) {
+        if(NativeInputLogicalLast() & D_UP) {
         // pressed_up:
             // LD_HL(wTownMapCursorLandmark);
             // LD_A_hl;
@@ -2756,7 +2756,7 @@ static void v_TownMap_loop(uint8_t d, uint8_t e){
         // LD_A_hl;
         // AND_A(D_DOWN);
         // IF_NZ goto pressed_down;
-        else if(hram.hJoyLast & D_DOWN) {
+        else if(NativeInputLogicalLast() & D_DOWN) {
         // pressed_down:
             // LD_HL(wTownMapCursorLandmark);
             // LD_A_hl;
@@ -3046,7 +3046,7 @@ void PlayRadio(uint8_t e){
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_NZ goto stop;
-        if(hram.hJoyPressed & (A_BUTTON | B_BUTTON))
+        if(NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON))
             break;
         // LD_A_addr(wPokegearRadioChannelAddr);
         // LD_L_A;
@@ -3131,7 +3131,7 @@ static void v_FlyMap_HandleDPad(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto ScrollNext;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
         do {
         // ScrollNext:
             // LD_HL(wTownMapPlayerIconLandmark);
@@ -3158,7 +3158,7 @@ static void v_FlyMap_HandleDPad(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto ScrollPrev;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
         do {
         // ScrollPrev:
             // LD_HL(wTownMapPlayerIconLandmark);
@@ -3239,7 +3239,7 @@ uint8_t v_FlyMap(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto pressedB;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         // pressedB:
             // LD_A(-1);
             a = 0xff;
@@ -3249,7 +3249,7 @@ uint8_t v_FlyMap(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto pressedA;
-        else if(hram.hJoyPressed & A_BUTTON) {
+        else if(NativeInputLogicalPressed() & A_BUTTON) {
         // pressedA:
             // LD_A_addr(wTownMapPlayerIconLandmark);
             // LD_L_A;
@@ -3918,7 +3918,7 @@ void Pokedex_GetArea(uint8_t e, species_t species){
         // LD_A_hl;
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_NZ goto a_b;
-        if(hram.hJoyPressed & (A_BUTTON | B_BUTTON)) {
+        if(NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) {
         // a_b:
             // CALL(aClearSprites);
             ClearSprites();
@@ -4222,7 +4222,7 @@ void LoadTownMapGFX(void){
 
 static void EntireFlyMap_HandleDPad(void){
     // LD_HL(hJoyLast);
-    uint8_t joy = hram.hJoyLast;
+    uint8_t joy = NativeInputLogicalLast();
     // LD_A_hl;
     // AND_A(D_DOWN | D_RIGHT);
     // IF_NZ goto ScrollNext;
@@ -4375,7 +4375,7 @@ uint8_t EntireFlyMap(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto pressedB;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         // pressedB:
             // LD_A(-1);
             // goto exit;

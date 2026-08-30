@@ -1,4 +1,5 @@
 #include "../constants.h"
+#include "../util/input.h"
 #include "mobile_45_stadium.h"
 #include "mobile_5c.h"
 #include "mobile_5f.h"
@@ -212,50 +213,50 @@ void Function117764(void){
     // LD_A_hl;
     // AND_A(SELECT);
     // JR_NZ (mFunction117764_select);
-    if(hram.hJoyPressed & SELECT) {
+    if(NativeInputLogicalPressed() & SELECT) {
         return Function117764_select();
     }
     // LD_A_hl;
     // AND_A(START);
     // JR_NZ (mFunction117764_start);
-    else if(hram.hJoyPressed & START) {
+    else if(NativeInputLogicalPressed() & START) {
         return Function117764_start();
     }
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // JP_NZ (mFunction117764_a_button);
-    else if(hram.hJoyPressed & A_BUTTON) {
+    else if(NativeInputLogicalPressed() & A_BUTTON) {
         return Function117764_a_button();
     }
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // JR_NZ (mFunction117764_b_button);
-    else if(hram.hJoyPressed & B_BUTTON) {
+    else if(NativeInputLogicalPressed() & B_BUTTON) {
         return Function117764_b_button();
     }
     // LD_HL(hJoyLast);
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mFunction117764_d_up);
-    else if(hram.hJoyLast & D_UP) {
+    else if(NativeInputLogicalLast() & D_UP) {
         return Function117764_d_up();
     }
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mFunction117764_d_down);
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
         return Function117764_d_down();
     }
     // LD_A_hl;
     // AND_A(D_LEFT);
     // JP_NZ (mFunction117764_d_left);
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
         return Function117764_d_left();
     }
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // JP_NZ (mFunction117764_d_right);
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
         return Function117764_d_right();
     }
     // RET;
@@ -546,7 +547,7 @@ void Function1178e8(void){
     // LDH_A_addr(hJoyPressed);
     // CP_A(B_BUTTON);
     // IF_Z goto b_button;
-    if(hram.hJoyPressed == B_BUTTON) {
+    if(NativeInputLogicalPressed() == B_BUTTON) {
     b_button:
         // CALL(aExitMenu);
         ExitMenu();
@@ -557,7 +558,7 @@ void Function1178e8(void){
     }
     // CP_A(A_BUTTON);
     // IF_Z goto a_button;
-    else if(hram.hJoyPressed == A_BUTTON) {
+    else if(NativeInputLogicalPressed() == A_BUTTON) {
     // a_button:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -576,7 +577,7 @@ void Function1178e8(void){
     }
     // CP_A(D_DOWN);
     // IF_Z goto d_down;
-    else if(hram.hJoyPressed == D_DOWN) {
+    else if(NativeInputLogicalPressed() == D_DOWN) {
     // d_down:
         // LD_A_addr(wcd4e);
         // AND_A_A;
@@ -599,7 +600,7 @@ void Function1178e8(void){
     }
     // CP_A(D_UP);
     // RET_NZ ;
-    else if(hram.hJoyPressed == D_UP) {
+    else if(NativeInputLogicalPressed() == D_UP) {
         // LD_A_addr(wcd4e);
         // AND_A_A;
         // RET_Z ;
@@ -922,7 +923,7 @@ void Function117b4f(void){
     // LDH_A_addr(hJoyPressed);
     // CP_A(B_BUTTON);
     // IF_Z goto b_button;
-    if(hram.hJoyPressed == B_BUTTON) {
+    if(NativeInputLogicalPressed() == B_BUTTON) {
     b_button:
         // CALL(aExitMenu);
         ExitMenu();
@@ -938,7 +939,7 @@ void Function117b4f(void){
     }
     // CP_A(A_BUTTON);
     // IF_Z goto a_button;
-    else if(hram.hJoyPressed == A_BUTTON) {
+    else if(NativeInputLogicalPressed() == A_BUTTON) {
     // a_button:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -958,7 +959,7 @@ void Function117b4f(void){
     }
     // CP_A(D_DOWN);
     // IF_Z goto d_down;
-    else if(hram.hJoyPressed == D_DOWN) {
+    else if(NativeInputLogicalPressed() == D_DOWN) {
     // d_down:
         // LD_A_addr(wcf64);
         // AND_A_A;
@@ -981,7 +982,7 @@ void Function117b4f(void){
     }
     // CP_A(D_UP);
     // RET_NZ ;
-    else if(hram.hJoyPressed == D_UP) {
+    else if(NativeInputLogicalPressed() == D_UP) {
         // LD_A_addr(wcf64);
         // AND_A_A;
         // RET_Z ;

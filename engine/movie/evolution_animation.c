@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "evolution_animation.h"
 #include "../../home/copy.h"
 #include "../../home/delay.h"
@@ -130,7 +131,7 @@ static bool EvolutionAnimation_WaitFrames_CheckPressedB(uint8_t c){
         // POP_BC;
         // AND_A(B_BUTTON);
         // IF_NZ goto pressed_b;
-        if(hram.hJoyDown & B_BUTTON) {
+        if(NativeInputLogicalHeld() & B_BUTTON) {
         // pressed_b:
             // LD_A_addr(wForceEvolution);
             // AND_A_A;

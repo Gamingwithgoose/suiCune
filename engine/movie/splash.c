@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "splash.h"
 #include "../../home/audio.h"
 #include "../../home/delay.h"
@@ -105,7 +106,7 @@ bool SplashScreen(void){
         // LDH_A_addr(hJoyLast);
         // AND_A(BUTTONS);
         // IF_NZ goto pressed_button;
-        if(hram.hJoyLast & (BUTTONS)) {
+        if(NativeInputLogicalLast() & (BUTTONS)) {
         // pressed_button:
             // CALL(aGameFreakPresentsEnd);
             GameFreakPresentsEnd();

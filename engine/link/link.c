@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "link.h"
 #include "link_trade.h"
 #include "link_2.h"
@@ -2371,10 +2372,10 @@ LinkTradePartymonMenuCheckCancel:
             // LDH_A_addr(hJoyLast);
             // AND_A_A;
             // IF_Z goto loop2;
-        } while(hram.hJoyLast == 0);
+        } while(NativeInputLogicalLast() == 0);
         // BIT_A(A_BUTTON_F);
         // IF_NZ goto a_button;
-        if(!bit_test(hram.hJoyLast, A_BUTTON_F)) {
+        if(!bit_test(NativeInputLogicalLast(), A_BUTTON_F)) {
             // PUSH_AF;
             // LD_A(0x7f);
             // ldcoord_a(9, 17, wTilemap);
@@ -2382,7 +2383,7 @@ LinkTradePartymonMenuCheckCancel:
             // POP_AF;
             // BIT_A(D_UP_F);
             // IF_Z goto d_up;
-            if(bit_test(hram.hJoyLast, D_UP_F)) {
+            if(bit_test(NativeInputLogicalLast(), D_UP_F)) {
                 // LD_A_addr(wOTPartyCount);
                 // LD_addr_A(wMenuCursorY);
                 wram->wMenuCursorY = wram->wOTPartyCount;
@@ -2920,10 +2921,10 @@ void LinkTradePartymonMenuCheckCancel(void){
             // LDH_A_addr(hJoyLast);
             // AND_A_A;
             // IF_Z goto loop2;
-        } while(hram.hJoyLast == 0);
+        } while(NativeInputLogicalLast() == 0);
         // BIT_A(A_BUTTON_F);
         // IF_NZ goto a_button;
-        if(!bit_test(hram.hJoyLast, A_BUTTON_F)) {
+        if(!bit_test(NativeInputLogicalLast(), A_BUTTON_F)) {
             // PUSH_AF;
             // LD_A(0x7f);
             // ldcoord_a(9, 17, wTilemap);
@@ -2931,7 +2932,7 @@ void LinkTradePartymonMenuCheckCancel(void){
             // POP_AF;
             // BIT_A(D_UP_F);
             // IF_Z goto d_up;
-            if(bit_test(hram.hJoyLast, D_UP_F)) {
+            if(bit_test(NativeInputLogicalLast(), D_UP_F)) {
                 // LD_A_addr(wOTPartyCount);
                 // LD_addr_A(wMenuCursorY);
                 wram->wMenuCursorY = wram->wOTPartyCount;

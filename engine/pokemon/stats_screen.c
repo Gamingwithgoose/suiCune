@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "../../charmap.h"
 #include "../../home/audio.h"
 #include "../../home/map_objects.h"
@@ -552,7 +553,7 @@ static bool StatsScreen_GetJoypad(uint8_t* a){
     if(wram->wMonType != TEMPMON) {
     // not_tempmon:
         // LDH_A_addr(hJoyPressed);
-        *a = hram.hJoyPressed;
+        *a = NativeInputLogicalPressed();
     }
     else {
         // PUSH_HL;

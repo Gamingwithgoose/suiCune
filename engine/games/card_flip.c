@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "card_flip.h"
 #include "../../home/audio.h"
 #include "../../home/clear_sprites.h"
@@ -286,7 +287,7 @@ static void v_CardFlip_CardFlip(void){
             // LDH_A_addr(hJoyLast);
             // AND_A(A_BUTTON);
             // IF_NZ goto next;
-            if(hram.hJoyLast & A_BUTTON)
+            if(NativeInputLogicalLast() & A_BUTTON)
                 break;
             // LD_DE(SFX_KINESIS);
             // CALL(aPlaySFX);
@@ -365,7 +366,7 @@ static void v_CardFlip_CardFlip(void){
             // LDH_A_addr(hJoyLast);
             // AND_A(A_BUTTON);
             // IF_NZ goto betdone;
-            if(hram.hJoyLast & A_BUTTON)
+            if(NativeInputLogicalLast() & A_BUTTON)
                 break;
             // CALL(aChooseCard_HandleJoypad);
             ChooseCard_HandleJoypad();
@@ -1671,7 +1672,7 @@ void PlaceOAMCardBorder(uint8_t card){
 void ChooseCard_HandleJoypad(void){
     // LD_HL(hJoyLast);
     // LD_A_hl;
-    uint8_t input = hram.hJoyLast;
+    uint8_t input = NativeInputLogicalLast();
     uint8_t* hl;
     // AND_A(D_LEFT);
     // JP_NZ (mChooseCard_HandleJoypad_d_left);

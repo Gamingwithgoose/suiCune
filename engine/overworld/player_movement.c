@@ -4,6 +4,7 @@
 #include "../../home/audio.h"
 #include "../../home/gfx.h"
 #include "../../home/map.h"
+#include "../../util/input.h"
 #include "npc_movement.h"
 #include "warp_connection.h"
 
@@ -34,7 +35,7 @@ static void DoPlayerMovement_GetOutOfWater(void);
 static void DoPlayerMovement_GetDPad(void) {
     // LDH_A_addr(hJoyDown);
     // LD_addr_A(wCurInput);
-    wram->wCurInput = hram.hJoyDown;
+    wram->wCurInput = NativeInputLogicalHeld();
 
 //  Standing downhill instead moves down.
 
@@ -389,7 +390,7 @@ static u8_flag_s DoPlayerMovement_TryStep(void) {
     
     if(debug_mode()) {
         // Athletic, wall phasing, blazing speed, running shoes.
-        if(hram.hJoyDown & B_BUTTON) {
+        if(NativeInputLogicalHeld() & B_BUTTON) {
             uint8_t npc = DoPlayerMovement_CheckNPC();
             if(npc == 0 || npc == 2)
                 return (u8_flag_s) {.a = 0, .flag = false};
@@ -427,7 +428,7 @@ static u8_flag_s DoPlayerMovement_TryStep(void) {
     // CALL(aDoPlayerMovement_BikeCheck);
     // IF_NZ goto walk;
     if(!debug_mode()) {
-        if(!DoPlayerMovement_BikeCheck() && ((hram.hJoyDown & B_BUTTON) == 0))
+        if(!DoPlayerMovement_BikeCheck() && ((NativeInputLogicalHeld() & B_BUTTON) == 0))
             return (u8_flag_s) {.a = DoPlayerMovement_DoStep(STEP_WALK), .flag = true};
     }
     else {

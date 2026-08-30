@@ -1,4 +1,5 @@
 #include "../constants.h"
+#include "../util/input.h"
 #include "mobile_5e.h"
 #include "mobile_41.h"
 #include "mobile_45_sprite_engine.h"
@@ -410,7 +411,7 @@ void Function17a81a(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(0x3);
     // RET_Z ;
-    if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) == 0)
+    if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) == 0)
         return;
     // CALL(aExitMenu);
     ExitMenu();
@@ -439,7 +440,7 @@ uint8_t Function17a83c(void){
     // OR_A_C;
     // LD_C_A;
     // RET;
-    return (hram.hJoyLast & 0xf0) | (hram.hJoyPressed & 0xb);
+    return (NativeInputLogicalLast() & 0xf0) | (NativeInputLogicalPressed() & 0xb);
 }
 
 bool Function17a848(uint8_t c){

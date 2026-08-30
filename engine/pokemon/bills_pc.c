@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "bills_pc.h"
 #include "bills_pc_top.h"
 #include "mon_stats.h"
@@ -34,7 +35,7 @@
 
 static void v_DepositPKMN_RunJumptable(void);
 
-static u8_flag_s v_StatsScreenDPad(uint8_t* hl);
+static u8_flag_s v_StatsScreenDPad(uint8_t input);
 static u8_flag_s Withdraw_UpDown(void);
 static u8_flag_s MoveMonWithoutMail_DPad(void);
 static u8_flag_s MoveMonWithoutMail_DPad_2(void);
@@ -184,7 +185,7 @@ static void v_DepositPKMN_RunJumptable(void) {
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto b_button;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         b_button:
             // LD_A(0x4);
             // LD_addr_A(wJumptableIndex);
@@ -195,7 +196,7 @@ static void v_DepositPKMN_RunJumptable(void) {
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto a_button;
-        if(hram.hJoyPressed & A_BUTTON) {
+        if(NativeInputLogicalPressed() & A_BUTTON) {
         // a_button:
             species_t a;
             // CALL(aBillsPC_GetSelectedPokemonSpecies);
@@ -582,7 +583,7 @@ static void v_WithdrawPKMN_RunJumptable(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto b_button;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         b_button:
             // LD_A(0x4);
             // LD_addr_A(wJumptableIndex);
@@ -593,7 +594,7 @@ static void v_WithdrawPKMN_RunJumptable(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto a_button;
-        if(hram.hJoyPressed & A_BUTTON) {
+        if(NativeInputLogicalPressed() & A_BUTTON) {
         // a_button:
             // CALL(aBillsPC_GetSelectedPokemonSpecies);
             species_t a = BillsPC_GetSelectedPokemonSpecies();
@@ -985,7 +986,7 @@ static void v_MovePKMNWithoutMail_RunJumptable(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto b_button;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         b_button:
             // LD_A(0x6);
             // LD_addr_A(wJumptableIndex);
@@ -996,7 +997,7 @@ static void v_MovePKMNWithoutMail_RunJumptable(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto a_button;
-        else if(hram.hJoyPressed & A_BUTTON) {
+        else if(NativeInputLogicalPressed() & A_BUTTON) {
         // a_button:
             // CALL(aBillsPC_GetSelectedPokemonSpecies);
             species_t species = BillsPC_GetSelectedPokemonSpecies();
@@ -1197,7 +1198,7 @@ static void v_MovePKMNWithoutMail_RunJumptable(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto b_button_2;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         // b_button_2:
             // LD_A_addr(wBillsPC_BackupScrollPosition);
             // LD_addr_A(wBillsPC_ScrollPosition);
@@ -1217,7 +1218,7 @@ static void v_MovePKMNWithoutMail_RunJumptable(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto a_button_2;
-        else if(hram.hJoyPressed & A_BUTTON){
+        else if(NativeInputLogicalPressed() & A_BUTTON){
         // a_button_2:
             // CALL(aBillsPC_CheckSpaceInDestination);
             // IF_C goto no_space;
@@ -1321,7 +1322,7 @@ void BillsPC_EndJumptableLoop(void){
     bit_set(wram->wJumptableIndex, 7);
 }
 
-static u8_flag_s v_StatsScreenDPad(uint8_t* hl){
+static u8_flag_s v_StatsScreenDPad(uint8_t input){
     // LD_A_addr(wBillsPC_NumMonsOnScreen);
     // LD_D_A;
     uint8_t d = wram->wBillsPC_NumMonsOnScreen;
@@ -1342,12 +1343,12 @@ static u8_flag_s v_StatsScreenDPad(uint8_t* hl){
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mBillsPC_PressUp);
-    if(*hl & D_UP)
+    if(input & D_UP)
         return BillsPC_PressUp();
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mBillsPC_PressDown);
-    if(*hl & D_DOWN)
+    if(input & D_DOWN)
         return BillsPC_PressDown(d, e);
 
 // empty:
@@ -1368,12 +1369,12 @@ static u8_flag_s Withdraw_UpDown(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mBillsPC_PressUp);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return BillsPC_PressUp();
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mBillsPC_PressDown);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return BillsPC_PressDown(wram->wBillsPC_NumMonsOnScreen, wram->wBillsPC_NumMonsInBox);
 
 // empty:
@@ -1395,12 +1396,12 @@ static u8_flag_s MoveMonWithoutMail_DPad(void){
         // LD_A_hl;
         // AND_A(D_UP);
         // JR_NZ (mBillsPC_PressUp);
-        if(hram.hJoyLast & D_UP)
+        if(NativeInputLogicalLast() & D_UP)
             return BillsPC_PressUp();
         // LD_A_hl;
         // AND_A(D_DOWN);
         // JR_NZ (mBillsPC_PressDown);
-        if(hram.hJoyLast & D_DOWN)
+        if(NativeInputLogicalLast() & D_DOWN)
             return BillsPC_PressDown(d, e);
     }
 
@@ -1408,12 +1409,12 @@ static u8_flag_s MoveMonWithoutMail_DPad(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // JR_NZ (mBillsPC_PressLeft);
-    if(hram.hJoyLast & D_LEFT)
+    if(NativeInputLogicalLast() & D_LEFT)
         return BillsPC_PressLeft();
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // JR_NZ (mBillsPC_PressRight);
-    if(hram.hJoyLast & D_RIGHT)
+    if(NativeInputLogicalLast() & D_RIGHT)
         return BillsPC_PressRight();
     // JR(mBillsPC_JoypadDidNothing);
     return BillsPC_JoypadDidNothing();
@@ -1433,12 +1434,12 @@ static u8_flag_s MoveMonWithoutMail_DPad_2(void){
         // LD_A_hl;
         // AND_A(D_UP);
         // JR_NZ (mBillsPC_PressUp);
-        if(hram.hJoyLast & D_UP)
+        if(NativeInputLogicalLast() & D_UP)
             return BillsPC_PressUp();
         // LD_A_hl;
         // AND_A(D_DOWN);
         // JR_NZ (mBillsPC_PressDown);
-        if(hram.hJoyLast & D_DOWN)
+        if(NativeInputLogicalLast() & D_DOWN)
             return BillsPC_PressDown(d, e);
     }
 
@@ -1446,12 +1447,12 @@ static u8_flag_s MoveMonWithoutMail_DPad_2(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // JR_NZ (mBillsPC_PressLeft);
-    if(hram.hJoyLast & D_LEFT)
+    if(NativeInputLogicalLast() & D_LEFT)
         return BillsPC_PressLeft();
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // JR_NZ (mBillsPC_PressRight);
-    if(hram.hJoyLast & D_RIGHT)
+    if(NativeInputLogicalLast() & D_RIGHT)
         return BillsPC_PressRight();
     // JR(mBillsPC_JoypadDidNothing);
     return BillsPC_JoypadDidNothing();
@@ -2562,21 +2563,21 @@ void StatsScreenDPad(void){
     // LD_A_hl;
     // AND_A(A_BUTTON | B_BUTTON | D_RIGHT | D_LEFT);
     // LD_addr_A(wMenuJoypad);
-    wram->wMenuJoypad = hram.hJoyPressed & (A_BUTTON | B_BUTTON | D_RIGHT | D_LEFT);
+    wram->wMenuJoypad = NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON | D_RIGHT | D_LEFT);
     // IF_NZ goto pressed_a_b_right_left;
     if(wram->wMenuJoypad != 0)
         return;
     // LD_A_hl;
     // AND_A(D_DOWN | D_UP);
     // LD_addr_A(wMenuJoypad);
-    wram->wMenuJoypad = hram.hJoyPressed & (D_DOWN | D_UP);
+    wram->wMenuJoypad = NativeInputLogicalPressed() & (D_DOWN | D_UP);
     // IF_NZ goto pressed_down_up;
     if(wram->wMenuJoypad != 0) {
     // pressed_down_up:
         // CALL(av_StatsScreenDPad);
         // AND_A_A;
         // IF_Z goto did_nothing;
-        if(v_StatsScreenDPad(&hram.hJoyPressed).a == 0) {
+        if(v_StatsScreenDPad(NativeInputLogicalPressed()).a == 0) {
         // did_nothing:
             // XOR_A_A;
             // LD_addr_A(wMenuJoypad);

@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "mom.h"
 #include "money.h"
 #include "../../home/text.h"
@@ -753,7 +754,7 @@ static void Mom_WithdrawDepositMenuJoypad_dpadaction(void) {
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto incrementdigit;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // incrementdigit:
         // LD_HL(mMom_WithdrawDepositMenuJoypad_DigitQuantities);
         // CALL(aMom_WithdrawDepositMenuJoypad_getdigitquantity);
@@ -769,7 +770,7 @@ static void Mom_WithdrawDepositMenuJoypad_dpadaction(void) {
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto decrementdigit;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // decrementdigit:
         // LD_HL(mMom_WithdrawDepositMenuJoypad_DigitQuantities);
         // CALL(aMom_WithdrawDepositMenuJoypad_getdigitquantity);
@@ -785,7 +786,7 @@ static void Mom_WithdrawDepositMenuJoypad_dpadaction(void) {
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto movecursorleft;
-    else if(hram.hJoyLast & D_LEFT) {
+    else if(NativeInputLogicalLast() & D_LEFT) {
     // movecursorleft:
         // LD_HL(wMomBankDigitCursorPosition);
         // LD_A_hl;
@@ -801,7 +802,7 @@ static void Mom_WithdrawDepositMenuJoypad_dpadaction(void) {
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto movecursorright;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // movecursorright:
         // LD_HL(wMomBankDigitCursorPosition);
         // LD_A_hl;
@@ -829,7 +830,7 @@ bool Mom_WithdrawDepositMenuJoypad(void){
         // LD_A_hl;
         // AND_A(B_BUTTON);
         // IF_NZ goto pressedB;
-        if(hram.hJoyPressed & B_BUTTON) {
+        if(NativeInputLogicalPressed() & B_BUTTON) {
         // pressedB:
             // SCF;
             // RET;
@@ -838,7 +839,7 @@ bool Mom_WithdrawDepositMenuJoypad(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto pressedA;
-        if(hram.hJoyPressed & A_BUTTON) {
+        if(NativeInputLogicalPressed() & A_BUTTON) {
         // pressedA:
             // AND_A_A;
             // RET;

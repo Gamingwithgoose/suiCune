@@ -16,13 +16,6 @@ struct AutoInputState {
 
 static struct AutoInputState s_autoInput;
 
-static void SyncLegacyLogicalJoypadMirrors(void) {
-    hram.hJoyReleased = NativeInputLogicalReleased();
-    hram.hJoyPressed = NativeInputLogicalPressed();
-    hram.hJoyDown = NativeInputLogicalHeld();
-    hram.hJoyLast = NativeInputLogicalLast();
-}
-
 void Joypad(void) {
         //  Replaced by UpdateJoypad, called from VBlank instead of the useless
     //  joypad interrupt.
@@ -34,32 +27,26 @@ void Joypad(void) {
 void ClearJoypad(void) {
     NativeInputClearLogicalPressed();
     NativeInputClearLogicalHeld();
-    SyncLegacyLogicalJoypadMirrors();
 }
 
 void ResetJoypadInput(void) {
     NativeInputClearLogicalState();
-    SyncLegacyLogicalJoypadMirrors();
 }
 
 void ClearJoypadPressed(void) {
     NativeInputClearLogicalPressed();
-    SyncLegacyLogicalJoypadMirrors();
 }
 
 void ClearJoypadHeld(void) {
     NativeInputClearLogicalHeld();
-    SyncLegacyLogicalJoypadMirrors();
 }
 
 void ClearJoypadLast(void) {
     NativeInputClearLogicalLast();
-    SyncLegacyLogicalJoypadMirrors();
 }
 
 // This is called automatically every frame in VBlank. SDL input arrives as
-// native action bits; legacy HRAM mirrors remain until their C consumers are
-// migrated to native input state.
+// native action bits. Logical input is advanced separately by GetJoypad.
 void UpdateJoypad(void) {
     //  Updates:
 
@@ -159,7 +146,6 @@ void GetJoypad(void) {
             //  Until then, don't change anything.
             s_autoInput.framesRemaining = --len;
         }
-        SyncLegacyLogicalJoypadMirrors();
         return;
     }
     else 
@@ -183,7 +169,6 @@ void GetJoypad(void) {
         //AND_A_B;
         //LDH_addr_A(hJoyPressed);
         NativeInputAdvanceLogicalFrame(real_input);
-        SyncLegacyLogicalJoypadMirrors();
         //LD_A_B;
         //LDH_addr_A(hJoyDown);  // frame input
     }
@@ -203,7 +188,6 @@ void StartAutoInput(const uint8_t* hl) {
     s_autoInput.framesRemaining = 0;
     //  Reset input mirrors.
     NativeInputClearLogicalFrame();
-    SyncLegacyLogicalJoypadMirrors();
 
     s_autoInput.active = true;
 }
@@ -328,7 +312,6 @@ void JoyTextDelay(void) {
             // LD_A(5);
             // LD_addr_A(wTextDelayFrames);
             wram->wTextDelayFrames = 5;
-            SyncLegacyLogicalJoypadMirrors();
 
             // RET;
             return;
@@ -337,7 +320,6 @@ void JoyTextDelay(void) {
         // XOR_A_A;
         // LDH_addr_A(hJoyLast);
         NativeInputClearLogicalLast();
-        SyncLegacyLogicalJoypadMirrors();
 
         // RET;
         return;
@@ -346,7 +328,6 @@ void JoyTextDelay(void) {
     // LD_A(15);
     // LD_addr_A(wTextDelayFrames);
     wram->wTextDelayFrames = 15;
-    SyncLegacyLogicalJoypadMirrors();
 
     // RET;
     return;

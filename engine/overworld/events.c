@@ -1,6 +1,7 @@
 #include "../../constants.h"
 #include "../../util/scripting.h"
 #include "../../util/scripting_macros.h"
+#include "../../util/input.h"
 #include "events.h"
 #include "../../home/map.h"
 #include "../../home/map_objects.h"
@@ -870,7 +871,7 @@ static u8_flag_s CheckAPressOW(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(A_BUTTON);
     // RET_Z ;
-    if(!(hram.hJoyPressed & (A_BUTTON)))
+    if(!(NativeInputLogicalPressed() & A_BUTTON))
         return u8_flag(0, false);
     
     u8_flag_s res;
@@ -1387,10 +1388,10 @@ static u8_flag_s CheckMenuOW(void){
     // LDH_addr_A(hUnusedByte);
     hram.hUnusedByte = 0;
     // LDH_A_addr(hJoyPressed);
-    uint8_t a = hram.hJoyPressed;
+    uint8_t a = NativeInputLogicalPressed();
 
     if(debug_mode()) {
-        if(bit_test(a, SELECT_F) && bit_test(hram.hJoyDown, B_BUTTON_F)) {
+        if(bit_test(a, SELECT_F) && bit_test(NativeInputLogicalHeld(), B_BUTTON_F)) {
             return u8_flag(CallScript(DebugFieldMenuScript), true);
         }
     }
@@ -1848,7 +1849,7 @@ static u8_flag_s TryTileCollisionEvent(void){
 static u8_flag_s RandomEncounter(void){
     if(debug_mode()) {
         // In debug mode, pressing B supresses wild encounters.
-        if(bit_test(hram.hJoyDown, B_BUTTON_F))
+        if(bit_test(NativeInputLogicalHeld(), B_BUTTON_F))
             return u8_flag(1, false);
     }
     // CALL(aCheckWildEncounterCooldown);

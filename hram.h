@@ -64,14 +64,9 @@ struct hram_s
     uint8_t hJoypadDown;
     // 27
     uint8_t hJoypadSum;
-    // 28
-    uint8_t hJoyReleased;
-    // 29
-    uint8_t hJoyPressed;
-    // 30
-    uint8_t hJoyDown;
-    // 31
-    uint8_t hJoyLast;
+    // 28-31. Retained only to preserve the packed legacy HRAM layout.
+    // Native logical input is owned by NativeInputState in util/input.c.
+    uint8_t legacyLogicalInputReserved[4];
     // 32
     uint8_t hInMenu;
     // 33

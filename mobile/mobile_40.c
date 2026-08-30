@@ -1,4 +1,5 @@
 #include "../constants.h"
+#include "../util/input.h"
 #include "mobile_40.h"
 #include "mobile_41.h"
 #include "mobile_42.h"
@@ -2389,7 +2390,7 @@ bool Function1009f3(void){
     // AND_A(SELECT + A_BUTTON);
     // CP_A(SELECT + A_BUTTON);
     // IF_NZ goto select_a;
-    if((hram.hJoyDown & (SELECT + A_BUTTON)) == (SELECT + A_BUTTON)) {
+    if((NativeInputLogicalHeld() & (SELECT + A_BUTTON)) == (SELECT + A_BUTTON)) {
         // LD_HL(wcd2a);
         // SET_hl(4);
         bit_set(wram->wcd2a, 4);
@@ -3037,7 +3038,7 @@ bool Mobile_PartyMenuSelect(void){
     // LD_B_A;
     // BIT_B(1);
     // IF_NZ goto done;
-    if(bit_test(hram.hJoyLast, B_BUTTON_F))
+    if(bit_test(NativeInputLogicalLast(), B_BUTTON_F))
         goto done;
     // LD_A_addr(wMenuCursorY);
     // DEC_A;
@@ -4574,7 +4575,7 @@ bool Function101418(void){
     // AND_A(SELECT + A_BUTTON);
     // CP_A(SELECT + A_BUTTON);
     // IF_Z goto asm_101425;
-    if((hram.hJoyDown & (SELECT + A_BUTTON)) == (SELECT + A_BUTTON)) {
+    if((NativeInputLogicalHeld() & (SELECT + A_BUTTON)) == (SELECT + A_BUTTON)) {
     // asm_101425:
         // LD_A(0xf7);
         // LD_addr_A(wcd2b);
@@ -4729,7 +4730,7 @@ void Function1014b7(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(0x03);
     // IF_NZ goto asm_1014c5;
-    if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) == 0) {
+    if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) == 0) {
         // LD_HL(wcd42);
         // DEC_hl;
         // RET_NZ ;
@@ -7869,7 +7870,7 @@ void Function1024de(void){
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON | B_BUTTON);
         // RET_Z ;
-        if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) == 0)
+        if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) == 0)
             return;
     }
 
@@ -8301,7 +8302,7 @@ void Function1026f3(void){
     // LDH_A_addr(hJoyPressed);
     // BIT_A(A_BUTTON_F);
     // IF_NZ goto asm_102723;
-    if(bit_test(hram.hJoyPressed, A_BUTTON_F)) {
+    if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F)) {
     // asm_102723:
         // hlcoord(9, 17, wTilemap);
         // LD_hl(0xec);
@@ -8319,7 +8320,7 @@ void Function1026f3(void){
     }
     // BIT_A(D_UP_F);
     // IF_NZ goto asm_102712;
-    else if(bit_test(hram.hJoyPressed, D_UP_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), D_UP_F)) {
     // asm_102712:
         // hlcoord(9, 17, wTilemap);
         // LD_hl(0x7f);
@@ -8335,7 +8336,7 @@ void Function1026f3(void){
     }
     // BIT_A(D_DOWN_F);
     // IF_NZ goto asm_102702;
-    else if(bit_test(hram.hJoyPressed, D_DOWN_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), D_DOWN_F)) {
     // asm_102702:
         // hlcoord(9, 17, wTilemap);
         // LD_hl(0x7f);
@@ -8427,15 +8428,15 @@ void Function10278c(void){
     // LDH_A_addr(hJoyPressed);
     // BIT_A(A_BUTTON_F);
     // JR_NZ (masm_1027c6);
-    if(bit_test(hram.hJoyPressed, A_BUTTON_F))
+    if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F))
         return asm_1027c6();
     // BIT_A(B_BUTTON_F);
     // JR_NZ (masm_1027e2);
-    else if(bit_test(hram.hJoyPressed, B_BUTTON_F))
+    else if(bit_test(NativeInputLogicalPressed(), B_BUTTON_F))
         return asm_1027e2();
     // BIT_A(D_RIGHT_F);
     // IF_NZ goto asm_10279b;
-    else if(bit_test(hram.hJoyPressed, D_RIGHT_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), D_RIGHT_F)) {
     // asm_10279b:
         // LD_A(0x03);
         // LD_addr_A(wcd4a);
@@ -8466,15 +8467,15 @@ void Function1027b7(void){
     // LDH_A_addr(hJoyPressed);
     // BIT_A(A_BUTTON_F);
     // JR_NZ (masm_1027d1);
-    if(bit_test(hram.hJoyPressed, A_BUTTON_F))
+    if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F))
         return asm_1027d1();
     // BIT_A(B_BUTTON_F);
     // JR_NZ (masm_1027e2);
-    else if(bit_test(hram.hJoyPressed, B_BUTTON_F))
+    else if(bit_test(NativeInputLogicalPressed(), B_BUTTON_F))
         return asm_1027e2();
     // BIT_A(D_LEFT_F);
     // JR_NZ (mFunction102770);
-    else if(bit_test(hram.hJoyPressed, D_LEFT_F))
+    else if(bit_test(NativeInputLogicalPressed(), D_LEFT_F))
         return Function102770();
     // RET;
 }
@@ -10380,8 +10381,8 @@ void Function1033af(void){
     // IF_NZ goto left;
     // BIT_A(D_RIGHT_F);
     // IF_NZ goto right;
-    if(bit_test(hram.hJoyPressed, D_LEFT_F)
-    || bit_test(hram.hJoyPressed, D_RIGHT_F)) {
+    if(bit_test(NativeInputLogicalPressed(), D_LEFT_F)
+    || bit_test(NativeInputLogicalPressed(), D_RIGHT_F)) {
     // left:
     // right:
     a_return:
@@ -10404,7 +10405,7 @@ void Function1033af(void){
     }
     // BIT_A(B_BUTTON_F);
     // IF_NZ goto b;
-    else if(bit_test(hram.hJoyPressed, B_BUTTON_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), B_BUTTON_F)) {
     // b:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -10416,7 +10417,7 @@ void Function1033af(void){
     }
     // BIT_A(A_BUTTON_F);
     // IF_NZ goto a;
-    else if(bit_test(hram.hJoyPressed, A_BUTTON_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F)) {
     // a:
         // LD_A_addr(wd1f3);
         // CP_A(3);
@@ -10436,7 +10437,7 @@ void Function1033af(void){
     }
     // BIT_A(D_UP_F);
     // IF_NZ goto up;
-    else if(bit_test(hram.hJoyPressed, D_UP_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), D_UP_F)) {
     // up:
         // LD_A_addr(wd1f0);
         // DEC_A;
@@ -10454,7 +10455,7 @@ void Function1033af(void){
     }
     // BIT_A(D_DOWN_F);
     // IF_NZ goto down;
-    else if(bit_test(hram.hJoyPressed, D_DOWN_F)) {
+    else if(bit_test(NativeInputLogicalPressed(), D_DOWN_F)) {
     // down:
         // LD_A_addr(wd1f0);
         // INC_A;

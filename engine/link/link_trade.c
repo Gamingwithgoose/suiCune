@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "link.h"
 #include "link_trade.h"
 #include "time_capsule.h"
@@ -291,7 +292,7 @@ static uint8_t LinkTradeMenu_GetJoypad(void){
     // AND_A(BUTTONS);
     // OR_A_B;
     // LD_B_A;
-    uint8_t b = (hram.hJoyLast & (D_PAD)) | (hram.hJoyPressed & (BUTTONS));
+    uint8_t b = (NativeInputLogicalLast() & (D_PAD)) | (NativeInputLogicalPressed() & (BUTTONS));
     // POP_AF;
     // LD_A_B;
     // POP_BC;

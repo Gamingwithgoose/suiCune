@@ -27,10 +27,8 @@ check_field(hJoypadReleased)
 check_field(hJoypadPressed)
 check_field(hJoypadDown)
 check_field(hJoypadSum)
-check_field(hJoyReleased)
-check_field(hJoyPressed)
-check_field(hJoyDown)
-check_field(hJoyLast)
+static_assert(offsetof(struct hram_s, legacyLogicalInputReserved) == hJoypadSum - 0xff80 + 1, "");
+static_assert(sizeof(((struct hram_s*)0)->legacyLogicalInputReserved) == 4, "");
 check_field(hInMenu)
 check_field(hPrinter)
 check_field(hGraphicStartTile)

@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "printer.h"
 #include "print_party.h"
 #include "../../home/audio.h"
@@ -668,7 +669,7 @@ bool CheckCancelPrint(void){
     // LDH_A_addr(hJoyDown);
     // AND_A(B_BUTTON);
     // IF_NZ goto pressed_b;
-    if(hram.hJoyDown & B_BUTTON) {
+    if(NativeInputLogicalHeld() & B_BUTTON) {
     // pressed_b:
         // LD_A_addr(wUnusedGameboyPrinterSafeCancelFlag);
         // CP_A(0x0c);

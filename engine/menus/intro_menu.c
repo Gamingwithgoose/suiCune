@@ -18,6 +18,7 @@
 #include "../../home/text.h"
 #include "../../home/pokemon.h"
 #include "../../home/joypad.h"
+#include "../../util/input.h"
 #include "../../home/tilemap.h"
 #include "../../home/palettes.h"
 #include "../../home/time.h"
@@ -782,11 +783,11 @@ static bool ConfirmContinue(void) {
         // LD_HL(hJoyPressed);
         // BIT_hl(A_BUTTON_F);
         // IF_NZ goto PressA;
-        if(bit_test(hram.hJoyPressed, A_BUTTON_F))
+        if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F))
             return true;
         // BIT_hl(B_BUTTON_F);
         // IF_Z goto loop;
-    } while(!bit_test(hram.hJoyPressed, B_BUTTON_F));
+    } while(!bit_test(NativeInputLogicalPressed(), B_BUTTON_F));
     // SCF;
     // RET;
     return false;
@@ -1840,7 +1841,7 @@ static void TitleScreenMain(void) {
         // AND_A(D_UP + B_BUTTON + SELECT);
         // CP_A(D_UP + B_BUTTON + SELECT);
         // IF_Z goto delete_save_data;
-        if((hram.hJoyDown & (D_UP + B_BUTTON + SELECT)) == (D_UP + B_BUTTON + SELECT)) {
+        if((NativeInputLogicalHeld() & (D_UP + B_BUTTON + SELECT)) == (D_UP + B_BUTTON + SELECT)) {
         // delete_save_data:
             // LD_A(TITLESCREENOPTION_DELETE_SAVE_DATA);
             wram->wTitleScreenSelectedOption = TITLESCREENOPTION_DELETE_SAVE_DATA;
@@ -1858,7 +1859,7 @@ static void TitleScreenMain(void) {
             // check_clock_reset:
                 // BIT_hl(SELECT_F);
                 // IF_NZ goto check_start;
-                if(!bit_test(hram.hJoyDown, SELECT_F)) {
+                if(!bit_test(NativeInputLogicalHeld(), SELECT_F)) {
                     // XOR_A_A;
                     // LDH_addr_A(hClockResetTrigger);
                     hram.hClockResetTrigger = 0;
@@ -1867,7 +1868,7 @@ static void TitleScreenMain(void) {
                     // AND_A(D_LEFT + D_UP);
                     // CP_A(D_LEFT + D_UP);
                     // IF_Z goto reset_clock;
-                    if((hram.hJoyDown & (D_LEFT + D_UP)) == (D_LEFT + D_UP)) {
+                    if((NativeInputLogicalHeld() & (D_LEFT + D_UP)) == (D_LEFT + D_UP)) {
                     // reset_clock:
                         // LD_A(TITLESCREENOPTION_RESET_CLOCK);
                         // LD_addr_A(wTitleScreenSelectedOption);
@@ -1887,7 +1888,7 @@ static void TitleScreenMain(void) {
             // AND_A(D_DOWN + B_BUTTON + SELECT);
             // CP_A(D_DOWN + B_BUTTON + SELECT);
             // IF_NZ goto check_start;
-            else if((hram.hJoyDown & (D_DOWN + B_BUTTON + SELECT)) == (D_DOWN + B_BUTTON + SELECT)) {
+            else if((NativeInputLogicalHeld() & (D_DOWN + B_BUTTON + SELECT)) == (D_DOWN + B_BUTTON + SELECT)) {
                 // LD_A(0x34);
                 // LDH_addr_A(hClockResetTrigger);
                 hram.hClockResetTrigger = 0x34;
@@ -1900,7 +1901,7 @@ static void TitleScreenMain(void) {
             // LD_A_hl;
             // AND_A(START | A_BUTTON);
             // IF_NZ goto incave;
-            if(hram.hJoyDown & (START | A_BUTTON)) {
+            if(NativeInputLogicalHeld() & (START | A_BUTTON)) {
             // incave:
                 // LD_A(TITLESCREENOPTION_MAIN_MENU);
                 // goto done;

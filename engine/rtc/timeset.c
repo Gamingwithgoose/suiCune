@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "timeset.h"
 #include "print_hours_mins.h"
 #include "../../home/delay.h"
@@ -236,14 +237,14 @@ static bool SetHour(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(A_BUTTON);
     // IF_NZ goto Confirm;
-    if(hram.hJoyPressed & A_BUTTON)
+    if(NativeInputLogicalPressed() & A_BUTTON)
         return true;
 
     // LD_HL(hJoyLast);
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_HL(wInitHourBuffer);
         // LD_A_hl;
@@ -263,7 +264,7 @@ static bool SetHour(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_HL(wInitHourBuffer);
         // LD_A_hl;
@@ -368,14 +369,14 @@ static bool SetMinutes(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A(A_BUTTON);
     // IF_NZ goto a_button;
-    if(hram.hJoyPressed & A_BUTTON) {
+    if(NativeInputLogicalPressed() & A_BUTTON) {
         return true;
     }
     // LD_HL(hJoyLast);
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto d_up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // d_up:
         // LD_HL(wInitMinuteBuffer);
         // LD_A_hl;
@@ -394,7 +395,7 @@ static bool SetMinutes(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto d_down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // d_down:
         // LD_HL(wInitMinuteBuffer);
         // LD_A_hl;
@@ -653,7 +654,7 @@ static bool SetDayOfWeek_GetJoypadAction(void) {
     // IF_Z goto not_A;
     // SCF;
     // RET;
-    if(hram.hJoyPressed & A_BUTTON)
+    if(NativeInputLogicalPressed() & A_BUTTON)
         return true;
 
 // not_A:
@@ -661,7 +662,7 @@ static bool SetDayOfWeek_GetJoypadAction(void) {
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto d_up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // d_up:
         // LD_HL(wTempDayOfWeek);
         // LD_A_hl;
@@ -681,7 +682,7 @@ static bool SetDayOfWeek_GetJoypadAction(void) {
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto d_down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // d_down:
         // LD_HL(wTempDayOfWeek);
         // LD_A_hl;

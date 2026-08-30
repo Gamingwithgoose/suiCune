@@ -1,6 +1,7 @@
 #include "../../constants.h"
 #include "naming_screen.h"
 #include "../../home/joypad.h"
+#include "../../util/input.h"
 #include "../../home/delay.h"
 #include "../../home/tilemap.h"
 #include "../../home/lcd.h"
@@ -523,7 +524,7 @@ static void NamingScreenJoypadLoop_Jumptable(void) {
     // ReadButtons:
         // LD_HL(hJoyPressed);
         // LD_A_hl;
-        uint8_t pressed = hram.hJoyPressed;
+        uint8_t pressed = NativeInputLogicalPressed();
         // AND_A(A_BUTTON);
         // IF_NZ goto a;
         if(pressed & A_BUTTON) {
@@ -754,7 +755,7 @@ uint8_t NamingScreen_GetCursorPosition(struct SpriteAnim* bc){
 static void NamingScreen_AnimateCursor_GetDPad(struct SpriteAnim* bc){
     // LD_HL(hJoyLast);
     // LD_A_hl;
-    uint8_t joy = hram.hJoyLast;
+    uint8_t joy = NativeInputLogicalLast();
     // AND_A(D_UP);
     // IF_NZ goto up;
     if(joy & D_UP) {
@@ -1459,7 +1460,7 @@ static void v_ComposeMailMessage_DoJumptable(void){
             // LD_A_hl;
             // AND_A(A_BUTTON);
             // IF_NZ goto a;
-            if(hram.hJoyPressed & A_BUTTON) {
+            if(NativeInputLogicalPressed() & A_BUTTON) {
             // a:
                 // CALL(aNamingScreen_PressedA_GetCursorCommand);
                 uint8_t a = NamingScreen_PressedA_GetCursorCommand();
@@ -1499,7 +1500,7 @@ static void v_ComposeMailMessage_DoJumptable(void){
             // LD_A_hl;
             // AND_A(B_BUTTON);
             // IF_NZ goto b;
-            else if(hram.hJoyPressed & B_BUTTON) {
+            else if(NativeInputLogicalPressed() & B_BUTTON) {
             b:
                 // CALL(aNamingScreen_DeleteCharacter);
                 NamingScreen_DeleteCharacter();
@@ -1524,7 +1525,7 @@ static void v_ComposeMailMessage_DoJumptable(void){
             // LD_A_hl;
             // AND_A(START);
             // IF_NZ goto start;
-            else if(hram.hJoyPressed & START) {
+            else if(NativeInputLogicalPressed() & START) {
             start:
                 // LD_HL(wNamingScreenCursorObjectPointer);
                 // LD_C_hl;
@@ -1545,7 +1546,7 @@ static void v_ComposeMailMessage_DoJumptable(void){
             // LD_A_hl;
             // AND_A(SELECT);
             // IF_NZ goto select;
-            else if(hram.hJoyPressed & SELECT) {
+            else if(NativeInputLogicalPressed() & SELECT) {
             select:
                 // LD_HL(wNamingScreenLetterCase);
                 // LD_A_hl;
@@ -1663,7 +1664,7 @@ static void ComposeMail_AnimateCursor_GetDPad(struct SpriteAnim* bc){
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
     // up:
         // LD_HL(SPRITEANIMSTRUCT_VAR2);
         // ADD_HL_BC;
@@ -1685,7 +1686,7 @@ static void ComposeMail_AnimateCursor_GetDPad(struct SpriteAnim* bc){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
     // down:
         // LD_HL(SPRITEANIMSTRUCT_VAR2);
         // ADD_HL_BC;
@@ -1707,7 +1708,7 @@ static void ComposeMail_AnimateCursor_GetDPad(struct SpriteAnim* bc){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    else if(hram.hJoyLast & D_LEFT){
+    else if(NativeInputLogicalLast() & D_LEFT){
     // left:
         // CALL(aComposeMail_GetCursorPosition);
         uint8_t pos = ComposeMail_GetCursorPosition(bc);
@@ -1755,7 +1756,7 @@ static void ComposeMail_AnimateCursor_GetDPad(struct SpriteAnim* bc){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    else if(hram.hJoyLast & D_RIGHT){
+    else if(NativeInputLogicalLast() & D_RIGHT){
     // right:
         // CALL(aComposeMail_GetCursorPosition);
         uint8_t pos = ComposeMail_GetCursorPosition(bc);

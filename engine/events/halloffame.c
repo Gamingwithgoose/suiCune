@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "halloffame.h"
 #include "prof_oaks_pc.h"
 #include "../../home/sprite_updates.h"
@@ -543,7 +544,7 @@ static bool v_HallOfFamePC_DisplayTeam(void){
             // LD_A_hl;
             // AND_A(B_BUTTON);
             // IF_NZ goto b_button;
-            if(hram.hJoyLast & B_BUTTON){
+            if(NativeInputLogicalLast() & B_BUTTON){
             // b_button:
                 // SCF;
                 // RET;
@@ -552,7 +553,7 @@ static bool v_HallOfFamePC_DisplayTeam(void){
             // LD_A_hl;
             // AND_A(A_BUTTON);
             // IF_NZ goto a_button;
-            if(hram.hJoyLast & A_BUTTON){
+            if(NativeInputLogicalLast() & A_BUTTON){
             // a_button:
                 // LD_HL(wHallOfFameMonCounter);
                 // INC_hl;
@@ -563,7 +564,7 @@ static bool v_HallOfFamePC_DisplayTeam(void){
             // LD_A_hl;
             // AND_A(START);
             // IF_NZ goto start_button;
-            if(hram.hJoyLast & START){
+            if(NativeInputLogicalLast() & START){
             // start_button:
                 // AND_A_A;
                 // RET;

@@ -7,6 +7,7 @@
 #include "../../home/audio.h"
 #include "../../home/clear_sprites.h"
 #include "../../home/joypad.h"
+#include "../../util/input.h"
 #include "../../home/copy.h"
 #include "../../home/text.h"
 #include "../../home/tilemap.h"
@@ -440,7 +441,7 @@ void Pokedex_InitMainScreen(void){
 
 void Pokedex_UpdateMainScreen(void){
     // LD_HL(hJoyPressed);
-    uint8_t pressed = hram.hJoyPressed;
+    uint8_t pressed = NativeInputLogicalPressed();
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto b;
@@ -584,7 +585,7 @@ void Pokedex_UpdateDexEntryScreen(void){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto return_to_prev_screen;
-    if(hram.hJoyPressed & B_BUTTON) {
+    if(NativeInputLogicalPressed() & B_BUTTON) {
     // return_to_prev_screen:
         // LD_A_addr(wLastVolume);
         // AND_A_A;
@@ -607,7 +608,7 @@ void Pokedex_UpdateDexEntryScreen(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // IF_NZ goto do_menu_action;
-    if(hram.hJoyPressed & A_BUTTON) {
+    if(NativeInputLogicalPressed() & A_BUTTON) {
     // do_menu_action:
         // LD_A_addr(wDexArrowCursorPosIndex);
         // LD_HL(mDexEntryScreen_MenuActionJumptable);
@@ -882,7 +883,7 @@ void Pokedex_UpdateOptionScreen(void){
     // LD_A_hl;
     // AND_A(SELECT | B_BUTTON);
     // IF_NZ goto return_to_main_screen;
-    if(hram.hJoyPressed & (SELECT | B_BUTTON)) {
+    if(NativeInputLogicalPressed() & (SELECT | B_BUTTON)) {
     // return_to_main_screen:
         // CALL(aPokedex_BlackOutBG);
         Pokedex_BlackOutBG();
@@ -895,7 +896,7 @@ void Pokedex_UpdateOptionScreen(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // IF_NZ goto do_menu_action;
-    if(hram.hJoyPressed & A_BUTTON){
+    if(NativeInputLogicalPressed() & A_BUTTON){
     // do_menu_action:
         // LD_A_addr(wDexArrowCursorPosIndex);
         // LD_HL(mPokedex_UpdateOptionScreen_MenuActionJumptable);
@@ -1029,7 +1030,7 @@ void Pokedex_UpdateSearchScreen(void){
     // LD_A_hl;
     // AND_A(START | B_BUTTON);
     // IF_NZ goto cancel;
-    if(hram.hJoyPressed & (START | B_BUTTON)){
+    if(NativeInputLogicalPressed() & (START | B_BUTTON)){
     // cancel:
         // CALL(aPokedex_BlackOutBG);
         Pokedex_BlackOutBG();
@@ -1042,7 +1043,7 @@ void Pokedex_UpdateSearchScreen(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // IF_NZ goto do_menu_action;
-    else if(hram.hJoyPressed & A_BUTTON){
+    else if(NativeInputLogicalPressed() & A_BUTTON){
     // do_menu_action:
         // LD_A_addr(wDexArrowCursorPosIndex);
         // LD_HL(mPokedex_UpdateSearchScreen_MenuActionJumptable);
@@ -1196,7 +1197,7 @@ void Pokedex_UpdateSearchResultsScreen(void){
     // LD_A_hl;
     // AND_A(B_BUTTON);
     // IF_NZ goto return_to_search_screen;
-    if(hram.hJoyPressed & B_BUTTON){
+    if(NativeInputLogicalPressed() & B_BUTTON){
     // return_to_search_screen:
         // LD_A_addr(wDexListingScrollOffsetBackup);
         // LD_addr_A(wDexListingScrollOffset);
@@ -1228,7 +1229,7 @@ void Pokedex_UpdateSearchResultsScreen(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // IF_NZ goto go_to_dex_entry;
-    if(hram.hJoyPressed & A_BUTTON){
+    if(NativeInputLogicalPressed() & A_BUTTON){
     // go_to_dex_entry:
         // CALL(aPokedex_GetSelectedMon);
         // CALL(aPokedex_CheckSeen);
@@ -1291,7 +1292,7 @@ void Pokedex_UpdateUnownMode(void){
     // LD_A_hl;
     // AND_A(A_BUTTON | B_BUTTON);
     // IF_NZ goto a_b;
-    if(hram.hJoyPressed & (A_BUTTON | B_BUTTON)){
+    if(NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)){
     // a_b:
         // CALL(aPokedex_BlackOutBG);
         Pokedex_BlackOutBG();
@@ -1330,7 +1331,7 @@ void Pokedex_UnownModeHandleDPadInput(void){
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
     uint8_t index;
-    if(hram.hJoyLast & D_RIGHT){
+    if(NativeInputLogicalLast() & D_RIGHT){
     // right:
         // LD_A_addr(wDexUnownCount);
         // LD_E_A;
@@ -1349,7 +1350,7 @@ void Pokedex_UnownModeHandleDPadInput(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    else if(hram.hJoyLast & D_LEFT){
+    else if(NativeInputLogicalLast() & D_LEFT){
     // left:
         // LD_HL(wDexCurUnownIndex);
         // LD_A_hl;
@@ -1429,7 +1430,7 @@ bool Pokedex_NextOrPreviousDexEntry(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // IF_NZ goto up;
-    if(hram.hJoyLast & D_UP) {
+    if(NativeInputLogicalLast() & D_UP) {
         while(1) {
         // up:
             // LD_A_addr(wDexListingHeight);
@@ -1451,7 +1452,7 @@ bool Pokedex_NextOrPreviousDexEntry(void){
     // LD_A_hl;
     // AND_A(D_DOWN);
     // IF_NZ goto down;
-    else if(hram.hJoyLast & D_DOWN) {
+    else if(NativeInputLogicalLast() & D_DOWN) {
         while(1) {
         // down:
             // LD_A_addr(wDexListingHeight);
@@ -1502,12 +1503,12 @@ bool Pokedex_ListingHandleDPadInput(void){
     // LD_A_hl;
     // AND_A(D_UP);
     // JR_NZ (mPokedex_ListingMoveCursorUp);
-    if(hram.hJoyLast & D_UP)
+    if(NativeInputLogicalLast() & D_UP)
         return Pokedex_ListingMoveCursorUp();
     // LD_A_hl;
     // AND_A(D_DOWN);
     // JR_NZ (mPokedex_ListingMoveCursorDown);
-    if(hram.hJoyLast & D_DOWN)
+    if(NativeInputLogicalLast() & D_DOWN)
         return Pokedex_ListingMoveCursorDown(d, e);
     // LD_A_D;
     // CP_A_E;
@@ -1517,12 +1518,12 @@ bool Pokedex_ListingHandleDPadInput(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // JR_NZ (mPokedex_ListingMoveUpOnePage);
-    if(hram.hJoyLast & D_LEFT)
+    if(NativeInputLogicalLast() & D_LEFT)
         return Pokedex_ListingMoveUpOnePage(d);
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // JR_NZ (mPokedex_ListingMoveDownOnePage);
-    if(hram.hJoyLast & D_RIGHT)
+    if(NativeInputLogicalLast() & D_RIGHT)
         return Pokedex_ListingMoveDownOnePage(d, e);
     // JR(mPokedex_ListingPosStayedSame);
     return Pokedex_ListingPosStayedSame();
@@ -2626,12 +2627,12 @@ bool Pokedex_UpdateSearchMonType(void){
         // LD_A_hl;
         // AND_A(D_LEFT);
         // JR_NZ (mPokedex_PrevSearchMonType);
-        if(hram.hJoyLast & D_LEFT)
+        if(NativeInputLogicalLast() & D_LEFT)
             return Pokedex_PrevSearchMonType();
         // LD_A_hl;
         // AND_A(D_RIGHT);
         // JR_NZ (mPokedex_NextSearchMonType);
-        if(hram.hJoyLast & D_RIGHT)
+        if(NativeInputLogicalLast() & D_RIGHT)
             return Pokedex_NextSearchMonType();
     }
 
@@ -3192,19 +3193,19 @@ bool Pokedex_MoveArrowCursor(const struct ArrowCursorData* de){
     // AND_A(D_LEFT | D_UP);
     // AND_A_B;
     // IF_NZ goto move_left_or_up;
-    if(hram.hJoyPressed & (D_LEFT | D_UP) & b)
+    if(NativeInputLogicalPressed() & (D_LEFT | D_UP) & b)
         goto move_left_or_up;
     // LD_A_hl;
     // AND_A(D_RIGHT | D_DOWN);
     // AND_A_B;
     // IF_NZ goto move_right_or_down;
-    if(hram.hJoyPressed & (D_RIGHT | D_DOWN) & b)
+    if(NativeInputLogicalPressed() & (D_RIGHT | D_DOWN) & b)
         goto move_right_or_down;
     // LD_A_hl;
     // AND_A(SELECT);
     // AND_A_B;
     // IF_NZ goto select;
-    if(hram.hJoyPressed & SELECT & b)
+    if(NativeInputLogicalPressed() & SELECT & b)
         goto select;
     // CALL(aPokedex_ArrowCursorDelay);
     // IF_C goto no_action;
@@ -3215,13 +3216,13 @@ bool Pokedex_MoveArrowCursor(const struct ArrowCursorData* de){
     // AND_A(D_LEFT | D_UP);
     // AND_A_B;
     // IF_NZ goto move_left_or_up;
-    if(hram.hJoyLast & (D_LEFT | D_UP) & b)
+    if(NativeInputLogicalLast() & (D_LEFT | D_UP) & b)
         goto move_left_or_up;
     // LD_A_hl;
     // AND_A(D_RIGHT | D_DOWN);
     // AND_A_B;
     // IF_NZ goto move_right_or_down;
-    if(hram.hJoyLast & (D_RIGHT | D_DOWN) & b)
+    if(NativeInputLogicalLast() & (D_RIGHT | D_DOWN) & b)
         goto move_right_or_down;
     // goto no_action;
     return false;

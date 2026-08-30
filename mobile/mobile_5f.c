@@ -1,4 +1,5 @@
 #include "../constants.h"
+#include "../util/input.h"
 #include "mobile_5f.h"
 #include "mobile_12.h"
 #include "mobile_41.h"
@@ -1391,13 +1392,13 @@ void Function17d5c4(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A_A;
     // RET_Z ;
-    if(hram.hJoyPressed == 0)
+    if(NativeInputLogicalPressed() == 0)
         return;
     // LD_C(0);
     uint8_t c = 0;
     // LD_B_C;
     // LD_HL(wcd32);
-    uint8_t a = hram.hJoyPressed;
+    uint8_t a = NativeInputLogicalPressed();
 
     while((a & 1) == 0) {
     // loop:
@@ -4136,7 +4137,7 @@ void Function17e3f0(void){
         // LD_A_hl;
         // AND_A(0x2);
         // RET_NZ ;
-        if((hram.hJoyPressed & A_BUTTON) || (hram.hJoyPressed & B_BUTTON))
+        if((NativeInputLogicalPressed() & A_BUTTON) || (NativeInputLogicalPressed() & B_BUTTON))
             return;
         // CALL(aWaitBGMap);
         WaitBGMap();
@@ -4186,7 +4187,7 @@ void Function17e427(void){
     // IF_NZ goto asm_17e432;
     // AND_A(0x2);
     // RET_Z ;
-    if(hram.hJoyPressed & (A_BUTTON | B_BUTTON)) {
+    if(NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) {
     // asm_17e432:
         // LD_A(0x3);
         // LD_addr_A(wcd77);
@@ -7063,7 +7064,7 @@ void Function17ff23(void){
     // LDH_A_addr(hJoyPressed);
     // AND_A_A;
     // RET_Z ;
-    if(hram.hJoyPressed == 0)
+    if(NativeInputLogicalPressed() == 0)
         return;
     // LD_A(0x8);
     // LD_addr_A(wMusicFade);

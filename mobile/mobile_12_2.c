@@ -1,4 +1,5 @@
 #include "../constants.h"
+#include "../util/input.h"
 #include "mobile_12_2.h"
 #include "../data/text/common.h"
 #include "../home/map.h"
@@ -992,7 +993,7 @@ void Function4acaa(void){
         // LDH_A_addr(hJoyPressed);
         // BIT_A(0);
         // IF_NZ goto asm_4acf4;
-        if(bit_test(hram.hJoyPressed, A_BUTTON_F)) {
+        if(bit_test(NativeInputLogicalPressed(), A_BUTTON_F)) {
         // asm_4acf4:
             // LD_A_addr(wd019);
             // BIT_A(1);
@@ -1025,7 +1026,7 @@ void Function4acaa(void){
         }
         // BIT_A(1);
         // IF_NZ goto asm_4acf3;
-        else if(bit_test(hram.hJoyPressed, B_BUTTON_F))
+        else if(bit_test(NativeInputLogicalPressed(), B_BUTTON_F))
             break;
         // goto asm_4acaa;
     }

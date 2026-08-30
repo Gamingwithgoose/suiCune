@@ -2,6 +2,7 @@
 #include "trainer_card.h"
 #include "../../home/time.h"
 #include "../../home/joypad.h"
+#include "../../util/input.h"
 #include "../../home/delay.h"
 #include "../../home/tilemap.h"
 #include "../../home/clear_sprites.h"
@@ -74,7 +75,7 @@ void TrainerCard(void){
         // LDH_A_addr(hJoyLast);
         // AND_A(B_BUTTON);
         // IF_NZ goto quit;
-        if(bit_test(wram->wJumptableIndex, 7) || bit_test(hram.hJoyLast, B_BUTTON))
+        if(bit_test(wram->wJumptableIndex, 7) || bit_test(NativeInputLogicalLast(), B_BUTTON))
             break;
         // CALL(aTrainerCard_RunJumptable);
         // Jumptable:
@@ -220,7 +221,7 @@ void TrainerCard_Page1_Joypad(void){
     // LD_A_hl;
     // AND_A(D_RIGHT | A_BUTTON);
     // IF_NZ goto pressed_right_a;
-    if(hram.hJoyLast & (D_RIGHT | A_BUTTON)) {
+    if(NativeInputLogicalLast() & (D_RIGHT | A_BUTTON)) {
     // pressed_right_a:
         // LD_A(TRAINERCARDSTATE_PAGE2_LOADGFX);
         // LD_addr_A(wJumptableIndex);
@@ -276,7 +277,7 @@ void TrainerCard_Page2_Joypad(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // IF_NZ goto Quit;
-    if(hram.hJoyLast & A_BUTTON) {
+    if(NativeInputLogicalLast() & A_BUTTON) {
     // Quit:
         // LD_A(TRAINERCARDSTATE_QUIT);
         // LD_addr_A(wJumptableIndex);
@@ -287,7 +288,7 @@ void TrainerCard_Page2_Joypad(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto d_left;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // d_left:
         // LD_A(TRAINERCARDSTATE_PAGE1_LOADGFX);
         // LD_addr_A(wJumptableIndex);
@@ -343,7 +344,7 @@ void TrainerCard_Page3_Joypad(void){
     // LD_A_hl;
     // AND_A(D_LEFT);
     // IF_NZ goto left;
-    if(hram.hJoyLast & D_LEFT) {
+    if(NativeInputLogicalLast() & D_LEFT) {
     // left:
         // LD_A(TRAINERCARDSTATE_PAGE2_LOADGFX);
         // LD_addr_A(wJumptableIndex);
@@ -354,7 +355,7 @@ void TrainerCard_Page3_Joypad(void){
     // LD_A_hl;
     // AND_A(D_RIGHT);
     // IF_NZ goto right;
-    else if(hram.hJoyLast & D_RIGHT) {
+    else if(NativeInputLogicalLast() & D_RIGHT) {
     // right:
         // LD_A(TRAINERCARDSTATE_PAGE1_LOADGFX);
         // LD_addr_A(wJumptableIndex);

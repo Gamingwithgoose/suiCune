@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "mail_2.h"
 #include "european_mail.h"
 #include "../gfx/color.h"
@@ -144,11 +145,11 @@ static void ReadAnyMail_loop(void){
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON | B_BUTTON | START);
         // IF_Z goto loop;
-        if((hram.hJoyPressed & (A_BUTTON | B_BUTTON | START)) == 0)
+        if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON | START)) == 0)
             continue;
         // AND_A(START);
         // IF_NZ goto pressed_start;
-        if((hram.hJoyPressed & START) == 0) {
+        if((NativeInputLogicalPressed() & START) == 0) {
             // RET;
             return;
         }

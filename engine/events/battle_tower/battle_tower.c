@@ -1,4 +1,5 @@
 #include "../../../constants.h"
+#include "../../../util/input.h"
 #include "battle_tower.h"
 #include "rules.h"
 #include "load_trainer.h"
@@ -1275,7 +1276,7 @@ void Function1704e1_JumptableLoop(void){
             // LD_A_hl;
             // AND_A(B_BUTTON);
             // IF_NZ goto pressed_a_or_b;
-            if(hram.hJoyPressed & (A_BUTTON | B_BUTTON)) {
+            if(NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) {
             // pressed_a_or_b:
                 // LD_HL(wJumptableIndex);
                 // SET_hl(7);
@@ -1286,7 +1287,7 @@ void Function1704e1_JumptableLoop(void){
             // LD_A_hl;
             // AND_A(D_UP);
             // IF_NZ goto pressed_up;
-            else if(hram.hJoyPressed & D_UP) {
+            else if(NativeInputLogicalPressed() & D_UP) {
             // pressed_up:
                 // LD_A_addr(wNrOfBeatenBattleTowerTrainers);
                 // AND_A_A;
@@ -1304,7 +1305,7 @@ void Function1704e1_JumptableLoop(void){
             // LD_A_hl;
             // AND_A(D_DOWN);
             // IF_NZ goto pressed_down;
-            else if(hram.hJoyPressed & D_DOWN) {
+            else if(NativeInputLogicalPressed() & D_DOWN) {
             // pressed_down:
                 // LD_A_addr(wNrOfBeatenBattleTowerTrainers);
                 // CP_A(60);

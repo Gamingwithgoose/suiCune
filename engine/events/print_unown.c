@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "print_unown.h"
 #include "print_unown_2.h"
 #include "../../home/audio.h"
@@ -115,13 +116,13 @@ void v_UnownPrinter(void){
         // LDH_A_addr(hJoyPressed);
         // AND_A(B_BUTTON);
         // IF_NZ goto pressed_b;
-        if(hram.hJoyPressed & B_BUTTON)
+        if(NativeInputLogicalPressed() & B_BUTTON)
             break;
 
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON);
         // IF_NZ goto pressed_a;
-        if(hram.hJoyPressed & A_BUTTON){
+        if(NativeInputLogicalPressed() & A_BUTTON){
         // pressed_a:
             // LD_A_addr(wJumptableIndex);
             // PUSH_AF;
@@ -248,7 +249,7 @@ static void v_UnownPrinter_LeftRight(void){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_RIGHT);
     // IF_NZ goto press_right;
-    if(hram.hJoyLast & D_RIGHT){
+    if(NativeInputLogicalLast() & D_RIGHT){
     // press_right:
         // LD_HL(wJumptableIndex);
         // LD_A_hl;
@@ -266,7 +267,7 @@ static void v_UnownPrinter_LeftRight(void){
     // LDH_A_addr(hJoyLast);
     // AND_A(D_LEFT);
     // IF_NZ goto press_left;
-    else if(hram.hJoyLast & D_LEFT){
+    else if(NativeInputLogicalLast() & D_LEFT){
     // press_left:
         // LD_HL(wJumptableIndex);
         // LD_A_hl;

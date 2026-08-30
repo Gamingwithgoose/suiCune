@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "intro.h"
 #include "../../home/palettes.h"
 #include "../../home/joypad.h"
@@ -276,7 +277,7 @@ void CrystalIntro(void){
         // LDH_A_addr(hJoyLast);
         // AND_A(BUTTONS);
         // IF_NZ goto ShutOffMusic;
-        if(hram.hJoyLast & (BUTTONS)) {
+        if(NativeInputLogicalLast() & (BUTTONS)) {
             // LD_DE(MUSIC_NONE);
             // CALL(aPlayMusic);
             PlayMusic(MUSIC_NONE);

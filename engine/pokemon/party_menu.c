@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../util/input.h"
 #include "party_menu.h"
 #include "mon_stats.h"
 #include "health.h"
@@ -975,7 +976,7 @@ u8_flag_s PartyMenuSelect(void){
         // LD_B_A;
         // BIT_B(B_BUTTON_F);
         // IF_NZ goto exitmenu;  // B button
-        if(!bit_test(hram.hJoyLast, B_BUTTON_F)) {
+        if(!bit_test(NativeInputLogicalLast(), B_BUTTON_F)) {
             // LD_A_addr(wMenuCursorY);
             // DEC_A;
             // LD_addr_A(wCurPartyMon);
