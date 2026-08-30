@@ -187,7 +187,7 @@ const txt_cmd_s ItemsOakWarningText[] = {
     text_end
 };
 
-void PartyMonItemName(item_t item){
+void PartyMonItemName(ItemId item){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);

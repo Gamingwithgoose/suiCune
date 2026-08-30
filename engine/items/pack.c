@@ -2122,7 +2122,7 @@ void DrawPocketName(uint8_t pocket){
     // RET;
 }
 
-void Pack_GetItemName(item_t item){
+void Pack_GetItemName(ItemId item){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);

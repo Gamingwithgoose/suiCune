@@ -10,7 +10,7 @@ void DoItemEffect(void){
 }
 
 //  Return false if item can't be removed from the bag.
-bool CheckTossableItem(item_t item){
+bool CheckTossableItem(ItemId item){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;
@@ -22,7 +22,7 @@ bool CheckTossableItem(item_t item){
     return v_CheckTossableItem(item);
 }
 
-bool TossItem(item_pocket_u* pocket, item_t item, uint8_t quantity){
+bool TossItem(item_pocket_u* pocket, ItemId item, uint8_t quantity){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;
@@ -43,7 +43,7 @@ bool TossItem(item_pocket_u* pocket, item_t item, uint8_t quantity){
     // RET;
 }
 
-bool ReceiveItem(item_pocket_u* pocket, item_t item, uint8_t quantity){
+bool ReceiveItem(item_pocket_u* pocket, ItemId item, uint8_t quantity){
     // PUSH_BC;
     // LDH_A_addr(hROMBank);
     // PUSH_AF;
@@ -65,7 +65,7 @@ bool ReceiveItem(item_pocket_u* pocket, item_t item, uint8_t quantity){
     // RET;
 }
 
-bool CheckItem(item_pocket_u *pocket, item_t item){
+bool CheckItem(item_pocket_u *pocket, ItemId item){
     // PUSH_HL;
     // PUSH_DE;
     // PUSH_BC;

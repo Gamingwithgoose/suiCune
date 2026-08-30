@@ -12,7 +12,9 @@ void UpdateItemDescription(void){
     ItemId item = (data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL
                 || data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY)
         ? GetScrollingMenuItemSelection()
-        : wram->wMenuSelection;
+        : (wram->wMenuSelection == LEGACY_ITEM_LIST_END
+            ? ITEM_LIST_END
+            : (ItemId)wram->wMenuSelection);
     // hlcoord(0, 12, wTilemap);
     // LD_B(4);
     // LD_C(SCREEN_WIDTH - 2);

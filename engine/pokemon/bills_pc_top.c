@@ -175,7 +175,7 @@ static bool v_BillsPC_Jumptable(uint8_t sel) {
         return BillsPC_ChangeBoxMenu();
     case 3:
     //     //dw ['BillsPC_MovePKMNMenu'];
-        // return BillsPC_MovePKMNMenu();
+        return BillsPC_MovePKMNMenu();
     default:
         //dw ['BillsPC_SeeYa'];
         return BillsPC_SeeYa();

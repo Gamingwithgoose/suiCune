@@ -49,10 +49,13 @@ enum {
 
 static const ItemId* sMartPointer;
 static const item_price_s* sPricedMartPointer;
-static struct {
+struct NativeMartItemList {
     uint8_t count;
-    LegacyItemId items[16];
-} sCurMart;
+    item_pocket_en_s pocket[16];
+};
+static_assert(offsetof(struct NativeMartItemList, pocket) == offsetof(item_pocket_s, pocket),
+              "Native mart menus must share the native ItemId pocket layout");
+static struct NativeMartItemList sCurMart;
 static item_price_s sMartItems[16];
 
 struct MartDialogGroup {
@@ -208,9 +211,8 @@ void LoadMartPointer(const ItemId* ptr, size_t size){
     sMartPointer = ptr;
     sPricedMartPointer = NULL;
     // LD_HL(wCurMartCount);
-    if(size >= lengthof(sCurMart.items) || size > UINT8_MAX)
+    if(size >= lengthof(sCurMart.pocket) || size > UINT8_MAX)
         abort();
-    wram->wCurMartCount = (uint8_t)size;
     //assert ['wCurMartCount + 1 == wCurMartItems'];
     // XOR_A_A;
     // LD_BC(16);
@@ -228,11 +230,10 @@ void LoadMartPointer(const ItemId* ptr, size_t size){
 }
 
 void LoadPricedMartPointer(const item_price_s* ptr, size_t size){
-    if(size >= lengthof(sCurMart.items) || size > UINT8_MAX)
+    if(size >= lengthof(sCurMart.pocket) || size > UINT8_MAX)
         abort();
     sPricedMartPointer = ptr;
     sMartPointer = NULL;
-    wram->wCurMartCount = (uint8_t)size;
     ByteFill(&sCurMart, sizeof(sCurMart), 0);
     sCurMart.count = (uint8_t)size;
     wram->wMartJumptableIndex = STANDARDMART_HOWMAYIHELPYOU;
@@ -390,31 +391,25 @@ void FarReadMart(void){
     // LD_L_A;
     // LD_DE(wCurMartCount);
     const ItemId* hl = sMartPointer;
-    LegacyItemId* de = sCurMart.items;
-
     uint32_t i = 0;
-    for(i = 0; i < wram->wCurMartCount; ++i) {
+    for(i = 0; i < sCurMart.count; ++i) {
     // CopyMart:
         // LD_A_addr(wMartPointerBank);
         // CALL(aGetFarByte);
         // LD_de_A;
-        if(!TryItemIdToLegacy(hl[i], de + i)) {
-            log_err("Mart item ID %u cannot enter the legacy scrolling-menu record.\n", hl[i]);
-            abort();
-        }
+        sCurMart.pocket[i].item = hl[i];
         // INC_HL;
         // INC_DE;
         // CP_A(-1);
         // IF_NZ goto CopyMart;
     }
 
-    de[i] = LEGACY_ITEM_LIST_END;
+    sCurMart.pocket[i].item = ITEM_LIST_END;
     // LD_HL(wMartItem1BCD);
     // LD_DE(wCurMartItems);
-    de = sCurMart.items;
     item_price_s* bcd = sMartItems;
 
-    for(i = 0; i < wram->wCurMartCount; ++i) {
+    for(i = 0; i < sCurMart.count; ++i) {
     // ReadMartItem:
         // LD_A_de;
         // INC_DE;
@@ -422,7 +417,7 @@ void FarReadMart(void){
         // IF_Z goto done;
         // PUSH_DE;
         // CALL(aGetMartItemPrice);
-        GetMartItemPrice(bcd + i, de[i]);
+        GetMartItemPrice(bcd + i, sCurMart.pocket[i].item);
         // POP_DE;
         // goto ReadMartItem;
     }
@@ -511,18 +506,13 @@ void ReadMart(void){
     // LD_BC(wMartItem1BCD);
     item_price_s* bc = sMartItems;
     // LD_DE(wCurMartItems);
-    LegacyItemId* de = sCurMart.items;
-
     uint32_t i = 0;
-    while(i < wram->wCurMartCount) {
+    while(i < sCurMart.count) {
     // loop:
     //  copy the items to wCurMartItems
         // LD_A_hli;
         // LD_de_A;
-        if(!TryItemIdToLegacy(hl[i].id, de + i)) {
-            log_err("Priced mart item ID %u cannot enter the legacy scrolling-menu record.\n", hl[i].id);
-            abort();
-        }
+        sCurMart.pocket[i].item = hl[i].id;
         // INC_DE;
     //  -1 is the terminator
         // CP_A(-1);
@@ -549,7 +539,7 @@ void ReadMart(void){
         i++;
     }
 
-    de[i] = LEGACY_ITEM_LIST_END;
+    sCurMart.pocket[i].item = ITEM_LIST_END;
 // done:
     // POP_HL;
     // LD_A_hl;
@@ -939,7 +929,7 @@ const struct MenuHeader MenuHeader_Buy = {
         .flags=SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3,  // flags
         .scrollingMenu = {
             .rows=4, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_NORMAL,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_NORMAL,  // item format
             //dbw ['0', 'wCurMartCount']
             .list=&sCurMart.count,
             //dba ['PlaceMenuItemName']

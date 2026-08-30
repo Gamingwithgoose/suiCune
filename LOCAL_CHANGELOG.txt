@@ -2176,11 +2176,147 @@ Exact stopping point and next recommended task
   the bag UI, and expanded item content databases/effects remain untouched.
 
 
+Session: 2026-08-29 — PC dispatch, mart cancel, and native mart ItemId list
+============================================================================
+
+Task worked on
+--------------
+- Repaired the two menu defects found during the user's extended runtime test.
+- Continued the Phase 1 ItemId conversion by removing the mart's remaining
+  byte-only item-list projection and widening common item wrapper/name APIs.
+
+User-reported validation before this session
+--------------------------------------------
+- The prior bag repair worked sufficiently to continue through Mr. Pokemon's
+  Mystery Egg, Professor Oak's Pokedex, the Pokedex UI, the Cherrygrove Map Card,
+  and the map UI without another reported defect.
+- PC access worked except that selecting `MOVE PKMN W/O MAIL` behaved like the
+  cancel/exit entry.
+- Mart item descriptions worked for purchasable rows, but the Cancel row showed
+  a single question mark.
+- The user corrected the previous session's `log_error` spelling to the
+  repository's actual `log_err` macro. That correction was present at session
+  start and was preserved.
+
+Files modified
+--------------
+- `engine/pokemon/bills_pc_top.c`: restored the live dispatch from the fourth
+  Bill's PC menu entry to `BillsPC_MovePKMNMenu`; it had remained commented out
+  and fallen through to `BillsPC_SeeYa`.
+- `engine/items/update_item_description.c`: explicitly converts the legacy
+  scrolling-menu `$ff` cancel marker to native `ITEM_LIST_END` before deciding
+  whether to print a description.
+- `engine/items/mart.c`: replaced the byte-only projected mart menu records with
+  an aligned `ItemId` list, removed checked narrowing/abort paths and duplicate
+  WRAM count ownership, and changed the buy menu to the native item-list format.
+- `home/item.h`: widened common toss/check/receive wrapper declarations to
+  `ItemId`.
+- `home/item.c`: widened the matching wrapper implementations to `ItemId`.
+- `engine/items/pack.h`: widened `Pack_GetItemName` to `ItemId`.
+- `engine/items/pack.c`: widened `Pack_GetItemName` implementation to `ItemId`.
+- `engine/pokemon/mon_menu.h`: widened `PartyMonItemName` to `ItemId`.
+- `engine/pokemon/mon_menu.c`: widened `PartyMonItemName` implementation to
+  `ItemId`.
+- `LOCAL_CHANGELOG.txt`: documented the runtime evidence, fixes, conversion,
+  remaining boundary, and validation state.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed work and architectural changes
+----------------------------------------
+- Bill's PC selection index 3 once again invokes the already-existing move-
+  without-mail workflow instead of sharing the default exit path.
+- Legacy scrolling-menu cancel is now interpreted semantically. Item 255 is no
+  longer sent to the item-description path when the mart cursor is on Cancel.
+- Mart source data, priced-mart data, the runtime buy list, menu selection, and
+  price lookup now retain `ItemId`. The mart no longer converts each entry into
+  a `LegacyItemId` array or aborts merely because a source ID exceeds one byte.
+- The mart list has one authoritative native count. `wCurMartCount` is no longer
+  populated or read by the C mart runtime.
+- The native mart list's layout is asserted against `item_pocket_s`, making the
+  menu representation explicit instead of depending on an undocumented cast.
+- Common bag item receipt/removal/check wrappers and the shared pack/Pokemon item
+  naming APIs no longer truncate callers at their function boundary.
+
+Obsolete Game Boy dependency removed
+------------------------------------
+- Removed the buy list's dependence on Crystal's byte item records,
+  `LEGACY_ITEM_LIST_END`, and byte-sized `wCurMartCount` runtime ownership.
+- Removed two mart-specific ItemId-to-LegacyItemId conversion-and-abort paths.
+
+Partially completed and transitional work
+-----------------------------------------
+- Mart list storage and display are native-width, but selecting any native menu
+  item for an action still reaches the checked `wCurItem` bridge in scrolling
+  menu code. IDs in the original action range work; expanded IDs are refused
+  rather than truncated.
+- Exact removal condition: introduce authoritative native item-action state,
+  migrate every live `wCurItem` read/write and all legacy-record projections at
+  their real boundaries, then pass the native selection into buy/use/toss/give/
+  register/effect paths directly and delete the scrolling-menu bridge.
+- `PartyMonItemName` now accepts ItemId, but the current original-content name
+  database remains byte-range and is not claimed as a Phase 14 conversion.
+- The move-without-mail workflow still uses temporary legacy Pokemon UI records
+  at documented conversion boundaries even though persistent PC box ownership
+  is native. This session restored dispatch only; it did not claim that full UI
+  workflow is natively represented.
+
+Untouched remaining work
+------------------------
+- The repository-wide `wCurItem` dependency graph, native item-effect dispatch,
+  expanded item content tables, and native TM/HM action state remain untouched.
+- Full native party ownership and remaining species/move legacy runtime fields
+  from the broader Phase 1 prompt remain unfinished.
+- Later roadmap phases remain untouched.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save structure, serializer descriptor, or on-disk format changed.
+- Original mart order, prices, quantities, cancel behavior, and PC save prompt
+  behavior are intended to remain unchanged.
+- No duplicated mart mirror or fallback path was introduced.
+
+Suspected source-level risks
+----------------------------
+- The restored move-without-mail entry now exposes a complex workflow that was
+  unreachable from this menu; the user should exercise selecting a Pokemon,
+  viewing Stats, moving between boxes, cancelling, and saving.
+- Mart buy-menu Cancel and purchases require runtime confirmation. Expanded
+  ItemIds still cannot complete purchases until native item-action state is
+  authoritative.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after restoring the PC dispatch, fixing semantic mart cancellation,
+  converting mart list ownership to ItemId, and widening the common item wrapper
+  and naming API boundaries.
+- Next recommended task: migrate the complete live `wCurItem` dependency graph
+  to authoritative native item-action state as one bounded Phase 1 conversion,
+  with explicit checked projections only where packed Crystal records still
+  require them.
+- Phase 1 and the original long-term conversion request remain partially
+  complete.
+
+
 Latest handoff marker: 2026-08-29
 ---------------------------------
-The full 2026-08-29 "Native bag scrolling and reordering repair" section above
-is the latest session record. The reported bag corruption has a source-level
-repair, but user build/runtime validation is pending. Phase 1 remains partially
-complete.
+The full 2026-08-29 "PC dispatch, mart cancel, and native mart ItemId list"
+section above is the latest session record. The two reported defects have
+source-level repairs and the mart list is native-width; runtime validation is
+pending and Phase 1 remains partially complete.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

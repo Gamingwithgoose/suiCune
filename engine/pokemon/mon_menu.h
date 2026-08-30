@@ -2,7 +2,7 @@ bool HasNoItems(void);
 bool TossItemFromPC(item_pocket_u* de);
 void CantUseItem(void);
 extern const txt_cmd_s ItemsOakWarningText[];
-void PartyMonItemName(item_t item);
+void PartyMonItemName(ItemId item);
 u8_pair_s CancelPokemonAction(void);
 u8_pair_s PokemonActionSubmenu(void);
 u8_pair_s SwitchPartyMons(void);
