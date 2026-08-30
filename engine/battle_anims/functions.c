@@ -386,7 +386,7 @@ void BattleAnimFunction_PokeBall(struct BattleAnim* bc) {
         //
         //  init
         // CALL(aGetBallAnimPal);
-        GetBallAnimPal(bc, wram->wCurItem);
+        GetBallAnimPal(bc, gNativeUI.currentItem);
         // CALL(aBattleAnim_IncAnonJumptableIndex);
         bc->jumptableIndex++;
         // RET;
@@ -493,7 +493,7 @@ void BattleAnimFunction_PokeBall(struct BattleAnim* bc) {
     case 7:
     // seven:
         // CALL(aGetBallAnimPal);
-        GetBallAnimPal(bc, wram->wCurItem);
+        GetBallAnimPal(bc, gNativeUI.currentItem);
         // LD_A(BATTLEANIMFRAMESET_0A);
         // CALL(aReinitBattleAnimFrameset);
         ReinitBattleAnimFrameset(bc, BATTLEANIMFRAMESET_0A);
@@ -559,7 +559,7 @@ void BattleAnimFunction_PokeBallBlocked(struct BattleAnim* bc) {
     case 0:
     // zero:
         // CALL(aGetBallAnimPal);
-        GetBallAnimPal(bc, wram->wCurItem);
+        GetBallAnimPal(bc, gNativeUI.currentItem);
         // CALL(aBattleAnim_IncAnonJumptableIndex);
         bc->jumptableIndex++;
         // RET;
@@ -611,7 +611,7 @@ void BattleAnimFunction_PokeBallBlocked(struct BattleAnim* bc) {
     }
 }
 
-void GetBallAnimPal(struct BattleAnim* bc, item_t item) {
+void GetBallAnimPal(struct BattleAnim* bc, ItemId item) {
     // SET_PC(aGetBallAnimPal);
     // LD_HL(mBallColors);
     // LDH_A_addr(rSVBK);

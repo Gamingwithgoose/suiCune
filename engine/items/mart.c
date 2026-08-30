@@ -725,7 +725,7 @@ bool BuyMenuLoop(void){
         // LD_HL(wNumItems);
         // CALL(aReceiveItem);
         // IF_NC goto insufficient_bag_space;
-        if(!ReceiveItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange)){
+        if(!ReceiveItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange)){
         // insufficient_bag_space:
             // LD_A(MARTTEXT_BAG_FULL);
             // CALL(aLoadBuyMenuText);
@@ -785,7 +785,7 @@ bool StandardMartAskPurchaseQuantity(void){
 
 bool MartConfirmPurchase(void){
     // PREDEF(pPartyMonItemName);
-    PartyMonItemName(wram->wCurItem);
+    PartyMonItemName(gNativeUI.currentItem);
     // LD_A(MARTTEXT_COSTS_THIS_MUCH);
     // CALL(aLoadBuyMenuText);
     LoadBuyMenuText(MARTTEXT_COSTS_THIS_MUCH);
@@ -1050,7 +1050,7 @@ const txt_cmd_s PharmacyComeAgainText[] = {
 
 static void SellMenu_TryToSellItem(void) {
     // FARCALL(aCheckItemMenu);
-    uint8_t attr = CheckItemMenu(wram->wCurItem);
+    uint8_t attr = CheckItemMenu(gNativeUI.currentItem);
     // LD_A_addr(wItemAttributeValue);
     // LD_HL(mSellMenu_dw);
     // RST(aJumpTable);
@@ -1067,7 +1067,7 @@ static void SellMenu_TryToSellItem(void) {
             // LD_A_addr(wItemAttributeValue);
             // AND_A_A;
             // IF_Z goto okay_to_sell;
-            if(!v_CheckTossableItem(wram->wCurItem)){
+            if(!v_CheckTossableItem(gNativeUI.currentItem)){
                 // LD_HL(mMartCantBuyText);
                 // CALL(aPrintText);
                 PrintText(MartCantBuyText);
@@ -1105,9 +1105,9 @@ static void SellMenu_TryToSellItem(void) {
                     // LD_A_addr(wMartItemID);
                     // LD_HL(wNumItems);
                     // CALL(aTossItem);
-                    TossItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange);
+                    TossItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange);
                     // PREDEF(pPartyMonItemName);
-                    PartyMonItemName(wram->wCurItem);
+                    PartyMonItemName(gNativeUI.currentItem);
                     // hlcoord(1, 14, wTilemap);
                     // LD_BC((3 << 8) | 18);
                     // CALL(aClearBox);

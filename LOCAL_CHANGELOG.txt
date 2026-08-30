@@ -2312,11 +2312,149 @@ Exact stopping point and next recommended task
   complete.
 
 
-Latest handoff marker: 2026-08-29
+Session: 2026-08-30 — Native current-item action state
+=======================================================
+
+Task worked on
+--------------
+- Per the previous handoff's recommended next task, migrated live C runtime
+  ownership of the current item from byte-sized emulated WRAM `wCurItem` to a
+  native ItemId action-state field.
+- Reviewed the existing changelog and worktree before modifying source.
+- Preserved the pre-existing dirty `lib/libmobile` submodule without touching it.
+
+Files modified
+--------------
+- `constants/types.h`: added non-serialized `NativeUIState` containing the
+  authoritative ItemId `currentItem`.
+- `constants.h`: declared the native UI state global for C runtime consumers.
+- `wram.c`: defined the native UI state global outside the emulated WRAM object.
+- `engine/menus/intro_menu.c`: resets native transient UI state on new-game WRAM
+  reset without altering save data.
+- `engine/menus/scrolling_menu.c`: native bag/mart/PC menu selection now writes
+  the full ItemId directly; removed the former narrowing/logging action bridge.
+- `engine/items/pack.c`, `engine/items/mart.c`, `engine/items/buy_sell_toss.c`,
+  `engine/items/items.c`, `engine/items/tmhm.c`, and `engine/items/item_effects.c`:
+  migrated item selection, item menu/context lookup, buy/sell/toss, TM/HM, and
+  item-effect consumers to native current-item state.
+- `engine/items/tmhm.h` and `engine/items/item_effects.h`: widened current-item
+  API boundaries to ItemId.
+- `home/item.c`: dispatches item effects from native current-item state.
+- `engine/overworld/scripting.c` and `engine/overworld/select_menu.c`: scripts
+  and registered-item selection now retain ItemId instead of refusing IDs above
+  one byte.
+- `engine/events/kurt.c`, `engine/events/misc_scripts.c`,
+  `engine/events/odd_egg.c`, `engine/events/pokecenter_pc.c`,
+  `engine/events/specials.c`, and `engine/events/battle_tower/battle_tower.c`:
+  migrated their current-item reads/writes to native state; Kurt explicitly
+  checks the Apricorn quantity-menu legacy boundary.
+- `engine/battle/core.c`, `engine/battle_anims/functions.c`, and
+  `engine/battle_anims/functions.h`: migrated battle ball selection/animation
+  consumers to ItemId and widened the animation palette API.
+- `engine/pokemon/evolve.c`, `engine/pokemon/party_menu.c`,
+  `engine/pokemon/mail.c`, `engine/pokemon/mon_menu.c`,
+  `engine/pokemon/mon_menu.h`, and `engine/pokemon/move_mon.c`: migrated current
+  item use to ItemId and added checked projections at actual legacy held-item,
+  mail, party, and box-record write boundaries.
+- `home/hm_moves.c` and `home/hm_moves.h`: widened the HM-item predicate to
+  ItemId so TM/HM item handling does not narrow native current-item state before
+  its semantic range check.
+- `engine/menus/debug_field_menu.c` and `engine/menus/menu_2.c`: migrated their
+  current-item assignments to native state.
+- `LOCAL_CHANGELOG.txt`: recorded the completed migration and remaining legacy
+  boundaries.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- `gNativeUI.currentItem` is now the authoritative current item for all live C
+  runtime paths audited in this session. It is naturally aligned, ItemId-sized,
+  native-only transient state rather than an address in emulated WRAM.
+- Native scrolling menus pass the selected ItemId directly into bag, mart, PC,
+  registered-item, script, battle, and item-effect logic. The old menu action
+  rejection for IDs above the byte range has been removed.
+- Mart purchases and script `giveitem`/`checkitem` can now retain an ItemId
+  through their runtime action path rather than narrowing before pocket logic.
+- All live C `wram->wCurItem` reads and writes were removed. The original WRAM
+  byte remains only as part of the fixed emulated WRAM layout and in historical
+  comments/mobile-ASM sources; it is no longer C runtime authority.
+- Original-range behavior is preserved through semantic ItemId APIs rather than
+  an indefinite mirrored byte field.
+
+Legacy/transitional structures and conversions still remaining
+--------------------------------------------------------------
+- Packed Crystal party, box, mail, PP-restore, and Kurt quantity-menu records
+  still contain byte item fields. Their writes now use explicit
+  `TryItemIdToLegacy` checks and log/reject unrepresentable values rather than
+  silently truncating ItemId.
+- Mailbox reads remain byte-oriented because the persisted mailbox record still
+  stores an original-format mail-item byte. The return cast in `mail.c` is an
+  explicit read of that legacy field, not a projection from native action state.
+- Exact removal condition: migrate each owning record to native Pokemon/mail/UI
+  state and native serialization, then delete the corresponding checked
+  projection. Do not remove those checks before the record itself ceases to be
+  byte-oriented.
+- The emulated `wCurItem` slot cannot be removed yet because `wram_s` still
+  models the fixed Game Boy address map. Its removal belongs to the later native
+  memory-model phase after all emulated WRAM layout consumers are retired.
+- Existing item effect, item name/description, TM/HM, mail, and held-item
+  content tables remain original-content databases. They are not yet expanded
+  content systems.
+
+Compatibility and save-format implications
+------------------------------------------
+- Native current-item state is transient and deliberately excluded from saves.
+  No save format, serializer descriptor, or existing-save migration changed.
+- Existing byte-held-item and mail serialization remains compatible because
+  conversions now occur only at their actual legacy record boundaries.
+- No parallel native/legacy item-action owner or fallback behavior was retained.
+
+Investigated but not implemented
+--------------------------------
+- Mobile ASM source still names the emulated `wCurItem` address. It was not
+  altered because this session targeted the live C runtime dependency graph and
+  its behavior/assembly build role was not established from source inspection.
+- Native Pokemon held-item/mail ownership, native expanded content databases,
+  and the remaining native memory-model conversion were not started.
+
+Suspected source-level risks
+----------------------------
+- The new flow should be runtime-tested across bag use/toss/register, mart buy
+  and sell, PC item transfer, a TM/HM, a ball in battle, script-given items, and
+  mail/held-item handling.
+- An item ID outside legacy range is intentionally rejected when a still-legacy
+  held-item, mail, PP-restore, box, or Kurt quantity record must store it.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing the native current-item ownership migration and
+  source-level audit of its legacy record projections.
+- Next recommended Phase 1 task: choose one owning legacy Pokemon record path
+  (party held items and mail are the most directly exposed) and migrate that
+  record plus its serialization to native ItemId ownership, removing its checked
+  projection only when every consumer is migrated.
+- The original long-term conversion request remains partially complete.
+
+
+Latest handoff marker: 2026-08-30
 ---------------------------------
-The full 2026-08-29 "PC dispatch, mart cancel, and native mart ItemId list"
-section above is the latest session record. The two reported defects have
-source-level repairs and the mart list is native-width; runtime validation is
-pending and Phase 1 remains partially complete.
+The full 2026-08-30 "Native current-item action state" section above is the
+latest session record. Current item selection is native ItemId state in live C
+runtime paths; legacy byte record boundaries remain explicitly checked.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

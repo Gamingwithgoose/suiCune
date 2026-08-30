@@ -107,12 +107,12 @@ bool TossItemFromPC(item_pocket_u * de){
     };
     // PUSH_DE;
     // CALL(aPartyMonItemName);
-    PartyMonItemName(wram->wCurItem);
+    PartyMonItemName(gNativeUI.currentItem);
     // FARCALL(av_CheckTossableItem);
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_NZ goto key_item;
-    if(!v_CheckTossableItem(wram->wCurItem)) {
+    if(!v_CheckTossableItem(gNativeUI.currentItem)) {
     // key_item:
         // CALL(aTossItemFromPC_CantToss);
         TossItemFromPC_CantToss();
@@ -151,9 +151,9 @@ bool TossItemFromPC(item_pocket_u * de){
         // POP_HL;
         // LD_A_addr(wCurItemQuantity);
         // CALL(aTossItem);
-        TossItem(de, wram->wCurItem, wram->wItemQuantityChange);
+        TossItem(de, gNativeUI.currentItem, wram->wItemQuantityChange);
         // CALL(aPartyMonItemName);
-        PartyMonItemName(wram->wCurItem);
+        PartyMonItemName(gNativeUI.currentItem);
         // LD_HL(mTossItemFromPC_ItemsDiscardedText);
         // CALL(aMenuTextbox);
         MenuTextbox(ItemsDiscardedText);
@@ -352,7 +352,7 @@ static void GiveTakePartyMonItem_GiveItem(void){
             // LD_A_addr(wItemAttributeValue);
             // AND_A_A;
             // IF_NZ goto next;
-            if(CheckTossableItem(wram->wCurItem)) {
+            if(CheckTossableItem(gNativeUI.currentItem)) {
                 // CALL(aTryGiveItemToPartymon);
                 TryGiveItemToPartymon();
                 // goto quit;
@@ -432,10 +432,17 @@ cancel:
 }
 
 void TryGiveItemToPartymon(void){
+    LegacyItemId legacyItem;
+    if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+        log_err("Native item ID %u cannot enter the legacy held-item record.\n",
+                gNativeUI.currentItem);
+        MenuTextboxBackup(ItemCantHeldText);
+        return;
+    }
     // CALL(aSpeechTextbox);
     SpeechTextbox();
     // CALL(aPartyMonItemName);
-    PartyMonItemName(wram->wCurItem);
+    PartyMonItemName(gNativeUI.currentItem);
     // CALL(aGetPartyItemLocation);
     item_t* itm = GetPartyItemLocation();
     // LD_A_hl;
@@ -444,12 +451,12 @@ void TryGiveItemToPartymon(void){
     if(*itm == NO_ITEM) {
     // give_item_to_mon:
         // CALL(aGiveItemToPokemon);
-        GiveItemToPokemon(wram->wCurItem);
+        GiveItemToPokemon(gNativeUI.currentItem);
         // LD_HL(mPokemonHoldItemText);
         // CALL(aMenuTextboxBackup);
         MenuTextboxBackup(PokemonHoldItemText);
         // CALL(aGivePartyItem);
-        GivePartyItem(wram->wCurItem);
+        GivePartyItem(gNativeUI.currentItem);
         // RET;
         return;
     }
@@ -478,7 +485,7 @@ void TryGiveItemToPartymon(void){
     // IF_C goto abort;
     if(StartMenuYesNo(PokemonAskSwapItemText)) {
         // CALL(aGiveItemToPokemon);
-        GiveItemToPokemon(wram->wCurItem);
+        GiveItemToPokemon(gNativeUI.currentItem);
         // LD_A_addr(wNamedObjectIndex);
         // PUSH_AF;
         // LD_A_addr(wCurItem);
@@ -494,7 +501,7 @@ void TryGiveItemToPartymon(void){
             // LD_A_addr(wNamedObjectIndex);
             // LD_addr_A(wCurItem);
             // CALL(aGivePartyItem);
-            GivePartyItem(wram->wCurItem);
+            GivePartyItem(gNativeUI.currentItem);
             // RET;
             return;
         }
@@ -503,7 +510,7 @@ void TryGiveItemToPartymon(void){
         // LD_A_addr(wNamedObjectIndex);
         // LD_addr_A(wCurItem);
         // CALL(aReceiveItemFromPokemon);
-        ReceiveItemFromPokemon(wram->wCurItem);
+        ReceiveItemFromPokemon(gNativeUI.currentItem);
         // LD_HL(mItemStorageFullText);
         // CALL(aMenuTextboxBackup);
         MenuTextboxBackup(ItemStorageFullText);
@@ -513,15 +520,20 @@ void TryGiveItemToPartymon(void){
     // RET;
 }
 
-void GivePartyItem(item_t item){
+void GivePartyItem(ItemId item){
     // CALL(aGetPartyItemLocation);
     // LD_A_addr(wCurItem);
     // LD_hl_A;
-    *GetPartyItemLocation() = item;
+    LegacyItemId legacyItem;
+    if(!TryItemIdToLegacy(item, &legacyItem)) {
+        log_err("Native item ID %u cannot enter the legacy held-item record.\n", item);
+        return;
+    }
+    *GetPartyItemLocation() = legacyItem;
     // LD_D_A;
     // FARCALL(aItemIsMail);
     // IF_NC goto done;
-    if(ItemIsMail(item)) {
+    if(ItemIsMail(legacyItem)) {
         // CALL(aComposeMailMessage);
         ComposeMailMessage();
     }
@@ -644,7 +656,7 @@ item_t* GetPartyItemLocation(void){
     return &gPokemon.partyMon[wram->wCurPartyMon].mon.item;
 }
 
-bool ReceiveItemFromPokemon(item_t item){
+bool ReceiveItemFromPokemon(ItemId item){
     // LD_A(1);
     // LD_addr_A(wItemQuantityChange);
     // LD_HL(wNumItems);
@@ -652,7 +664,7 @@ bool ReceiveItemFromPokemon(item_t item){
     return ReceiveItem(GetItemPocket(ITEM_POCKET), item, 1);
 }
 
-void GiveItemToPokemon(item_t item){
+void GiveItemToPokemon(ItemId item){
     // LD_A(1);
     // LD_addr_A(wItemQuantityChange);
     wram->wItemQuantityChange = 1;
@@ -690,7 +702,13 @@ void ComposeMailMessage(void){
     // INC_DE;
     // LD_A_addr(wCurItem);
     // LD_de_A;
-    wram->wTempMail.type = wram->wCurItem;
+    LegacyItemId legacyItem;
+    if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+        log_err("Native mail item ID %u cannot enter the legacy mail record.\n",
+                gNativeUI.currentItem);
+        return;
+    }
+    wram->wTempMail.type = legacyItem;
     // LD_A_addr(wCurPartyMon);
     // LD_HL(sPartyMail);
     // LD_BC(MAIL_STRUCT_LENGTH);

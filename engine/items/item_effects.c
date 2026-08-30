@@ -60,9 +60,9 @@
 #include <stddef.h>
 #endif
 
-void v_DoItemEffect(item_t item){
+void v_DoItemEffect(ItemId item){
     // LD_A_addr(wCurItem);
-    wram->wCurItem = item;
+    gNativeUI.currentItem = item;
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);
     // CALL(aCopyName1);
@@ -509,7 +509,7 @@ void PokeBallEffect(void){
     // LD_A_addr(wCurItem);
     // CP_A(PARK_BALL);
     // CALL_NZ (aReturnToBattle_UseBall);
-    if(wram->wCurItem != PARK_BALL) // We use the Park Ball from the battle screen.
+    if(gNativeUI.currentItem != PARK_BALL) // We use the Park Ball from the battle screen.
         ReturnToBattle_UseBall();
 
     // LD_HL(wOptions);
@@ -528,7 +528,7 @@ void PokeBallEffect(void){
     // LD_A_addr(wCurItem);
     // CP_A(MASTER_BALL);
     // JP_Z (mPokeBallEffect_catch_without_fail);
-    if(wram->wBattleType != BATTLETYPE_TUTORIAL && wram->wCurItem != MASTER_BALL) {
+    if(wram->wBattleType != BATTLETYPE_TUTORIAL && gNativeUI.currentItem != MASTER_BALL) {
         // LD_A_addr(wCurItem);
         // LD_C_A;
         // LD_HL(mBallMultiplierFunctionTable);
@@ -541,7 +541,7 @@ void PokeBallEffect(void){
             // IF_Z goto skip_or_return_from_ball_fn;
             // CP_A_C;
             // IF_Z goto call_ball_function;
-            if(wram->wCurItem == ball_mul->item) {
+            if(gNativeUI.currentItem == ball_mul->item) {
             // call_ball_function:
                 // LD_A_hli;
                 // LD_H_hl;
@@ -564,7 +564,7 @@ void PokeBallEffect(void){
         // LD_A_B;
         // JP_Z (mPokeBallEffect_skip_hp_calc);
 
-        if(wram->wCurItem != LEVEL_BALL) {
+        if(gNativeUI.currentItem != LEVEL_BALL) {
             // LD_A_B;
             // LDH_addr_A(hMultiplicand + 2);
             uint8_t base = b;
@@ -750,7 +750,9 @@ void PokeBallEffect(void){
 
 // not_kurt_ball:
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = (wram->wCurItem < POKE_BALL + 1)? wram->wCurItem: POKE_BALL;
+    wram->wBattleAnimParam = (gNativeUI.currentItem < POKE_BALL + 1)
+        ? (uint8_t)gNativeUI.currentItem
+        : POKE_BALL;
 
     // LD_DE(ANIM_THROW_POKE_BALL);
     // LD_A_E;
@@ -1005,7 +1007,7 @@ void PokeBallEffect(void){
                 // LD_A_addr(wCurItem);
                 // CP_A(FRIEND_BALL);
                 // IF_NZ goto SkipPartyMonFriendBall;
-                if(wram->wCurItem == FRIEND_BALL) {
+                if(gNativeUI.currentItem == FRIEND_BALL) {
                     // LD_A_addr(wPartyCount);
                     // DEC_A;
                     // LD_HL(wPartyMon1Happiness);
@@ -1090,7 +1092,7 @@ void PokeBallEffect(void){
                 // LD_A_addr(wCurItem);
                 // CP_A(FRIEND_BALL);
                 // IF_NZ goto SkipBoxMonFriendBall;
-                if(wram->wCurItem == FRIEND_BALL) {
+                if(gNativeUI.currentItem == FRIEND_BALL) {
                 // The captured mon is now first in the box
                     // LD_A(FRIEND_BALL_HAPPINESS);
                     // LD_addr_A(sBoxMon1Happiness);
@@ -1211,7 +1213,7 @@ return_from_capture:
     // LD_addr_A(wItemQuantityChange);
     wram->wItemQuantityChange = 1;
     // JP(mTossItem);
-    TossItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, 1);
+    TossItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, 1);
 }
 
 //  multiply catch rate by 2
@@ -1986,7 +1988,7 @@ uint8_t GetStatExpRelativePointer(void){
         {CALCIUM,   (MON_SPC_EXP - MON_STAT_EXP) / 2},
     };
     // LD_A_addr(wCurItem);
-    item_t item = wram->wCurItem;
+    ItemId item = gNativeUI.currentItem;
     // LD_HL(mStatExpItemPointerOffsets);
     const struct ItemStat* istat = StatExpItemPointerOffsets;
 
@@ -2202,7 +2204,7 @@ uint8_t UseStatusHealer(void){
     if(IsMonFainted(curMon))
         return TRUE;
     // CALL(aGetItemHealingAction);
-    uint16_t action = GetItemHealingAction(wram->wCurItem);
+    uint16_t action = GetItemHealingAction(gNativeUI.currentItem);
     uint8_t text = HIGH(action);
     uint8_t c = LOW(action);
     // LD_A(MON_STATUS);
@@ -2432,7 +2434,7 @@ uint8_t RevivePokemon(void){
     // LD_A_addr(wCurItem);
     // CP_A(REVIVE);
     // IF_Z goto revive_half_hp;
-    if(wram->wCurItem == REVIVE) {
+    if(gNativeUI.currentItem == REVIVE) {
     // revive_half_hp:
         // CALL(aReviveHalfHP);
         ReviveHalfHP(curMon);
@@ -2603,7 +2605,7 @@ uint8_t ItemRestoreHP(void){
     // LD_addr_A(wLowHealthAlarm);
     wram->wLowHealthAlarm = 0x0;
     // CALL(aGetHealingItemAmount);
-    uint16_t amount = GetHealingItemAmount(wram->wCurItem);
+    uint16_t amount = GetHealingItemAmount(gNativeUI.currentItem);
     // CALL(aRestoreHealth);
     amount = RestoreHealth(curMon, amount);
     // CALL(aBattlemonRestoreHealth);
@@ -3267,7 +3269,7 @@ void XItemEffect(void){
     UseItemText();
 
     // LD_A_addr(wCurItem);
-    item_t target = wram->wCurItem;
+    ItemId target = gNativeUI.currentItem;
     // LD_HL(mXItemStats);
     const struct ItemStat* hl = XItemStats;
 
@@ -3486,7 +3488,13 @@ void ItemfinderEffect(void){
 void RestorePPEffect(void){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wTempRestorePPItem);
-    wram->wTempRestorePPItem = wram->wCurItem;
+    LegacyItemId legacyItem;
+    if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+        log_err("Native item ID %u cannot enter the legacy PP restoration state.\n",
+                gNativeUI.currentItem);
+        return;
+    }
+    wram->wTempRestorePPItem = legacyItem;
     bool cancel;
 
 loop:
@@ -3919,7 +3927,7 @@ void UseDisposableItem(void){
     // LD_addr_A(wItemQuantityChange);
     wram->wItemQuantityChange = 1;
     // JP(mTossItem);
-    TossItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, 1);
+    TossItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, 1);
 }
 
 void UseBallInTrainerBattle(void){

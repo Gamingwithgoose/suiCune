@@ -2333,10 +2333,17 @@ uint8_t GivePoke(uint8_t b, const char* nickname, const char* otName){
         // LD_A_addr(wCurItem);
         // AND_A_A;
         // IF_Z goto done;
-        if(wram->wCurItem != NO_ITEM) {
+        if(gNativeUI.currentItem != NO_ITEM) {
             // LD_A_addr(wCurItem);
             // LD_addr_A(sBoxMon1Item);
-            gb_write(sBoxMon1Item, wram->wCurItem);
+            LegacyItemId legacyItem;
+            if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+                log_err("Native held item ID %u cannot enter the legacy box record.\n",
+                        gNativeUI.currentItem);
+            }
+            else {
+                gb_write(sBoxMon1Item, legacyItem);
+            }
         }
     }
     else {
@@ -2359,14 +2366,21 @@ uint8_t GivePoke(uint8_t b, const char* nickname, const char* otName){
         // LD_A_addr(wCurItem);
         // AND_A_A;
         // IF_Z goto done;
-        if(wram->wCurItem != NO_ITEM) {
+        if(gNativeUI.currentItem != NO_ITEM) {
             // LD_A_addr(wCurPartyMon);
             // LD_HL(wPartyMon1Item);
             // LD_BC(PARTYMON_STRUCT_LENGTH);
             // CALL(aAddNTimes);
             // LD_A_addr(wCurItem);
             // LD_hl_A;
-            gPokemon.partyMon[wram->wCurPartyMon].mon.item = wram->wCurItem;
+            LegacyItemId legacyItem;
+            if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+                log_err("Native held item ID %u cannot enter the legacy party record.\n",
+                        gNativeUI.currentItem);
+            }
+            else {
+                gPokemon.partyMon[wram->wCurPartyMon].mon.item = legacyItem;
+            }
             // goto done;
         }
     }

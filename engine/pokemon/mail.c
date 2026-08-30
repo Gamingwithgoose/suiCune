@@ -605,10 +605,10 @@ static item_t MailboxPC_GetMailType(uint8_t sel) {
     // CALL(aAddNTimes);
     // LD_A_hl;
     // LD_addr_A(wCurItem);
-    wram->wCurItem = gb_read(sMailbox1Type + MAIL_STRUCT_LENGTH * sel);
+    gNativeUI.currentItem = gb_read(sMailbox1Type + MAIL_STRUCT_LENGTH * sel);
     // JP(mCloseSRAM);
     CloseSRAM();
-    return wram->wCurItem;
+    return (LegacyItemId)gNativeUI.currentItem;
 }
 
 static void MailboxPC_Submenu(void){

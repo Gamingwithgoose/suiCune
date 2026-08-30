@@ -1,4 +1,4 @@
-void v_DoItemEffect(item_t item);
+void v_DoItemEffect(ItemId item);
 void ItemEffects(void);
 void PokeBallEffect(void);
 // void BallMultiplierFunctionTable(void);

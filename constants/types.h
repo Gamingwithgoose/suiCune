@@ -2388,3 +2388,9 @@ struct CrystalData {
         uint8_t zipCode[4];
     };
 };
+
+// Native-only transient UI/action state. This deliberately lives outside the
+// emulated WRAM address space and is not serialized with player save data.
+struct NativeUIState {
+    ItemId currentItem;
+};

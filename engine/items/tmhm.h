@@ -1,6 +1,6 @@
 bool TMHMPocket(void);
 void ConvertCurItemIntoCurTMHM(void);
-move_t GetTMHMItemMove(item_t item);
+move_t GetTMHMItemMove(ItemId item);
 bool AskTeachTMHM(void);
 u8_flag_s ChooseMonToLearnTMHM(void);
 u8_flag_s ChooseMonToLearnTMHM_NoRefresh(void);

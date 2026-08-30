@@ -93,7 +93,7 @@ static void DebugPhoneCall(void){
 static void DebugAddPokemon(species_t species, uint8_t level, item_t item) {
     wram->wCurPartySpecies = species;
     wram->wCurPartyLevel = level;
-    wram->wCurItem = item;
+    gNativeUI.currentItem = item;
     GivePoke(0, NULL, NULL);
 }
 

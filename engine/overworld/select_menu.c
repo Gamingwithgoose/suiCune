@@ -63,10 +63,8 @@ static bool CheckRegisteredItem_IsSameItem(ItemId hl) {
         // RET;
         return false;
     }
-    if(hl > UINT8_MAX)
-        return false;
     // LD_addr_A(wCurItem);
-    wram->wCurItem = (LegacyItemId)hl;
+    gNativeUI.currentItem = hl;
     // AND_A_A;
     // RET;
     return true;
@@ -140,9 +138,7 @@ bool CheckRegisteredItem(void){
                     if(gPlayer.keyItems[i] == gPlayer.registeredItem) {
                         // LD_A_addr(wRegisteredItem);
                         // LD_addr_A(wCurItem);
-                        if(gPlayer.registeredItem > UINT8_MAX)
-                            break;
-                        wram->wCurItem = (LegacyItemId)gPlayer.registeredItem;
+                        gNativeUI.currentItem = gPlayer.registeredItem;
                         // AND_A_A;
                         // RET;
                         return true;
@@ -171,7 +167,7 @@ bool CheckRegisteredItem(void){
 bool UseRegisteredItem(void){
     // FARCALL(aCheckItemMenu);
     // LD_A_addr(wItemAttributeValue);
-    uint8_t menu = CheckItemMenu(wram->wCurItem);
+    uint8_t menu = CheckItemMenu(gNativeUI.currentItem);
     // LD_HL(mUseRegisteredItem_SwitchTo);
     // RST(aJumpTable);
     // RET;

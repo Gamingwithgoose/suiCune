@@ -30,7 +30,7 @@ static void FindItemInBallScript_TryReceiveItem(void) {
     CopyName2(wram->wStringBuffer3, GetItemName(wram->wItemBallItemID));
     // LD_A_addr(wItemBallItemID);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = wram->wItemBallItemID;
+    gNativeUI.currentItem = wram->wItemBallItemID;
     // LD_A_addr(wItemBallQuantity);
     // LD_addr_A(wItemQuantityChange);
     // LD_HL(wNumItems);

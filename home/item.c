@@ -6,7 +6,7 @@
 void DoItemEffect(void){
     // FARCALL(av_DoItemEffect);
     // RET;
-    v_DoItemEffect(wram->wCurItem);
+    v_DoItemEffect(gNativeUI.currentItem);
 }
 
 //  Return false if item can't be removed from the bag.

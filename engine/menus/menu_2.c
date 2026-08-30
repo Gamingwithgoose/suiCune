@@ -332,7 +332,7 @@ bool FindApricornsInBag(void){
         }
         // PUSH_HL;
         // LD_addr_A(wCurItem);
-        wram->wCurItem = a;
+        gNativeUI.currentItem = a;
         // LD_HL(wNumItems);
         // CALL(aCheckItem);
         // POP_HL;

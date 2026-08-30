@@ -56,8 +56,9 @@
 #include "../../mobile/mobile_41.h"
 #include <assert.h>
 
-static bool SetLegacyScriptItem(ItemId item) {
-    return TryItemIdToLegacy(item, &wram->wCurItem);
+static bool SetScriptItem(ItemId item) {
+    gNativeUI.currentItem = item;
+    return true;
 }
 
 static bool SetLegacyScriptSpecies(SpeciesId species) {
@@ -895,7 +896,7 @@ void Script_verbosegiveitemvar(script_s* s, ItemId item, uint8_t action){
 // ok:
     // LD_addr_A(wCurItem);
     item = (item != ITEM_FROM_MEM)? item: wram->wScriptVar;
-    if(!SetLegacyScriptItem(item)) {
+    if(!SetScriptItem(item)) {
         wram->wScriptVar = FALSE;
         return;
     }
@@ -906,7 +907,7 @@ void Script_verbosegiveitemvar(script_s* s, ItemId item, uint8_t action){
     wram->wItemQuantityChange = *GetVarAction(action);
     // LD_HL(wNumItems);
     // CALL(aReceiveItem);
-    bool ok = ReceiveItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange);
+    bool ok = ReceiveItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange);
     // LD_A(TRUE);
     // IF_C goto ok2;
     // XOR_A_A;
@@ -918,7 +919,7 @@ void Script_verbosegiveitemvar(script_s* s, ItemId item, uint8_t action){
     // LD_DE(wStringBuffer1);
     // LD_A(STRING_BUFFER_4);
     // CALL(aCopyConvertedText);
-    CopyConvertedText(STRING_BUFFER_4, CurItemName(wram->wCurItem));
+    CopyConvertedText(STRING_BUFFER_4, CurItemName(gNativeUI.currentItem));
     // LD_B(BANK(aGiveItemScript));
     // LD_DE(mGiveItemScript);
     // JP(mScriptCall);
@@ -930,7 +931,7 @@ void Script_itemnotify(script_s* s){
     // CALL(aGetPocketName);
     GetPocketName();
     // CALL(aCurItemName);
-    CurItemName(wram->wCurItem);
+    CurItemName(gNativeUI.currentItem);
     // LD_B(BANK(aPutItemInPocketText));
     // LD_HL(mPutItemInPocketText);
     // CALL(aMapTextbox);
@@ -944,7 +945,7 @@ void Script_pocketisfull(script_s* s){
     // CALL(aGetPocketName);
     GetPocketName();
     // CALL(aCurItemName);
-    CurItemName(wram->wCurItem);
+    CurItemName(gNativeUI.currentItem);
     // LD_B(BANK(aPocketIsFullText));
     // LD_HL(mPocketIsFullText);
     // CALL(aMapTextbox);
@@ -956,7 +957,7 @@ void Script_specialsound(script_s* s){
     (void)s;
     // FARCALL(aCheckItemPocket);
     // LD_A_addr(wItemAttributeValue);
-    uint8_t pocket = CheckItemPocket(wram->wCurItem);
+    uint8_t pocket = CheckItemPocket(gNativeUI.currentItem);
     // CP_A(TM_HM);
     // LD_DE(SFX_GET_TM);
     // IF_Z goto play;
@@ -996,7 +997,7 @@ uint8_t* GetPocketName(void){
     // LD_E_A;
     // LD_HL(wStringBuffer3);
     // CALL(aCopyName2);
-    return Utf8ToCrystalBuffer(wram->wStringBuffer3, sizeof(wram->wStringBuffer3), ItemPocketNames[CheckItemPocket(wram->wCurItem) - 1]);
+    return Utf8ToCrystalBuffer(wram->wStringBuffer3, sizeof(wram->wStringBuffer3), ItemPocketNames[CheckItemPocket(gNativeUI.currentItem) - 1]);
     // RET;
 
 // INCLUDE "data/items/pocket_names.asm"
@@ -2678,7 +2679,7 @@ void Script_giveitem(script_s* s, ItemId item, uint8_t quantity){
 
 // ok:
     // LD_addr_A(wCurItem);
-    if(!SetLegacyScriptItem(item)) {
+    if(!SetScriptItem(item)) {
         wram->wScriptVar = FALSE;
         return;
     }
@@ -2731,7 +2732,7 @@ void Script_checkitem(script_s* s, ItemId item){
     wram->wScriptVar = FALSE;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurItem);
-    if(!SetLegacyScriptItem(item))
+    if(!SetScriptItem(item))
         return;
     // LD_HL(wNumItems);
     // CALL(aCheckItem);
@@ -3000,7 +3001,7 @@ void Script_givepoke(script_s* s, SpeciesId species, uint8_t lvl, ItemId item, b
     wram->wCurPartyLevel = lvl;
     // CALL(aGetScriptByte);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = legacyItem;
+    gNativeUI.currentItem = legacyItem;
     // CALL(aGetScriptByte);
     // AND_A_A;
     // LD_B_A;

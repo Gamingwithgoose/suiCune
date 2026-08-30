@@ -554,7 +554,7 @@ static uint8_t* PlacePartyMonEvoStoneCompatibility_DetermineCompatibility(const 
         // INC_HL;
         // INC_HL;
         // IF_NZ goto loop2;
-        if(a == EVOLVE_ITEM && data->item.useItem == wram->wCurItem) {
+        if(a == EVOLVE_ITEM && data->item.useItem == gNativeUI.currentItem) {
             // LD_DE(mPlacePartyMonEvoStoneCompatibility_string_able);
             // RET;
             return U82C(string_able);

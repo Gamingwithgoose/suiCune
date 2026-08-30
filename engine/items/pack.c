@@ -306,7 +306,7 @@ void Pack_RunJumptable(void) {
             if(Pack_InterpretJoypad(PACKSTATE_INITKEYITEMSPOCKET, PACKSTATE_INITITEMSPOCKET))
                 return;
             // FARCALL(av_CheckTossableItem);
-            bool tossable = v_CheckTossableItem(wram->wCurItem);
+            bool tossable = v_CheckTossableItem(gNativeUI.currentItem);
             // LD_A_addr(wItemAttributeValue);
             // AND_A_A;
             // IF_NZ goto use_quit;
@@ -404,13 +404,13 @@ static void Pack_ItemBallsKey_LoadSubmenu(void){
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_NZ goto tossable;
-    if(!v_CheckTossableItem(wram->wCurItem)){
+    if(!v_CheckTossableItem(gNativeUI.currentItem)){
     // tossable:
         // FARCALL(aCheckSelectableItem);
         // LD_A_addr(wItemAttributeValue);
         // AND_A_A;
         // IF_NZ goto tossable_selectable;
-        if(!CheckSelectableItem(wram->wCurItem)){
+        if(!CheckSelectableItem(gNativeUI.currentItem)){
         // tossable_selectable:
             // LD_HL(mMenuHeader_UnusableItem);
             hl = &MenuHeader_UnusableItem;
@@ -432,13 +432,13 @@ static void Pack_ItemBallsKey_LoadSubmenu(void){
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_NZ goto selectable;
-    else if(!CheckSelectableItem(wram->wCurItem)){
+    else if(!CheckSelectableItem(gNativeUI.currentItem)){
     // selectable:
         // FARCALL(aCheckItemMenu);
         // LD_A_addr(wItemAttributeValue);
         // AND_A_A;
         // IF_NZ goto selectable_usable;
-        if(CheckItemMenu(wram->wCurItem) != 0){
+        if(CheckItemMenu(gNativeUI.currentItem) != 0){
         // selectable_usable:
             // LD_HL(mMenuHeader_UsableItem);
             hl = &MenuHeader_UsableItem;
@@ -459,7 +459,7 @@ static void Pack_ItemBallsKey_LoadSubmenu(void){
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_NZ goto usable;
-    else if(CheckItemMenu(wram->wCurItem) != 0){
+    else if(CheckItemMenu(gNativeUI.currentItem) != 0){
     // usable:
         // LD_HL(mMenuHeader_UsableKeyItem);
         hl = &MenuHeader_UsableKeyItem;
@@ -653,7 +653,7 @@ void UseItem(void){
     // RST(aJumpTable);
     // RET;
 // dw:
-    switch(CheckItemMenu(wram->wCurItem)){
+    switch(CheckItemMenu(gNativeUI.currentItem)){
     //  entries correspond to ITEMMENU_* constants
         //dw ['.Field'];  // ITEMMENU_CLOSE
         case ITEMMENU_CLOSE:
@@ -735,7 +735,7 @@ void TossMenu(void){
     // IF_C goto finish;
     if(!quit){
         // CALL(aPack_GetItemName);
-        Pack_GetItemName(wram->wCurItem);
+        Pack_GetItemName(gNativeUI.currentItem);
         // LD_HL(mAskQuantityThrowAwayText);
         // CALL(aMenuTextbox);
         MenuTextbox(AskQuantityThrowAwayText);
@@ -750,9 +750,9 @@ void TossMenu(void){
             // LD_HL(wNumItems);
             // LD_A_addr(wCurItemQuantity);
             // CALL(aTossItem);
-            TossItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange);
+            TossItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange);
             // CALL(aPack_GetItemName);
-            Pack_GetItemName(wram->wCurItem);
+            Pack_GetItemName(gNativeUI.currentItem);
             // LD_HL(mThrewAwayText);
             // CALL(aPack_PrintTextNoScroll);
             Pack_PrintTextNoScroll(ThrewAwayText);
@@ -798,7 +798,7 @@ void RegisterItem(void){
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_NZ goto cant_register;
-    if(!CheckSelectableItem(wram->wCurItem)){
+    if(!CheckSelectableItem(gNativeUI.currentItem)){
     // cant_register:
         // LD_HL(mCantRegisterText);
         // CALL(aPack_PrintTextNoScroll);
@@ -819,9 +819,9 @@ void RegisterItem(void){
     gPlayer.whichRegisteredItem = ((wram->wCurItemQuantity + 1) & REGISTERED_NUMBER) | ((wram->wCurPocket << 6) & REGISTERED_POCKET);
     // LD_A_addr(wCurItem);
     // LD_addr_A(wRegisteredItem);
-    gPlayer.registeredItem = wram->wCurItem;
+    gPlayer.registeredItem = gNativeUI.currentItem;
     // CALL(aPack_GetItemName);
-    Pack_GetItemName(wram->wCurItem);
+    Pack_GetItemName(gNativeUI.currentItem);
     // LD_DE(SFX_FULL_HEAL);
     // CALL(aWaitPlaySFX);
     WaitPlaySFX(SFX_FULL_HEAL);
@@ -1184,7 +1184,7 @@ void ItemSubmenu(void){
     PEEK("");
     // FARCALL(aCheckItemContext);
     // LD_A_addr(wItemAttributeValue);
-    return TMHMSubmenu(CheckItemContext(wram->wCurItem));
+    return TMHMSubmenu(CheckItemContext(gNativeUI.currentItem));
 }
 
 static const struct MenuHeader UsableMenuHeader = {
@@ -1254,7 +1254,7 @@ void TMHMSubmenu(uint8_t a){
                 // RET;
 
             // ItemFunctionJumptable:
-                switch(CheckItemContext(wram->wCurItem)){
+                switch(CheckItemContext(gNativeUI.currentItem)){
                 //  entries correspond to ITEMMENU_* constants
                     default:
                     case ITEMMENU_NOUSE:    //dw ['.Oak'];  // ITEMMENU_NOUSE

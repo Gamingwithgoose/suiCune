@@ -7772,7 +7772,7 @@ BattleMenu_begin:
                         TutorialPack();
                         // LD_A(POKE_BALL);
                         // LD_addr_A(wCurItem);
-                        wram->wCurItem = POKE_BALL;
+                        gNativeUI.currentItem = POKE_BALL;
                         // CALL(aDoItemEffect);
                         DoItemEffect();
                         // goto got_item;
@@ -7781,7 +7781,7 @@ BattleMenu_begin:
                     // contest:
                         // LD_A(PARK_BALL);
                         // LD_addr_A(wCurItem);
-                        wram->wCurItem = PARK_BALL;
+                        gNativeUI.currentItem = PARK_BALL;
                         // CALL(aDoItemEffect);
                         DoItemEffect();
                         break;
@@ -7815,7 +7815,7 @@ BattleMenu_begin:
                 // LD_A_addr(wItemAttributeValue);
                 // CP_A(BALL);
                 // IF_Z goto ball;
-                if(CheckItemPocket(wram->wCurItem) != BALL) {
+                if(CheckItemPocket(gNativeUI.currentItem) != BALL) {
                     // CALL(aClearBGPalettes);
                     ClearBGPalettes();
                 }

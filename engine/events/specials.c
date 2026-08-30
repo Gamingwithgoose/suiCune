@@ -245,13 +245,13 @@ void GetMysteryGiftItem(void){
     OpenSRAM(MBANK(asMysteryGiftItem));
     // LD_A_addr(sMysteryGiftItem);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = gb_read(sMysteryGiftItem);
+    gNativeUI.currentItem = gb_read(sMysteryGiftItem);
     // LD_A(1);
     // LD_addr_A(wItemQuantityChange);
     // LD_HL(wNumItems);
     // CALL(aReceiveItem);
     // IF_NC goto no_room;
-    if(!ReceiveItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, 1)) {
+    if(!ReceiveItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, 1)) {
     // no_room:
         // CALL(aCloseSRAM);
         CloseSRAM();
@@ -269,7 +269,7 @@ void GetMysteryGiftItem(void){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);
-    GetItemName(wram->wCurItem);
+    GetItemName(gNativeUI.currentItem);
     // LD_HL(mGetMysteryGiftItem_ReceiveItemText);
     // CALL(aPrintText);
     PrintText(ReceiveItemText);

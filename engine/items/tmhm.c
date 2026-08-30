@@ -26,7 +26,7 @@ static void TMHMPocket_ConvertItemToTMHMNumber(void){
     // CALLFAR(aGetNumberedTMHM);
     // LD_A_C;
     // LD_addr_A(wCurItem);
-    wram->wCurItem = GetNumberedTMHM(wram->wCurItem);
+    gNativeUI.currentItem = GetNumberedTMHM(gNativeUI.currentItem);
     // RET;
 }
 
@@ -49,7 +49,7 @@ bool TMHMPocket(void){
     // LD_A_addr(wCurItem);
     // DEC_A;
     // LD_addr_A(wCurItemQuantity);
-    wram->wCurItemQuantity = wram->wCurItem - 1;
+    wram->wCurItemQuantity = gNativeUI.currentItem - 1;
     // LD_HL(wTMsHMs);
     // LD_C_A;
     // LD_B(0);
@@ -70,12 +70,12 @@ void ConvertCurItemIntoCurTMHM(void){
     // CALLFAR(aGetTMHMNumber);
     // LD_A_C;
     // LD_addr_A(wTempTMHM);
-    wram->wTempTMHM = GetTMHMNumber(wram->wCurItem);
+    wram->wTempTMHM = GetTMHMNumber(gNativeUI.currentItem);
     // RET;
 
 }
 
-move_t GetTMHMItemMove(item_t item){
+move_t GetTMHMItemMove(ItemId item){
     // CALL(aConvertCurItemIntoCurTMHM);
     // PREDEF(pGetTMHMMove);
     MoveId move = GetTMHMMove(GetTMHMNumber(item));
@@ -97,11 +97,11 @@ bool AskTeachTMHM(void){
     // CP_A(TM01);
     // IF_C goto NotTMHM;
     bool quit = true;
-    if(wram->wCurItem >= TM01){
+    if(gNativeUI.currentItem >= TM01){
         // CALL(aGetTMHMItemMove);
         // LD_A_addr(wTempTMHM);
         // LD_addr_A(wPutativeTMHMMove);
-        wram->wPutativeTMHMMove = GetTMHMItemMove(wram->wCurItem);
+        wram->wPutativeTMHMMove = GetTMHMItemMove(gNativeUI.currentItem);
         // CALL(aGetMoveName);
         // CALL(aCopyName1);
         CopyName1(GetMoveName(wram->wPutativeTMHMMove));
@@ -113,7 +113,7 @@ bool AskTeachTMHM(void){
 
     // TM:
         // CALL(aPrintText);
-        PrintText((wram->wCurItem < HM01)? BootedTMText: BootedHMText);
+        PrintText((gNativeUI.currentItem < HM01)? BootedTMText: BootedHMText);
         // LD_HL(mContainedMoveText);
         // CALL(aPrintText);
         PrintText(ContainedMoveText);
@@ -246,7 +246,7 @@ void TeachTMHM(void){
     // LD_A_addr(wCurItem);
     // CALL(aIsHM);
     // RET_C ;
-    if(IsHM(wram->wCurItem))
+    if(IsHM(gNativeUI.currentItem))
         return;
 
     // LD_C(HAPPINESS_LEARNMOVE);
@@ -357,14 +357,14 @@ bool TMHM_PocketLoop(void){
         // LD_A_addr(wCurItem);
         // CP_A(NUM_TMS + NUM_HMS + 1);
         // JR_NC (mTMHM_JoypadLoop);
-        if(wram->wCurItem < NUM_TMS + NUM_HMS + 1){
+        if(gNativeUI.currentItem < NUM_TMS + NUM_HMS + 1){
             // LD_addr_A(wTempTMHM);
             // PREDEF(pGetTMHMMove);
             // LD_A_addr(wTempTMHM);
             // LD_addr_A(wCurSpecies);
             // hlcoord(1, 14, wTilemap);
             // CALL(aPrintMoveDescription);
-            PrintMoveDescription(coord(1, 14, wram->wTilemap), GetTMHMMove(wram->wCurItem));
+            PrintMoveDescription(coord(1, 14, wram->wTilemap), GetTMHMMove(gNativeUI.currentItem));
             // JP(mTMHM_JoypadLoop);
         }
 
@@ -549,7 +549,7 @@ bool TMHM_CheckHoveringOverCancel(void){
 
 // okay:
     // LD_addr_A(wCurItem);
-    wram->wCurItem = a;
+    gNativeUI.currentItem = a;
     // CP_A(-1);
     // RET;
     return a < 0xff;

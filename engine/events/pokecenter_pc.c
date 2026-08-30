@@ -533,7 +533,7 @@ static void PlayerWithdrawItemMenu_Submenu(void) {
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_Z goto askquantity;
-    if(!v_CheckTossableItem(wram->wCurItem)) {
+    if(!v_CheckTossableItem(gNativeUI.currentItem)) {
     // items without quantity are always ×1
         // LD_A(1);
         // LD_addr_A(wItemQuantityChange);
@@ -565,7 +565,7 @@ static void PlayerWithdrawItemMenu_Submenu(void) {
     wram->wPCItemQuantity = wram->wCurItemQuantity;
     // LD_HL(wNumItems);
     // CALL(aReceiveItem);
-    bool ok = ReceiveItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange);
+    bool ok = ReceiveItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange);
     // IF_NC goto PackFull;
     if(!ok) {
     // PackFull:
@@ -583,9 +583,9 @@ static void PlayerWithdrawItemMenu_Submenu(void) {
     wram->wCurItemQuantity = wram->wPCItemQuantity;
     // LD_HL(wNumPCItems);
     // CALL(aTossItem);
-    TossItem(GetItemPocket(PC_ITEM_POCKET), wram->wCurItem, wram->wPCItemQuantityChange);
+    TossItem(GetItemPocket(PC_ITEM_POCKET), gNativeUI.currentItem, wram->wPCItemQuantityChange);
     // PREDEF(pPartyMonItemName);
-    PartyMonItemName(wram->wCurItem);
+    PartyMonItemName(gNativeUI.currentItem);
     // LD_HL(mPlayerWithdrawItemMenu_PlayersPCWithdrewItemsText);
     // CALL(aMenuTextbox);
     MenuTextbox(PlayersPCWithdrewItemsText);
@@ -711,7 +711,7 @@ static void PlayerDepositItemMenu_DepositItem(void) {
     // LD_A_addr(wItemAttributeValue);
     // AND_A_A;
     // IF_Z goto AskQuantity;
-    if(!v_CheckTossableItem(wram->wCurItem)) {
+    if(!v_CheckTossableItem(gNativeUI.currentItem)) {
         // LD_A(1);
         // LD_addr_A(wItemQuantityChange);
         wram->wItemQuantityChange = 1;
@@ -748,7 +748,7 @@ static void PlayerDepositItemMenu_DepositItem(void) {
     wram->wPCItemQuantity = wram->wCurItemQuantity;
     // LD_HL(wNumPCItems);
     // CALL(aReceiveItem);
-    bool ok = ReceiveItem(GetItemPocket(PC_ITEM_POCKET), wram->wCurItem, wram->wItemQuantityChange);
+    bool ok = ReceiveItem(GetItemPocket(PC_ITEM_POCKET), gNativeUI.currentItem, wram->wItemQuantityChange);
     // IF_NC goto NoRoomInPC;
     if(!ok) {
     // NoRoomInPC:
@@ -766,9 +766,9 @@ static void PlayerDepositItemMenu_DepositItem(void) {
     wram->wCurItemQuantity = wram->wPCItemQuantity;
     // LD_HL(wNumItems);
     // CALL(aTossItem);
-    TossItem(GetItemPocket(ITEM_POCKET), wram->wCurItem, wram->wPCItemQuantityChange);
+    TossItem(GetItemPocket(ITEM_POCKET), gNativeUI.currentItem, wram->wPCItemQuantityChange);
     // PREDEF(pPartyMonItemName);
-    PartyMonItemName(wram->wCurItem);
+    PartyMonItemName(gNativeUI.currentItem);
     // LD_HL(mPlayerDepositItemMenu_PlayersPCDepositItemsText);
     // CALL(aPrintText);
     PrintText(PlayersPCDepositItemsText);
@@ -783,7 +783,7 @@ static void PlayerDepositItemMenu_TryDepositItem(void) {
     // LD_addr_A(wSpriteUpdatesEnabled);
     wram->wSpriteUpdatesEnabled = FALSE;
     // FARCALL(aCheckItemMenu);
-    uint8_t menu = CheckItemMenu(wram->wCurItem);
+    uint8_t menu = CheckItemMenu(gNativeUI.currentItem);
     // LD_A_addr(wItemAttributeValue);
     // LD_HL(mPlayerDepositItemMenu_dw);
     // RST(aJumpTable);

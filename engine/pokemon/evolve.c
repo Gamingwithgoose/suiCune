@@ -205,7 +205,7 @@ MasterLoop:
             // LD_A_addr(wCurItem);
             // CP_A_B;
             // JP_NZ (mEvolveAfterBattle_MasterLoop_dont_evolve_3);
-            if(wram->wCurItem != ev_item)
+            if(gNativeUI.currentItem != ev_item)
                 goto dont_evolve_3;
 
             // LD_A_addr(wForceEvolution);

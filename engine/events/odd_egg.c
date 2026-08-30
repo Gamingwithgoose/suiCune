@@ -77,7 +77,7 @@ void v_GiveOddEgg(void){
 
     // LD_A(EGG_TICKET);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = EGG_TICKET;
+    gNativeUI.currentItem = EGG_TICKET;
     // LD_A(1);
     // LD_addr_A(wItemQuantityChange);
     wram->wItemQuantityChange = 1;

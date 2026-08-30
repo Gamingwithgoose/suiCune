@@ -7,6 +7,7 @@ struct CurMapData gCurMapData;
 struct PokemonData gPokemon;
 struct PlayerData gPlayer;
 struct CrystalData gCrystal;
+struct NativeUIState gNativeUI;
 
 #include <stddef.h>
 

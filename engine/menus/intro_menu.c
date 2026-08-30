@@ -299,6 +299,7 @@ static void v_ResetWRAM(void) {
     ByteFill(&gPlayer, sizeof(gPlayer), 0);
     ByteFill(&gCurMapData, sizeof(gCurMapData), 0);
     ByteFill(&gPokemon, sizeof(gPokemon), 0);
+    ByteFill(&gNativeUI, sizeof(gNativeUI), 0);
 
     // LDH_A_addr(rLY);
     // LDH_addr_A(hUnusedBackup);

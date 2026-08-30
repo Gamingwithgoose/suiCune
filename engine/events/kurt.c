@@ -62,7 +62,7 @@ void SelectApricornForKurt(void){
         if(wram->wScriptVar == 0)
             goto done;
         // LD_addr_A(wCurItem);
-        wram->wCurItem = wram->wScriptVar;
+        gNativeUI.currentItem = wram->wScriptVar;
         // LD_A_addr(wMenuCursorY);
         // LD_C_A;
         c = wram->wMenuCursorY;
@@ -100,7 +100,7 @@ static void Kurt_SelectApricorn_Name(const struct MenuData* data, tile_t* de) {
 static void Kurt_SelectApricorn_Quantity(const struct MenuData* data, tile_t* de) {
     // LD_A_addr(wMenuSelection);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = wram->wMenuSelection;
+    gNativeUI.currentItem = wram->wMenuSelection;
     // CALL(aKurt_GetQuantityOfApricorn);
     uint8_t quantity = Kurt_GetQuantityOfApricorn(wram->wMenuSelection);
     // RET_Z ;
@@ -195,10 +195,16 @@ static void Kurt_SelectQuantity_PlaceApricornName(void);
 bool Kurt_SelectQuantity(void){
     // LD_A_addr(wCurItem);
     // LD_addr_A(wMenuSelection);
-    wram->wMenuSelection = wram->wCurItem;
+    LegacyItemId legacyItem;
+    if(!TryItemIdToLegacy(gNativeUI.currentItem, &legacyItem)) {
+        log_err("Native Apricorn ID %u cannot enter the legacy quantity menu.\n",
+                gNativeUI.currentItem);
+        return false;
+    }
+    wram->wMenuSelection = legacyItem;
     // CALL(aKurt_GetQuantityOfApricorn);
     // IF_Z goto done;
-    uint8_t q = Kurt_GetQuantityOfApricorn(wram->wCurItem);
+    uint8_t q = Kurt_GetQuantityOfApricorn(gNativeUI.currentItem);
     if(q == 0) {
         CloseWindow();
         return false;
@@ -344,7 +350,7 @@ void Kurt_GiveUpSelectedQuantityOfSelectedApricorn(void){
     item_quantity_pocket_s* hl = &GetItemPocket(ITEM_POCKET)->quantity_pocket;
     // LD_A_addr(wCurItem);
     // LD_C_A;
-    ItemId c = wram->wCurItem;
+    ItemId c = gNativeUI.currentItem;
     // LD_E(0x0);
     uint8_t e = 0x0;
     // XOR_A_A;
@@ -573,14 +579,14 @@ void Kurt_GetRidOfItem(void){
     // ADD_HL_BC;
     // LD_A_addr(wCurItem);
     // LD_C_A;
-    item_t c = wram->wCurItem;
+    ItemId c = gNativeUI.currentItem;
     // LD_A_hli;
-    item_t a = pocket->pocket[wram->wCurItemQuantity].item;
+    ItemId a = pocket->pocket[wram->wCurItemQuantity].item;
     // CP_A(-1);
     // IF_Z goto done;
     // CP_A_C;
     // IF_NZ goto done;
-    if(a != 0xff && a == c) {
+    if(a != ITEM_LIST_END && a == c) {
         // LD_A_addr(wItemQuantityChange);
         // LD_C_A;
         uint8_t count = wram->wItemQuantityChange;

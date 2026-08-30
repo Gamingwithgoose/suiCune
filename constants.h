@@ -89,5 +89,6 @@ extern struct CurMapData gCurMapData;
 extern struct PokemonData gPokemon;
 extern struct PlayerData gPlayer;
 extern struct CrystalData gCrystal;
+extern struct NativeUIState gNativeUI;
 extern script_s gCurScript;
 #endif

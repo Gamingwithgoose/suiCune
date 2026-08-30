@@ -571,7 +571,7 @@ bool CheckKeyItems(ItemId c){
     // LD_C_A;
     // LD_HL(wKeyItems);
     
-    // uint8_t c = wram->wCurItem;
+    // uint8_t c = gNativeUI.currentItem;
     ItemId* hl = gPlayer.keyItems;
     ItemId a;
 

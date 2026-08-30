@@ -1989,7 +1989,7 @@ void BattleTowerAction_EggTicket(void){
     wram->wScriptVar = FALSE;
     // LD_A(EGG_TICKET);
     // LD_addr_A(wCurItem);
-    wram->wCurItem = EGG_TICKET;
+    gNativeUI.currentItem = EGG_TICKET;
     // LD_HL(wNumItems);
     // CALL(aCheckItem);
     // RET_NC ;

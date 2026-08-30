@@ -4,8 +4,8 @@
 
 //  HM moves can't be forgotten
 
-bool IsHM(uint8_t a){
-    return (a >= HM01);
+bool IsHM(ItemId item){
+    return item >= HM01;
 }
 
 bool IsHMMove(move_t a){
