@@ -2025,13 +2025,162 @@ Next recommended action
   `Release/suiCune.exe`.
 
 
+Session: 2026-08-29 — Native bag scrolling and reordering repair
+================================================================
+
+Task worked on
+--------------
+- Investigated and repaired the runtime bag corruption reported after the first
+  successful packaged Windows build.
+- Kept the repair within the active Phase 1 widened-item migration. No unrelated
+  subsystem or previous-project behavior was imported.
+
+User-reported validation before this repair
+-------------------------------------------
+- Intro, mobile boy/girl/address/age setup, character naming, saving, Mom's
+  introduction, time/day selection, and receiving Elm's starter all worked.
+- Opening bag pockets displayed random/corrupted item names. Receiving the
+  assistant's Potion made the displayed corruption worse.
+- The console repeatedly reported empty item names being truncated by
+  `Utf8ToCrystalBuffer`. Source inspection established that these warnings were
+  downstream symptoms of invalid item IDs read by the menu, not the text
+  converter causing the corruption.
+
+Files modified
+--------------
+- `constants/menu_constants.h`: added explicit scrolling-menu formats for native
+  ItemId-only and ItemId-plus-quantity pocket entries.
+- `engine/menus/scrolling_menu.h`: exposed the semantic ItemId selected by a
+  scrolling item menu.
+- `engine/menus/scrolling_menu.c`: added aligned typed traversal for native
+  pockets, retained legacy byte traversal for byte-backed menus, carried the
+  selected item as ItemId for display callbacks, and added a checked boundary
+  before the remaining byte-sized item action state.
+- `engine/menus/menu_2.c`: item names and tossability display now consume the
+  semantic scrolling-menu ItemId for native pockets while retaining legacy
+  behavior for legacy menu lists and direct callers.
+- `engine/items/update_item_description.c`: descriptions now receive the native
+  selected ItemId directly instead of routing it through byte-sized
+  `wMenuSelection`/`wCurSpecies` state.
+- `engine/items/print_item_description.h`: widened the item-description API to
+  ItemId.
+- `engine/items/print_item_description.c`: widened the item-description API
+  implementation to ItemId; the existing original-content description tables
+  remain authoritative.
+- `engine/items/switch_items.c`: added native pocket reordering and stack merging
+  using typed entries and overlap-safe native memory moves. Native entries no
+  longer pass through the two-byte Game Boy switch buffer.
+- `engine/items/pack.c`: marked the live bag, PC/mart bag, key-item, and ball
+  pocket menus as native-backed. Catching-tutorial byte arrays remain on the
+  legacy formats.
+- `engine/events/pokecenter_pc.c`: marked PC item storage as a native
+  quantity-pocket menu.
+- `LOCAL_CHANGELOG.txt`: recorded diagnosis, implementation boundaries, risks,
+  validation state, and the next migration point.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Architectural changes completed
+-------------------------------
+- The live bag UI no longer assumes Crystal's `[count][item byte][quantity
+  byte]` layout for native `PlayerData` pockets. It indexes
+  `item_pocket_s`/`item_quantity_pocket_s` semantically, including the compiler's
+  required alignment and the widened ItemId stride.
+- Item names, tossability display, and descriptions no longer obtain native
+  pocket IDs from the truncated byte menu-selection field.
+- Reordering live native pockets no longer copies widened entries through the
+  legacy two-byte WRAM switch buffer or searches for a one-byte `$ff`
+  terminator.
+- Legacy scrolling formats remain available only for callers whose lists are
+  still genuinely byte-oriented. This prevents regressing the catching tutorial
+  and other non-item scrolling lists while giving native pockets an explicit
+  representation.
+
+Obsolete dependency removed
+---------------------------
+- Removed the live pack/PC item's dependence on Game Boy item-record stride,
+  byte terminators, and the two-byte Game Boy item-switch buffer for traversal
+  and reordering.
+
+Legacy/transitional work still remaining
+-----------------------------------------
+- Selecting an item for an action still ultimately enters byte-sized
+  `wCurItem`. The new boundary performs a checked conversion; IDs outside the
+  representable legacy action range are refused and logged instead of silently
+  truncated. Original Crystal-range items, including Potion, continue through
+  the existing action code.
+- Exact removal condition: remove this checked bridge after every item action
+  consumer currently reading `wCurItem` has migrated to an ItemId field in
+  native UI/gameplay state. At that point native selections must be passed
+  directly and the WRAM field must cease to be authoritative for item actions.
+- Item-name, description, TM/HM, and item-effect content tables still describe
+  original byte-range content. The widened menu API does not claim those Phase
+  14 databases are converted.
+- Catching-tutorial item arrays remain deliberate legacy byte-backed data and
+  continue using the legacy scrolling formats. They should migrate only when
+  their owning tutorial state is converted, not by casting them as native
+  pockets.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save fields, serializer descriptors, or on-disk widths changed in this
+  repair. Existing explicit ItemId-to-Crystal serialization boundaries remain.
+- The fix preserves native in-memory ItemId pockets and does not repack entries,
+  narrow ItemId storage, reintroduce a legacy mirror, or suppress invalid-name
+  warnings.
+- No temporary duplicated pocket state or fallback implementation was added.
+  The only transitional code is the explicit checked action bridge documented
+  above.
+
+Investigated but not implemented
+--------------------------------
+- The UTF-8 conversion warning was inspected but intentionally not hidden or
+  changed because it correctly exposed invalid empty item names.
+- A repository-wide item-action migration was not started. It is larger than
+  the reported display/storage corruption and should be performed as the next
+  bounded Phase 1 task.
+
+Suspected source-level risks
+----------------------------
+- Runtime validation is still required for opening each pocket, receiving the
+  Potion, saving/reloading, moving entries with Select, and PC item deposit/
+  withdrawal.
+- Items above the legacy action range can be displayed as native selections but
+  cannot yet be used/tossed/given/registered; the checked boundary rejects them.
+- The original item content tables do not yet provide valid names/descriptions/
+  effects for IDs above their current defined range.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped with the live bag and PC pocket traversal/display/reordering migrated
+  to native entry widths and the old action handoff explicitly checked.
+- Next recommended native-conversion task: introduce native item-action UI state
+  and migrate all `wCurItem` item consumers as one bounded dependency graph,
+  then remove the checked ItemId-to-LegacyItemId selection bridge.
+- Remaining Phase 1 and later roadmap work is not complete. In particular, the
+  repository still has legacy content IDs and byte-oriented runtime paths beyond
+  the bag UI, and expanded item content databases/effects remain untouched.
+
+
 Latest handoff marker: 2026-08-29
 ---------------------------------
-The full 2026-08-29 "Windows Release runtime packaging" section above is the
-latest session record. `build_windows_release.bat` now builds and packages the
-runtime assets required by `Release/suiCune.exe`. The native-conversion stopping
-point remains consolidated normal party-species reads, with full native
-player/opponent party ownership, mutation migration, and persistent native PC
-storage still unfinished.
+The full 2026-08-29 "Native bag scrolling and reordering repair" section above
+is the latest session record. The reported bag corruption has a source-level
+repair, but user build/runtime validation is pending. Phase 1 remains partially
+complete.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

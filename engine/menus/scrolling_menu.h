@@ -4,6 +4,7 @@ void v_ScrollingMenu(const struct MenuData* data);
 // u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data);
 // uint8_t ScrollingMenu_GetCursorPosition(void);
 void ScrollingMenu_ClearLeftColumn(void);
+ItemId GetScrollingMenuItemSelection(void);
 // void InitScrollingMenuCursor(const struct MenuData* data);
 // void ScrollingMenu_InitFlags(const struct MenuData* data);
 // void ScrollingMenu_ValidateSwitchItem(void);

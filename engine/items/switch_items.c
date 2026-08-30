@@ -2,6 +2,86 @@
 #include "switch_items.h"
 #include "../../home/copy.h"
 #include "../../home/menu.h"
+#include <string.h>
+
+static bool ItemSwitch_UsesNativeFormat(void){
+    uint8_t format = GetMenuData()->scrollingMenu.format;
+    return format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL
+        || format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY;
+}
+
+static void ItemSwitch_RemoveNativeQuantityEntry(item_quantity_pocket_s* pocket, uint8_t index){
+    --pocket->count;
+    memmove(&pocket->pocket[index], &pocket->pocket[index + 1],
+            (pocket->count - index + 1) * sizeof(pocket->pocket[0]));
+    pocket->pocket[pocket->count].item = ITEM_LIST_END;
+    pocket->pocket[pocket->count].quantity = 0;
+}
+
+static void SwitchNativeItemsInBag(void){
+    const struct MenuData* data = GetMenuData();
+    uint8_t destination = wram->wScrollingMenuCursorPosition;
+
+    if(wram->wSwitchItem == 0) {
+        wram->wSwitchItem = destination + 1;
+        return;
+    }
+
+    uint8_t source = wram->wSwitchItem - 1;
+    if(source == destination) {
+        wram->wSwitchItem = 0;
+        return;
+    }
+
+    if(data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY) {
+        item_quantity_pocket_s* pocket = (item_quantity_pocket_s*)data->scrollingMenu.list;
+        if(destination >= pocket->count)
+            return;
+
+        item_quantity_pocket_en_s* entries = pocket->pocket;
+        if(entries[source].item == entries[destination].item
+        && entries[source].quantity != MAX_ITEM_STACK
+        && entries[destination].quantity != MAX_ITEM_STACK) {
+            uint16_t combined = entries[source].quantity + entries[destination].quantity;
+            if(combined > MAX_ITEM_STACK) {
+                entries[destination].quantity = MAX_ITEM_STACK;
+                entries[source].quantity = combined - MAX_ITEM_STACK;
+            }
+            else {
+                entries[destination].quantity = (uint8_t)combined;
+                ItemSwitch_RemoveNativeQuantityEntry(pocket, source);
+            }
+            wram->wSwitchItem = 0;
+            return;
+        }
+
+        item_quantity_pocket_en_s saved = entries[source];
+        if(source < destination)
+            memmove(&entries[source], &entries[source + 1],
+                    (destination - source) * sizeof(entries[0]));
+        else
+            memmove(&entries[destination + 1], &entries[destination],
+                    (source - destination) * sizeof(entries[0]));
+        entries[destination] = saved;
+    }
+    else {
+        item_pocket_s* pocket = (item_pocket_s*)data->scrollingMenu.list;
+        if(destination >= pocket->count)
+            return;
+
+        item_pocket_en_s* entries = pocket->pocket;
+        item_pocket_en_s saved = entries[source];
+        if(source < destination)
+            memmove(&entries[source], &entries[source + 1],
+                    (destination - source) * sizeof(entries[0]));
+        else
+            memmove(&entries[destination + 1], &entries[destination],
+                    (source - destination) * sizeof(entries[0]));
+        entries[destination] = saved;
+    }
+
+    wram->wSwitchItem = 0;
+}
 
 static bool SwitchItemsInBag_try_combining_stacks(void){
     // LD_A_addr(wSwitchItem);
@@ -144,6 +224,11 @@ static void SwitchItemsInBag_combine_stacks(void){
 }
 
 void SwitchItemsInBag(void){
+    if(ItemSwitch_UsesNativeFormat()) {
+        SwitchNativeItemsInBag();
+        return;
+    }
+
     // LD_A_addr(wSwitchItem);
     // AND_A_A;
     // IF_Z goto init;

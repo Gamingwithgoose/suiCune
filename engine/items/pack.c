@@ -2172,7 +2172,7 @@ const struct MenuHeader ItemsPocketMenuHeader = {
             //db ['5', '8'];  // rows, columns
             .rows = 5, .cols = 8,
             //db ['SCROLLINGMENU_ITEMS_QUANTITY'];  // item format
-            .format = SCROLLINGMENU_ITEMS_QUANTITY,
+            .format = SCROLLINGMENU_NATIVE_ITEMS_QUANTITY,
         //dbw ['0', 'wNumItems']
             .list = &gPlayer.numItems,
         //dba ['PlaceMenuItemName']
@@ -2196,7 +2196,7 @@ const struct MenuHeader PC_Mart_ItemsPocketMenuHeader = {
         .flags=STATICMENU_ENABLE_SELECT | STATICMENU_ENABLE_LEFT_RIGHT | STATICMENU_ENABLE_START | STATICMENU_WRAP,  // flags
         .scrollingMenu = {
             .rows=5, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_QUANTITY,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_QUANTITY,  // item format
             //dbw ['0', 'wNumItems']
             .list=&gPlayer.numItems,
             //dba ['PlaceMenuItemName']
@@ -2220,7 +2220,7 @@ const struct MenuHeader KeyItemsPocketMenuHeader = {
         .scrollingMenu = {
             //db ['5', '8'];  // rows, columns
             .rows = 5, .cols = 8,
-            .format = SCROLLINGMENU_ITEMS_NORMAL,  // item format
+            .format = SCROLLINGMENU_NATIVE_ITEMS_NORMAL,  // item format
             //dbw ['0', 'wNumKeyItems']
             .list = &gPlayer.numKeyItems,
             //dba ['PlaceMenuItemName']
@@ -2244,7 +2244,7 @@ const struct MenuHeader PC_Mart_KeyItemsPocketMenuHeader = {
         .flags=STATICMENU_ENABLE_SELECT | STATICMENU_ENABLE_LEFT_RIGHT | STATICMENU_ENABLE_START | STATICMENU_WRAP,  // flags
         .scrollingMenu = {
             .rows=5, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_NORMAL,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_NORMAL,  // item format
             //dbw ['0', 'wNumKeyItems']
             .list = &gPlayer.numKeyItems,
             //dba ['PlaceMenuItemName']
@@ -2267,7 +2267,7 @@ const struct MenuHeader BallsPocketMenuHeader = {
         .flags = STATICMENU_ENABLE_SELECT | STATICMENU_ENABLE_LEFT_RIGHT | STATICMENU_ENABLE_START | STATICMENU_WRAP | STATICMENU_CURSOR,  // flags
         .scrollingMenu = {
             .rows=5, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_QUANTITY,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_QUANTITY,  // item format
             //dbw ['0', 'wNumBalls']
             .list = &gPlayer.numBalls,
             //dba ['PlaceMenuItemName']
@@ -2289,7 +2289,7 @@ const struct MenuHeader PC_Mart_BallsPocketMenuHeader = {
         .flags=STATICMENU_ENABLE_SELECT | STATICMENU_ENABLE_LEFT_RIGHT | STATICMENU_ENABLE_START | STATICMENU_WRAP,  // flags
         .scrollingMenu = {
             .rows=5, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_QUANTITY,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_QUANTITY,  // item format
             //dbw ['0', 'wNumBalls']
             .list = &gPlayer.numBalls,
             //dba ['PlaceMenuItemName']

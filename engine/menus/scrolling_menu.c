@@ -19,6 +19,17 @@ static void ScrollingMenu_PlaceCursor(const struct MenuData* data);
 static void ScrollingMenu_CheckCallFunction3(const struct MenuData* data);
 static void ScrollingMenu_GetListItemCoordAndFunctionArgs(const struct MenuData* data, uint8_t a);
 
+static ItemId sScrollingMenuItemSelection = ITEM_LIST_END;
+
+ItemId GetScrollingMenuItemSelection(void){
+    return sScrollingMenuItemSelection;
+}
+
+static bool ScrollingMenuUsesNativeItems(const struct MenuData* data){
+    return data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL
+        || data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY;
+}
+
 void v_InitScrollingMenu(const struct MenuData* data){
     // XOR_A_A;
     // LD_addr_A(wMenuJoypad);
@@ -141,7 +152,21 @@ static u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data){
             ScrollingMenu_GetListItemCoordAndFunctionArgs(data, wram->wMenuCursorY - 1);
             // LD_A_addr(wMenuSelection);
             // LD_addr_A(wCurItem);
-            wram->wCurItem = wram->wMenuSelection;
+            if(ScrollingMenuUsesNativeItems(data)) {
+                if(sScrollingMenuItemSelection == ITEM_LIST_END)
+                    return u8_flag(B_BUTTON, true);
+                LegacyItemId legacyItem;
+                if(sScrollingMenuItemSelection >= LEGACY_ITEM_LIST_END
+                || !TryItemIdToLegacy(sScrollingMenuItemSelection, &legacyItem)) {
+                    log_error("Native item ID %u cannot enter the remaining byte-sized item action path.\n",
+                              sScrollingMenuItemSelection);
+                    continue;
+                }
+                wram->wCurItem = legacyItem;
+            }
+            else {
+                wram->wCurItem = wram->wMenuSelection;
+            }
             // LD_A_addr(wMenuSelectionQuantity);
             // LD_addr_A(wItemQuantity);
             wram->wItemQuantity = wram->wMenuSelectionQuantity;
@@ -154,7 +179,7 @@ static u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data){
             // LD_A_addr(wMenuSelection);
             // CP_A(-1);
             // IF_Z goto b_button;
-            if(wram->wMenuSelection == 0xff)
+            if(!ScrollingMenuUsesNativeItems(data) && wram->wMenuSelection == 0xff)
                 return u8_flag(B_BUTTON, true);
             // LD_A(A_BUTTON);
             // SCF;
@@ -186,7 +211,8 @@ static u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data){
             // LD_A_addr(wMenuSelection);
             // CP_A(-1);
             // JP_Z (mxor_a_dec_a);
-            if(wram->wMenuSelection == 0xff)
+            if((ScrollingMenuUsesNativeItems(data) && sScrollingMenuItemSelection == ITEM_LIST_END)
+            || (!ScrollingMenuUsesNativeItems(data) && wram->wMenuSelection == 0xff))
                 return u8_flag(0xff, true);
             // CALL(aScrollingMenu_GetCursorPosition);
             // DEC_A;
@@ -584,7 +610,8 @@ static void ScrollingMenu_UpdateDisplay(const struct MenuData* data){
         // LD_A_addr(wMenuSelection);
         // CP_A(-1);
         // IF_Z goto cancel;
-        if(wram->wMenuSelection == 0xff) {
+        if((ScrollingMenuUsesNativeItems(data) && sScrollingMenuItemSelection == ITEM_LIST_END)
+        || (!ScrollingMenuUsesNativeItems(data) && wram->wMenuSelection == 0xff)) {
         // cancel:
             // LD_A_addr(wMenuDataFlags);
             // BIT_A(0);  // call function on cancel
@@ -746,6 +773,25 @@ static void ScrollingMenu_GetListItemCoordAndFunctionArgs(const struct MenuData*
     // LD_H_hl;
     // LD_L_A;
     // INC_HL;  // items
+    if(data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL) {
+        const item_pocket_s* pocket = (const item_pocket_s*)data->scrollingMenu.list;
+        sScrollingMenuItemSelection = pocket->pocket[de].item;
+        wram->wMenuSelection = (sScrollingMenuItemSelection == ITEM_LIST_END)
+            ? UINT8_MAX
+            : (uint8_t)sScrollingMenuItemSelection;
+        wram->wMenuSelectionQuantity = 1;
+        return;
+    }
+    if(data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY) {
+        const item_quantity_pocket_s* pocket = (const item_quantity_pocket_s*)data->scrollingMenu.list;
+        sScrollingMenuItemSelection = pocket->pocket[de].item;
+        wram->wMenuSelection = (sScrollingMenuItemSelection == ITEM_LIST_END)
+            ? UINT8_MAX
+            : (uint8_t)sScrollingMenuItemSelection;
+        wram->wMenuSelectionQuantity = pocket->pocket[de].quantity;
+        return;
+    }
+
     const uint8_t* items = data->scrollingMenu.list + 1;
     // LD_A_addr(wMenuData_ScrollingMenuItemFormat);
     // CP_A(SCROLLINGMENU_ITEMS_NORMAL);
@@ -766,6 +812,9 @@ static void ScrollingMenu_GetListItemCoordAndFunctionArgs(const struct MenuData*
     // CALL(aGetFarByte);
     // LD_addr_A(wMenuSelection);
     wram->wMenuSelection = *(items++);
+    sScrollingMenuItemSelection = (wram->wMenuSelection == UINT8_MAX)
+        ? ITEM_LIST_END
+        : wram->wMenuSelection;
     // LD_addr_A(wCurItem);
     // INC_HL;
     // LD_A_addr(wMenuData_ItemsPointerBank);

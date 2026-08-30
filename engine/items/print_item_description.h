@@ -1,2 +1,2 @@
-void PrintItemDescription(tile_t* de, item_t item);
+void PrintItemDescription(tile_t* de, ItemId item);
 //#include "data/items/descriptions.h"

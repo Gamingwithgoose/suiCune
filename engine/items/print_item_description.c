@@ -6,7 +6,7 @@
 #include "../../data/items/descriptions.h"
 
 //  Print the description for item [wCurSpecies] at de.
-void PrintItemDescription(tile_t* de, item_t item){
+void PrintItemDescription(tile_t* de, ItemId item){
     // LD_A_addr(wCurSpecies);
     // CP_A(TM01);
     // IF_C goto not_a_tm;

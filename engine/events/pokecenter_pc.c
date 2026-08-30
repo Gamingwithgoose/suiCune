@@ -885,7 +885,7 @@ const struct MenuHeader PCItemsMenuData = {
         .flags=SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_ENABLE_FUNCTION3 | SCROLLINGMENU_DISPLAY_ARROWS,  // flags
         .scrollingMenu = {
             .rows=4, .cols=8,  // rows, columns
-            .format=SCROLLINGMENU_ITEMS_QUANTITY,  // item format
+            .format=SCROLLINGMENU_NATIVE_ITEMS_QUANTITY,  // item format
             //dbw ['0', 'wNumPCItems']
             .list = &gPlayer.numPCItems,
             //dba ['PlaceMenuItemName']

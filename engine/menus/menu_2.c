@@ -10,14 +10,18 @@
 #include "../../data/items/apricorn_balls.h"
 #include "../items/items.h"
 #include "../../charmap.h"
+#include "scrolling_menu.h"
 
 void PlaceMenuItemName(const struct MenuData* data, uint8_t* de){
-    (void)data;
     // PUSH_DE;
     // LD_A_addr(wMenuSelection);
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetItemName);
-    uint8_t* str = GetItemName(wram->wMenuSelection);
+    ItemId item = (data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL
+                || data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY)
+        ? GetScrollingMenuItemSelection()
+        : wram->wMenuSelection;
+    uint8_t* str = GetItemName(item);
     // POP_HL;
     // CALL(aPlaceString);
     PlaceStringSimple(str, de);
@@ -25,7 +29,6 @@ void PlaceMenuItemName(const struct MenuData* data, uint8_t* de){
 }
 
 void PlaceMenuItemQuantity(const struct MenuData* data, tile_t* de){
-    (void)data;
     // PUSH_DE;
     // LD_A_addr(wMenuSelection);
     // LD_addr_A(wCurItem);
@@ -34,7 +37,11 @@ void PlaceMenuItemQuantity(const struct MenuData* data, tile_t* de){
     // POP_HL;
     // AND_A_A;
     // IF_NZ goto done;
-    if(v_CheckTossableItem(wram->wMenuSelection)){
+    ItemId item = (data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_NORMAL
+                || data->scrollingMenu.format == SCROLLINGMENU_NATIVE_ITEMS_QUANTITY)
+        ? GetScrollingMenuItemSelection()
+        : wram->wMenuSelection;
+    if(v_CheckTossableItem(item)){
         // LD_DE(0x15);
         // ADD_HL_DE;
         // LD_hl(0xf1);
