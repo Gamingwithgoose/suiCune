@@ -158,7 +158,7 @@ static u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data){
                 LegacyItemId legacyItem;
                 if(sScrollingMenuItemSelection >= LEGACY_ITEM_LIST_END
                 || !TryItemIdToLegacy(sScrollingMenuItemSelection, &legacyItem)) {
-                    log_error("Native item ID %u cannot enter the remaining byte-sized item action path.\n",
+                    log_err("Native item ID %u cannot enter the remaining byte-sized item action path.\n",
                               sScrollingMenuItemSelection);
                     continue;
                 }
