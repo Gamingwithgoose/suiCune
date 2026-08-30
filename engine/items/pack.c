@@ -1745,7 +1745,7 @@ void TutorialPack(void){
     // LD_A_addr(wInputType);
     // OR_A_A;
     // IF_Z goto loop;
-    if(wram->wInputType != 0) {
+    if(IsAutoInputActive()) {
         // FARCALL(av_DudeAutoInput_RightA);
         v_DudeAutoInput_RightA();
     }

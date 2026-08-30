@@ -1,9 +1,13 @@
+#include <stdbool.h>
+#include <stdint.h>
+
 void Joypad(void);
 void ClearJoypad(void);
 void UpdateJoypad(void);
 void GetJoypad(void);
 void StartAutoInput(const uint8_t* hl);
 void StopAutoInput(void);
+bool IsAutoInputActive(void);
 void JoyTitleScreenInput(void);
 void JoyWaitAorB(void);
 void WaitButton(void);

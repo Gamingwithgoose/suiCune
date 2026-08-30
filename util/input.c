@@ -38,9 +38,9 @@ const char* game_input_e_strings[] = {
     STRINGIFY(GAME_INPUT_RECORD),
 };
 
-// SDL input is held in native, active-high game-action bits.  The legacy
-// hram joypad mirrors are written later by UpdateJoypad for existing game
-// consumers while they are migrated away from that byte layout.
+// SDL input is held in native, active-high game-action bits. The legacy HRAM
+// joypad fields remain responsible for frame-delta behavior while their
+// direct consumers are migrated.
 static uint8_t s_nativeInputHeld;
 
 typedef struct {

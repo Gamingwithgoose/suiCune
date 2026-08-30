@@ -2872,3 +2872,84 @@ will be measured by removal of live Game Boy runtime dependencies, beginning
 with the remaining HRAM input-mirror consumers.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Session: 2026-08-30 — Native scripted-input state
+===================================================
+
+Task worked on
+--------------
+- Continued the bounded Phase 7 input conversion after inspecting every
+  `wInputType` and auto-input cursor/duration caller, reset path, and WRAM
+  layout dependency.
+
+Files modified
+--------------
+- `home/joypad.c`, `home/joypad.h`: replaced WRAM-backed auto-input control
+  fields with one native `AutoInputState`; added an explicit active-state API.
+- `constants/wram_constants.h`: removed the obsolete `AUTO_INPUT` WRAM-state
+  constant after its final C consumer was migrated.
+- `engine/battle/core.c`, `engine/items/pack.c`: migrated tutorial checks to
+  the native active-state API.
+- `home/init.c`, `engine/menus/intro_menu.c`: reset native scripted input at
+  the same game-init/new-game points where the original WRAM state was reset.
+- `wram.h`, `wram.c`: retired the named WRAM input-type, pointer, bank, and
+  duration fields. A five-byte reserved span remains solely to preserve the
+  still-legacy WRAM address map for neighboring fields.
+- `LOCAL_CHANGELOG.txt`: recorded this migration.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- Tutorial/scripted input now has native pointer, duration, and active state;
+  it no longer depends on named Game Boy WRAM fields or a banked auto-input
+  pointer representation.
+- All live C reads of `wInputType`, `wAutoInputAddress`, `wAutoInputBank`, and
+  `wAutoInputLength` have been removed.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyInputRuntime[5]` preserves offsets in the remaining packed WRAM map
+  only. Remove the reserved span when the surrounding legacy WRAM layout is
+  replaced with native game state rather than offset-validated storage.
+- HRAM joypad frame mirrors remain active because existing code also writes
+  them directly (for example, save and slot-machine flows). Migrate each
+  reader and writer as a coherent group before making native frame deltas
+  authoritative.
+
+Compatibility and save-format implications
+------------------------------------------
+- Auto-input stream bytes, durations, tutorial behavior, and reset behavior
+  are preserved. No save, link, or input-binding format changed.
+
+Partially completed work
+------------------------
+- Native physical input and scripted-input ownership are complete slices;
+  menu/text/battle/overworld input consumption still uses legacy mirror bytes.
+
+Untouched remaining work
+------------------------
+- Native input snapshot consumption, remapping UI, native party ownership with
+  explicit egg state, native saves, and later roadmap phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing all live C use of the scripted-input WRAM fields.
+- Next: migrate one complete group of HRAM joypad mirror consumers and writers
+  to a native input-frame API; do not split the mirror owner from its writers.
+
+
+Latest handoff marker: 2026-08-30
+---------------------------------
+Native physical SDL input and scripted-input control now have separate native
+owners. Legacy HRAM mirrors remain only as compatibility state for their
+still-unmigrated consumers and writers.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.

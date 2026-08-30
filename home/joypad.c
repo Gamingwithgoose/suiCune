@@ -8,7 +8,13 @@
 #include "../engine/events/catch_tutorial_input.h"
 #include "../util/input.h"
 
-const uint8_t* gAutoInputAddress = NULL;
+struct AutoInputState {
+    const uint8_t* cursor;
+    uint8_t framesRemaining;
+    bool active;
+};
+
+static struct AutoInputState s_autoInput;
 
 void Joypad(void) {
         //  Replaced by UpdateJoypad, called from VBlank instead of the useless
@@ -47,19 +53,13 @@ void UpdateJoypad(void) {
 
     uint8_t input = NativeInputHeld();
 
-    //  To get the delta we xor the last frame's input with the new one.
-    uint8_t last_frame = hram.hJoypadDown;  // last frame
+    // The legacy frame mirrors remain authoritative until their direct
+    // writers/readers migrate together.
+    uint8_t last_frame = hram.hJoypadDown;
     uint8_t last_changed = last_frame ^ input;
-
-    //  Released this frame:
     hram.hJoypadReleased = last_changed & last_frame;
-    //  Pressed this frame:
-    hram.hJoypadPressed =  last_changed & input;
-
-    //  Add any new presses to the list of collective presses:
-    hram.hJoypadSum |= (last_changed & input);
-
-    //  Currently pressed:
+    hram.hJoypadPressed = last_changed & input;
+    hram.hJoypadSum |= hram.hJoypadPressed;
     hram.hJoypadDown = input;
 
     //  Now that we have the input, we can do stuff with it.
@@ -94,18 +94,17 @@ void GetJoypad(void) {
 
     //  The player input can be automated using an input stream.
     //  See more below.
-    uint8_t inputType = wram->wInputType;
-    if(inputType == AUTO_INPUT)
+    if(s_autoInput.active)
     {
         //  Use a predetermined input stream (used in the catching tutorial).
         //  Stream format: [input][duration]
         //  A value of $ff will immediately end the stream.
 
         //  Read from the input stream.
-        const uint8_t* hl = gAutoInputAddress;
+        const uint8_t* hl = s_autoInput.cursor;
 
         //  We only update when the input duration has expired.
-        uint8_t len = wram->wAutoInputLength;
+        uint8_t len = s_autoInput.framesRemaining;
         if(len == 0)
         {
             //  An input of $ff will end the stream.
@@ -119,11 +118,11 @@ void GetJoypad(void) {
             {
                 //  A duration of $ff will end the stream indefinitely.
                 uint8_t duration = *(hl++);
-                wram->wAutoInputLength = duration;
+                s_autoInput.framesRemaining = duration;
                 if(duration != 0xFF)
                 {
                     //  On to the next input...
-                    gAutoInputAddress = hl;
+                    s_autoInput.cursor = hl;
                 }
                 else 
                 {
@@ -138,7 +137,7 @@ void GetJoypad(void) {
         else 
         {
             //  Until then, don't change anything.
-            wram->wAutoInputLength = --len;
+            s_autoInput.framesRemaining = --len;
         }
         return;
     }
@@ -185,23 +184,27 @@ void GetJoypad(void) {
 
 //  Start reading automated input stream at hl.
 void StartAutoInput(const uint8_t* hl) {
-    gAutoInputAddress = hl;
+    s_autoInput.cursor = hl;
     //  Start reading the stream immediately.
-    wram->wAutoInputLength = 0;
+    s_autoInput.framesRemaining = 0;
     //  Reset input mirrors.
     hram.hJoyPressed = 0;   // pressed this frame
     hram.hJoyReleased = 0;  // released this frame
     hram.hJoyDown = 0;      // currently pressed
 
-    wram->wInputType = AUTO_INPUT;
+    s_autoInput.active = true;
 }
 
 void StopAutoInput(void) {
     //  Clear variables related to automated input.
-    gAutoInputAddress = NULL;
-    wram->wAutoInputLength = 0;
+    s_autoInput.cursor = NULL;
+    s_autoInput.framesRemaining = 0;
     //  Back to normal input.
-    wram->wInputType = 0;
+    s_autoInput.active = false;
+}
+
+bool IsAutoInputActive(void) {
+    return s_autoInput.active;
 }
 
 //  //  unreferenced
@@ -410,7 +413,7 @@ static void PromptButton_wait_input(void) {
     // LD_A_addr(wInputType);
     // OR_A_A;
     // IF_Z goto input_wait_loop;
-    if(wram->wInputType != 0)
+    if(IsAutoInputActive())
     {
         // FARCALL(av_DudeAutoInput_A);
         v_DudeAutoInput_A();

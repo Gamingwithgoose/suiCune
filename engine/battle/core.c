@@ -7667,7 +7667,7 @@ BattleMenu_begin:
             // LD_A_addr(wInputType);
             // OR_A_A;
             // IF_Z goto skip_dude_pack_select;
-            if(wram->wInputType != 0)
+            if(IsAutoInputActive())
                 // FARCALL(av_DudeAutoInput_DownA);
                 v_DudeAutoInput_DownA();
 

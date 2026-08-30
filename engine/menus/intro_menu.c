@@ -249,6 +249,10 @@ void DebugRoom(void) {
 }
 
 static void ResetWRAM(void) {
+    // The original WRAM clear reset wInputType. Preserve that lifecycle now
+    // that scripted input is native runtime state.
+    StopAutoInput();
+
     // XOR_A_A;
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_NONE;

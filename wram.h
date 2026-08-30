@@ -101,10 +101,9 @@ struct wram_s
                 uint8_t wLZBank; // unused
                 uint8_t skip_4[1];
                 uint8_t wBoxAlignment;
-                uint8_t wInputType;
-                uint16_t wAutoInputAddress;
-                uint8_t wAutoInputBank;
-                uint8_t wAutoInputLength;
+                // Reserved only to preserve the remaining legacy WRAM map.
+                // Runtime scripted-input state is native (home/joypad.c).
+                uint8_t legacyInputRuntime[5];
                 uint8_t wDebugFlags;
                 uint8_t wGameLogicPaused;
                 uint8_t wSpriteUpdatesEnabled;

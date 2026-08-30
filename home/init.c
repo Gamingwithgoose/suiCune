@@ -6,6 +6,7 @@
 #include "delay.h"
 #include "tilemap.h"
 #include "clear_sprites.h"
+#include "joypad.h"
 #include "../engine/gfx/color.h"
 #include "../engine/rtc/rtc.h"
 
@@ -56,6 +57,10 @@ void v_Start(void) {
 }
 
 void Init(void) {
+    // Native scripted input is transient runtime state, like the WRAM it
+    // replaces; a reset must not resume an old script.
+    StopAutoInput();
+
     // NOP;
 
     // XOR_A_A;

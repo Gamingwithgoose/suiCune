@@ -1,6 +1,3 @@
-// wInputType::
-#define AUTO_INPUT 0xff
-
 // wDebugFlags::
 enum {
     DEBUG_BATTLE_F,
