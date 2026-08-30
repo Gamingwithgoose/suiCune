@@ -11,6 +11,9 @@ static uint8_t GetBattleAnimTileOffset(uint8_t a);
 
 struct NativeBattleAnimationState {
     uint8_t tileDictionary[NUM_BATTLEANIMTILEDICT_ENTRIES * 2];
+    struct BattleAnimationCommandState command;
+    struct BattleAnimationRenderState render;
+    struct BattleAnimationEffectScratchState effectScratch;
     struct BattleAnim objects[NUM_ANIM_OBJECTS];
     struct BattleBGEffect bgEffects[NUM_BG_EFFECTS];
     uint8_t lastObjectIndex;
@@ -28,6 +31,18 @@ struct BattleBGEffect* BattleAnimationBGEffects(void){
 
 uint8_t* BattleAnimationTileDictionary(void){
     return sBattleAnimationState.tileDictionary;
+}
+
+struct BattleAnimationCommandState* BattleAnimationCommandState(void){
+    return &sBattleAnimationState.command;
+}
+
+struct BattleAnimationRenderState* BattleAnimationRenderState(void){
+    return &sBattleAnimationState.render;
+}
+
+struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void){
+    return &sBattleAnimationState.effectScratch;
 }
 
 void ResetNativeBattleAnimationState(void){
@@ -95,7 +110,7 @@ static void InitBattleAnimation(struct BattleAnim* bc){
     // }
     // LD_E_L;
     // LD_D_H;
-    const struct BattleAnimObj* de = BattleAnimObjects + wram->wBattleObjectTempID;
+    const struct BattleAnimObj* de = BattleAnimObjects + BattleAnimationCommandState()->objectId;
     // LD_HL(BATTLEANIMSTRUCT_INDEX);
     // ADD_HL_BC;
     // LD_A_addr(wLastAnimObjectIndex);
@@ -127,10 +142,10 @@ static void InitBattleAnimation(struct BattleAnim* bc){
     bc->tileId = GetBattleAnimTileOffset(de->tileOffset);
     // LD_A_addr(wBattleObjectTempXCoord);
     // LD_hli_A;  // BATTLEANIMSTRUCT_XCOORD
-    bc->xCoord = wram->wBattleObjectTempXCoord;
+    bc->xCoord = BattleAnimationCommandState()->objectX;
     // LD_A_addr(wBattleObjectTempYCoord);
     // LD_hli_A;  // BATTLEANIMSTRUCT_YCOORD
-    bc->yCoord = wram->wBattleObjectTempYCoord;
+    bc->yCoord = BattleAnimationCommandState()->objectY;
     // XOR_A_A;
     // LD_hli_A;  // BATTLEANIMSTRUCT_XOFFSET
     bc->xOffset = 0;
@@ -138,7 +153,7 @@ static void InitBattleAnimation(struct BattleAnim* bc){
     bc->yOffset = 0;
     // LD_A_addr(wBattleObjectTempParam);
     // LD_hli_A;  // BATTLEANIMSTRUCT_PARAM
-    bc->param = wram->wBattleObjectTempParam;
+    bc->param = BattleAnimationCommandState()->objectParam;
     // XOR_A_A;
     // LD_hli_A;  // BATTLEANIMSTRUCT_DURATION
     bc->duration = 0;
@@ -186,7 +201,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // XOR_A_hl;
     // AND_A(PRIORITY | Y_FLIP | X_FLIP);
     // LD_hl_A;
-    wram->wBattleAnimTempOAMFlags = (wram->wBattleAnimTempOAMFlags ^ wram->wBattleAnimTempFrameOAMFlags) & (PRIORITY | Y_FLIP | X_FLIP);
+    BattleAnimationRenderState()->oamFlags = (BattleAnimationRenderState()->oamFlags ^ BattleAnimationRenderState()->frameOamFlags) & (PRIORITY | Y_FLIP | X_FLIP);
     // POP_AF;
 
     // PUSH_BC;
@@ -195,7 +210,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // LD_A_addr(wBattleAnimTempTileID);
     // ADD_A_hl;  // tile offset
     // LD_addr_A(wBattleAnimTempTileID);
-    wram->wBattleAnimTempTileID += (int8_t)oam->vtile_offset;
+    BattleAnimationRenderState()->tileId += (int8_t)oam->vtile_offset;
     // INC_HL;
     // LD_A_hli;  // oam data length
     // LD_C_A;
@@ -217,14 +232,14 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // LD_A_addr(wBattleAnimTempYOffset);
         // ADD_A_B;
         // LD_B_A;
-        uint8_t b = wram->wBattleAnimTempYCoord + wram->wBattleAnimTempYOffset;
+        uint8_t b = BattleAnimationRenderState()->yCoord + BattleAnimationRenderState()->yOffset;
         // PUSH_HL;
         // LD_A_hl;
         uint8_t y = *(hl++);
         // LD_HL(wBattleAnimTempOAMFlags);
         // BIT_hl(OAM_Y_FLIP);
         // IF_Z goto no_yflip;
-        if(bit_test(wram->wBattleAnimTempOAMFlags, OAM_Y_FLIP)) {
+        if(bit_test(BattleAnimationRenderState()->oamFlags, OAM_Y_FLIP)) {
             // ADD_A(0x8);
             // XOR_A(0xff);
             // INC_A;
@@ -245,14 +260,14 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // LD_A_addr(wBattleAnimTempXOffset);
         // ADD_A_B;
         // LD_B_A;
-        b = wram->wBattleAnimTempXCoord + wram->wBattleAnimTempXOffset;
+        b = BattleAnimationRenderState()->xCoord + BattleAnimationRenderState()->xOffset;
         // PUSH_HL;
         // LD_A_hl;
         uint8_t x = *(hl++);
         // LD_HL(wBattleAnimTempOAMFlags);
         // BIT_hl(OAM_X_FLIP);
         // IF_Z goto no_xflip;
-        if(bit_test(wram->wBattleAnimTempOAMFlags, OAM_X_FLIP)) {
+        if(bit_test(BattleAnimationRenderState()->oamFlags, OAM_X_FLIP)) {
             // ADD_A(0x8);
             // XOR_A(0xff);
             // INC_A;
@@ -273,7 +288,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // ADD_A(BATTLEANIM_BASE_TILE);
         // ADD_A_hl;
         // LD_de_A;
-        de->tileID = wram->wBattleAnimTempTileID + BATTLEANIM_BASE_TILE + tileID;
+        de->tileID = BattleAnimationRenderState()->tileId + BATTLEANIM_BASE_TILE + tileID;
 
     // Attributes
         // INC_HL;
@@ -293,7 +308,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // AND_A(PALETTE_MASK | VRAM_BANK_1);
         // OR_A_B;
         // LD_de_A;
-        de->attributes = ((attr ^ wram->wBattleAnimTempOAMFlags) & (PRIORITY | Y_FLIP | X_FLIP)) | (attr & OBP_NUM) | (wram->wBattleAnimTempPalette & (PALETTE_MASK | VRAM_BANK_1));
+        de->attributes = ((attr ^ BattleAnimationRenderState()->oamFlags) & (PRIORITY | Y_FLIP | X_FLIP)) | (attr & OBP_NUM) | (BattleAnimationRenderState()->palette & (PALETTE_MASK | VRAM_BANK_1));
 
         // INC_HL;
         // INC_DE;
@@ -332,37 +347,37 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
 
     // AND_A(PRIORITY);
     // LD_addr_A(wBattleAnimTempOAMFlags);
-    wram->wBattleAnimTempOAMFlags = bc->oamFlags & PRIORITY;
+    BattleAnimationRenderState()->oamFlags = bc->oamFlags & PRIORITY;
     // XOR_A_A;
     // LD_addr_A(wBattleAnimTempFrameOAMFlags);
-    wram->wBattleAnimTempFrameOAMFlags = 0;
+    BattleAnimationRenderState()->frameOamFlags = 0;
     // LD_HL(BATTLEANIMSTRUCT_PALETTE);
     // ADD_HL_BC;
     // LD_A_hl;
     // LD_addr_A(wBattleAnimTempPalette);
-    wram->wBattleAnimTempPalette = bc->palette;
+    BattleAnimationRenderState()->palette = bc->palette;
     // LD_HL(BATTLEANIMSTRUCT_FIX_Y);
     // ADD_HL_BC;
     // LD_A_hl;
     // LD_addr_A(wBattleAnimTempFixY);
-    wram->wBattleAnimTempFixY = bc->fixY;
+    BattleAnimationRenderState()->fixY = bc->fixY;
     // LD_HL(BATTLEANIMSTRUCT_TILEID);
     // ADD_HL_BC;
     // LD_A_hli;
     // LD_addr_A(wBattleAnimTempTileID);
-    wram->wBattleAnimTempTileID = bc->tileId;
+    BattleAnimationRenderState()->tileId = bc->tileId;
     // LD_A_hli;
     // LD_addr_A(wBattleAnimTempXCoord);
-    wram->wBattleAnimTempXCoord = bc->xCoord;
+    BattleAnimationRenderState()->xCoord = bc->xCoord;
     // LD_A_hli;
     // LD_addr_A(wBattleAnimTempYCoord);
-    wram->wBattleAnimTempYCoord = bc->yCoord;
+    BattleAnimationRenderState()->yCoord = bc->yCoord;
     // LD_A_hli;
     // LD_addr_A(wBattleAnimTempXOffset);
-    wram->wBattleAnimTempXOffset = bc->xOffset;
+    BattleAnimationRenderState()->xOffset = bc->xOffset;
     // LD_A_hli;
     // LD_addr_A(wBattleAnimTempYOffset);
-    wram->wBattleAnimTempYOffset = bc->yOffset;
+    BattleAnimationRenderState()->yOffset = bc->yOffset;
 
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -374,7 +389,7 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
     // ADD_HL_BC;
     // LD_A_hl;
     // LD_addr_A(wBattleAnimTempOAMFlags);
-    wram->wBattleAnimTempOAMFlags = bc->oamFlags;
+    BattleAnimationRenderState()->oamFlags = bc->oamFlags;
     // BIT_hl(0);
     // RET_Z ;
     if(!bit_test(bc->oamFlags, 0))
@@ -387,17 +402,17 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
     // LD_A((-10 * 8) + 4);
     // SUB_A_D;
     // LD_addr_A(wBattleAnimTempXCoord);
-    wram->wBattleAnimTempXCoord = (uint8_t)(((-10 * 8) + 4) - bc->xCoord);
+    BattleAnimationRenderState()->xCoord = (uint8_t)(((-10 * 8) + 4) - bc->xCoord);
     // LD_A_hli;
     // LD_D_A;
     // LD_A_addr(wBattleAnimTempFixY);
     // CP_A(0xff);
     // IF_NZ goto check_kinesis_softboiled_milkdrink;
-    if(wram->wBattleAnimTempFixY != 0xff) {
+    if(BattleAnimationRenderState()->fixY != 0xff) {
     // check_kinesis_softboiled_milkdrink:
         // SUB_A_D;
         // PUSH_AF;
-        uint8_t d = wram->wBattleAnimTempFixY - bc->yCoord;
+        uint8_t d = BattleAnimationRenderState()->fixY - bc->yCoord;
         // LD_A_addr(wFXAnimID + 1);
         // OR_A_A;
         // IF_NZ goto no_sub;
@@ -412,20 +427,20 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
         // do_sub:
             // POP_AF;
             // SUB_A(1 * 8);
-            wram->wBattleAnimTempYCoord = d - (1 * 8);
+            BattleAnimationRenderState()->yCoord = d - (1 * 8);
             // goto done;
         }
         else {
         // no_sub:
             // POP_AF;
-            wram->wBattleAnimTempYCoord = d;
+            BattleAnimationRenderState()->yCoord = d;
         }
     }
     else {
         // LD_A(5 * 8);
         // ADD_A_D;
         // goto done;
-        wram->wBattleAnimTempYCoord = bc->yCoord + (5 * 8);
+        BattleAnimationRenderState()->yCoord = bc->yCoord + (5 * 8);
     }
 
 // done:
@@ -434,7 +449,7 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
     // XOR_A(0xff);
     // INC_A;
     // LD_addr_A(wBattleAnimTempXOffset);
-    wram->wBattleAnimTempXOffset = -bc->xOffset;
+    BattleAnimationRenderState()->xOffset = -bc->xOffset;
     // RET;
 }
 

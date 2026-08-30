@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "core.h"
 #include "helpers.h"
 #include "../../data/battle_anims/framesets.h"
 #include "../../data/battle_anims/oam.h"
@@ -125,7 +126,7 @@ uint8_t GetBattleAnimFrame(struct BattleAnim* bc){
         // AND_A(Y_FLIP << 1 | X_FLIP << 1);  // The << 1 is compensated in the "frame" macro
         // SRL_A;
         // LD_addr_A(wBattleAnimTempFrameOAMFlags);
-        wram->wBattleAnimTempFrameOAMFlags = ((*hl) & (Y_FLIP << 1 | X_FLIP << 1)) >> 1;
+        BattleAnimationRenderState()->frameOamFlags = ((*hl) & (Y_FLIP << 1 | X_FLIP << 1)) >> 1;
         // POP_AF;
         // RET;
         return a;

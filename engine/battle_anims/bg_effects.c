@@ -175,16 +175,16 @@ bool QueueBGEffect(void) {
             // ADD_HL_BC;
             // LD_A_addr(wBattleBGEffectTempID);
             // LD_hli_A;
-            hl->function = wram->wBattleBGEffectTempID;
+            hl->function = BattleAnimationCommandState()->bgEffectId;
             // LD_A_addr(wBattleBGEffectTempJumptableIndex);
             // LD_hli_A;
-            hl->jumptableIndex = wram->wBattleBGEffectTempJumptableIndex;
+            hl->jumptableIndex = BattleAnimationCommandState()->bgEffectJumptableIndex;
             // LD_A_addr(wBattleBGEffectTempTurn);
             // LD_hli_A;
-            hl->battleTurn = wram->wBattleBGEffectTempTurn;
+            hl->battleTurn = BattleAnimationCommandState()->bgEffectTurn;
             // LD_A_addr(wBattleBGEffectTempParam);
             // LD_hl_A;
-            hl->param = wram->wBattleBGEffectTempParam;
+            hl->param = BattleAnimationCommandState()->bgEffectParam;
             // RET;
             return false;
         }
@@ -419,7 +419,7 @@ static void BattleBGEffect_FlashContinue(struct BattleBGEffect* bc, const uint8_
     //  current timer, flash duration, number of flashes
     // LD_A(0x1);
     // LD_addr_A(wBattleBGEffectTempID);  // unused?
-    wram->wBattleBGEffectTempID = 0x1;
+    BattleAnimationCommandState()->bgEffectId = 0x1;
     // LD_HL(BG_EFFECT_STRUCT_JT_INDEX);
     // ADD_HL_BC;
     // LD_A_hl;
@@ -763,7 +763,7 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             if(BGEffect_CheckBattleTurn(bc) == 0){
                 // LD_A(ANIM_OBJ_ENEMYFEET_1ROW);
                 // LD_addr_A(wBattleObjectTempID);
-                wram->wBattleObjectTempID = ANIM_OBJ_ENEMYFEET_1ROW;
+                BattleAnimationCommandState()->objectId = ANIM_OBJ_ENEMYFEET_1ROW;
                 // LD_A(16 * TILE_WIDTH + 4);
                 a = 16 * TILE_WIDTH + 4;
                 // goto okay;
@@ -772,19 +772,19 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             // player_side:
                 // LD_A(ANIM_OBJ_PLAYERHEAD_1ROW);
                 // LD_addr_A(wBattleObjectTempID);
-                wram->wBattleObjectTempID = ANIM_OBJ_PLAYERHEAD_1ROW;
+                BattleAnimationCommandState()->objectId = ANIM_OBJ_PLAYERHEAD_1ROW;
                 // LD_A(6 * TILE_WIDTH);
                 a = 6 * TILE_WIDTH;
             }
         // okay:
             // LD_addr_A(wBattleObjectTempXCoord);
-            wram->wBattleObjectTempXCoord = a;
+            BattleAnimationCommandState()->objectX = a;
             // LD_A(8 * TILE_WIDTH);
             // LD_addr_A(wBattleObjectTempYCoord);
-            wram->wBattleObjectTempYCoord = 8 * TILE_WIDTH;
+            BattleAnimationCommandState()->objectY = 8 * TILE_WIDTH;
             // XOR_A_A;
             // LD_addr_A(wBattleObjectTempParam);
-            wram->wBattleObjectTempParam = 0x0;
+            BattleAnimationCommandState()->objectParam = 0x0;
             // CALL(av_QueueBattleAnimation);
             v_QueueBattleAnimation();
             // POP_BC;
@@ -878,7 +878,7 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             if(BGEffect_CheckBattleTurn(bc) == 0){
                 // LD_A(ANIM_OBJ_ENEMYFEET_2ROW);
                 // LD_addr_A(wBattleObjectTempID);
-                wram->wBattleObjectTempID = ANIM_OBJ_ENEMYFEET_2ROW;
+                BattleAnimationCommandState()->objectId = ANIM_OBJ_ENEMYFEET_2ROW;
                 // LD_A(16 * TILE_WIDTH + 4);
                 a = 16 * TILE_WIDTH + 4;
                 // goto okay;
@@ -887,20 +887,20 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             // player_side:
                 // LD_A(ANIM_OBJ_PLAYERHEAD_2ROW);
                 // LD_addr_A(wBattleObjectTempID);
-                wram->wBattleObjectTempID = ANIM_OBJ_PLAYERHEAD_2ROW;
+                BattleAnimationCommandState()->objectId = ANIM_OBJ_PLAYERHEAD_2ROW;
                 // LD_A(6 * TILE_WIDTH);
                 a = 6 * TILE_WIDTH;
             }
 
         // okay:
             // LD_addr_A(wBattleObjectTempXCoord);
-            wram->wBattleObjectTempXCoord = a;
+            BattleAnimationCommandState()->objectX = a;
             // LD_A(8 * TILE_WIDTH);
             // LD_addr_A(wBattleObjectTempYCoord);
-            wram->wBattleObjectTempYCoord = 8 * TILE_WIDTH;
+            BattleAnimationCommandState()->objectY = 8 * TILE_WIDTH;
             // XOR_A_A;
             // LD_addr_A(wBattleObjectTempParam);
-            wram->wBattleObjectTempParam = 0x0;
+            BattleAnimationCommandState()->objectParam = 0x0;
             // CALL(av_QueueBattleAnimation);
             v_QueueBattleAnimation();
             // POP_BC;
@@ -1387,7 +1387,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // INC_HL;
                 // LD_A_hli;
                 // LD_addr_A(wBattlePicResizeTempBaseTileID);
-                wram->wBattlePicResizeTempBaseTileID = hl2[1];
+                BattleAnimationEffectScratchState()->picResizeBaseTileId = hl2[1];
                 //  get coord
                 // PUSH_DE;
                 // LD_E_hl;
@@ -1411,7 +1411,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                     tile_t* hl4 = hl3;
                     // LD_A_addr(wBattlePicResizeTempBaseTileID);
                     // LD_B_A;
-                    uint8_t b = wram->wBattlePicResizeTempBaseTileID;
+                    uint8_t b = BattleAnimationEffectScratchState()->picResizeBaseTileId;
                     do {
                     // col:
                         // LD_A_de;
@@ -1659,7 +1659,7 @@ static void BattleBGEffect_Water(struct BattleBGEffect* bc) {
     // ADD_HL_BC;
     // LD_A_hl;
     // LD_addr_A(wBattleSineWaveTempProgress);
-    wram->wBattleSineWaveTempProgress = bc->jumptableIndex;
+    BattleAnimationEffectScratchState()->sineProgress = bc->jumptableIndex;
     // LD_HL(BG_EFFECT_STRUCT_BATTLE_TURN);
     // ADD_HL_BC;
     // LD_A_hl;
@@ -4039,16 +4039,16 @@ static void DeformScreen(uint8_t d, uint8_t e) {
     // PUSH_BC;
     // XOR_A_A;
     // LD_addr_A(wBattleSineWaveTempProgress);
-    wram->wBattleSineWaveTempProgress = 0x0;
+    BattleAnimationEffectScratchState()->sineProgress = 0x0;
     // LD_A_E;
     // LD_addr_A(wBattleSineWaveTempOffset);
-    wram->wBattleSineWaveTempOffset = e;
+    BattleAnimationEffectScratchState()->sineOffset = e;
     // LD_A_D;
     // LD_addr_A(wBattleSineWaveTempAmplitude);
-    wram->wBattleSineWaveTempAmplitude = d;
+    BattleAnimationEffectScratchState()->sineAmplitude = d;
     // LD_A(0x80);
     // LD_addr_A(wBattleSineWaveTempTimer);
-    wram->wBattleSineWaveTempTimer = 0x80;
+    BattleAnimationEffectScratchState()->sineTimer = 0x80;
     // LD_BC(wLYOverridesBackup);
     uint8_t* hl = wram->wLYOverridesBackup;
     uint8_t c = 0;
@@ -4067,7 +4067,7 @@ static void DeformScreen(uint8_t d, uint8_t e) {
             // LD_A_addr(wBattleSineWaveTempProgress);
             // CALL(aBattleBGEffects_Sine);
             // LD_bc_A;
-            hl[c] = Sine(wram->wBattleSineWaveTempProgress, wram->wBattleSineWaveTempAmplitude);
+            hl[c] = Sine(BattleAnimationEffectScratchState()->sineProgress, BattleAnimationEffectScratchState()->sineAmplitude);
         }
 
     // next:
@@ -4077,11 +4077,11 @@ static void DeformScreen(uint8_t d, uint8_t e) {
         // LD_HL(wBattleSineWaveTempProgress);
         // ADD_A_hl;
         // LD_hl_A;
-        wram->wBattleSineWaveTempProgress += wram->wBattleSineWaveTempOffset;
+        BattleAnimationEffectScratchState()->sineProgress += BattleAnimationEffectScratchState()->sineOffset;
         // LD_HL(wBattleSineWaveTempTimer);
         // DEC_hl;
         // IF_NZ goto loop;
-    } while(--wram->wBattleSineWaveTempTimer != 0);
+    } while(--BattleAnimationEffectScratchState()->sineTimer != 0);
     // POP_BC;
     // RET;
 }
@@ -4091,16 +4091,16 @@ static void InitSurfWaves(uint8_t d, uint8_t e) {
     // PUSH_BC;
     // XOR_A_A;
     // LD_addr_A(wBattleSineWaveTempProgress);
-    wram->wBattleSineWaveTempProgress = 0;
+    BattleAnimationEffectScratchState()->sineProgress = 0;
     // LD_A_E;
     // LD_addr_A(wBattleSineWaveTempOffset);
-    wram->wBattleSineWaveTempOffset = e;
+    BattleAnimationEffectScratchState()->sineOffset = e;
     // LD_A_D;
     // LD_addr_A(wBattleSineWaveTempAmplitude);
-    wram->wBattleSineWaveTempAmplitude = d;
+    BattleAnimationEffectScratchState()->sineAmplitude = d;
     // LD_A(0x40);
     // LD_addr_A(wBattleSineWaveTempTimer);
-    wram->wBattleSineWaveTempTimer = 0x40;
+    BattleAnimationEffectScratchState()->sineTimer = 0x40;
     // LD_BC(wSurfWaveBGEffect);
     uint8_t* bc = wram->wSurfWaveBGEffect;
 
@@ -4112,16 +4112,16 @@ static void InitSurfWaves(uint8_t d, uint8_t e) {
         // CALL(aBattleBGEffects_Sine);
         // LD_bc_A;
         // INC_BC;
-        *(bc++) = Sine(wram->wBattleSineWaveTempProgress, wram->wBattleSineWaveTempAmplitude);
+        *(bc++) = Sine(BattleAnimationEffectScratchState()->sineProgress, BattleAnimationEffectScratchState()->sineAmplitude);
         // LD_A_addr(wBattleSineWaveTempOffset);
         // LD_HL(wBattleSineWaveTempProgress);
         // ADD_A_hl;
         // LD_hl_A;
-        wram->wBattleSineWaveTempProgress += wram->wBattleSineWaveTempOffset;
+        BattleAnimationEffectScratchState()->sineProgress += BattleAnimationEffectScratchState()->sineOffset;
         // LD_HL(wBattleSineWaveTempTimer);
         // DEC_hl;
         // IF_NZ goto loop;
-    } while(--wram->wBattleSineWaveTempTimer != 0);
+    } while(--BattleAnimationEffectScratchState()->sineTimer != 0);
     // POP_BC;
     // RET;
 }
@@ -4134,20 +4134,20 @@ static uint8_t DeformWater_GetLYOverrideBackupAddrOffset(void){
     // LD_E_A;
     // LD_D(0);
     // RET;
-    return wram->wBattleSineWaveTempProgress + hram.hLYOverrideStart;
+    return BattleAnimationEffectScratchState()->sineProgress + hram.hLYOverrideStart;
 }
 
 static void DeformWater(uint8_t d, uint8_t e, uint8_t a) {
     // SET_PC(aDeformWater);
     // PUSH_BC;
     // LD_addr_A(wBattleSineWaveTempTimer);
-    wram->wBattleSineWaveTempTimer = a;
+    BattleAnimationEffectScratchState()->sineTimer = a;
     // LD_A_E;
     // LD_addr_A(wBattleSineWaveTempOffset);
-    wram->wBattleSineWaveTempOffset = e;
+    BattleAnimationEffectScratchState()->sineOffset = e;
     // LD_A_D;
     // LD_addr_A(wBattleSineWaveTempAmplitude);
-    wram->wBattleSineWaveTempAmplitude = d;
+    BattleAnimationEffectScratchState()->sineAmplitude = d;
     // CALL(aDeformWater_GetLYOverrideBackupAddrOffset);
     // LD_HL(wLYOverridesBackup);
     // ADD_HL_DE;
@@ -4157,14 +4157,14 @@ static void DeformWater(uint8_t d, uint8_t e, uint8_t a) {
     // LD_B_H;
     uint8_t* hl = wram->wLYOverridesBackup;
 
-    while(wram->wBattleSineWaveTempTimer != 0){
+    while(BattleAnimationEffectScratchState()->sineTimer != 0){
     // loop:
         // LD_A_addr(wBattleSineWaveTempTimer);
         // AND_A_A;
         // IF_Z goto done;
         // DEC_A;
         // LD_addr_A(wBattleSineWaveTempTimer);
-        --wram->wBattleSineWaveTempTimer;
+        --BattleAnimationEffectScratchState()->sineTimer;
         // PUSH_AF;
         // LD_A_addr(wBattleSineWaveTempAmplitude);
         // LD_D_A;
@@ -4172,7 +4172,7 @@ static void DeformWater(uint8_t d, uint8_t e, uint8_t a) {
         // PUSH_HL;
         // CALL(aBattleBGEffects_Sine);
         // LD_E_A;
-        uint8_t e2 = Sine(wram->wBattleSineWaveTempOffset, wram->wBattleSineWaveTempAmplitude);
+        uint8_t e2 = Sine(BattleAnimationEffectScratchState()->sineOffset, BattleAnimationEffectScratchState()->sineAmplitude);
         // POP_HL;
         // LDH_A_addr(hLYOverrideEnd);
         // CP_A_C;
@@ -4200,7 +4200,7 @@ static void DeformWater(uint8_t d, uint8_t e, uint8_t a) {
         // LD_A_addr(wBattleSineWaveTempOffset);
         // ADD_A(0x4);
         // LD_addr_A(wBattleSineWaveTempOffset);
-        wram->wBattleSineWaveTempOffset += 0x4;
+        BattleAnimationEffectScratchState()->sineOffset += 0x4;
         // POP_AF;
         // goto loop;
     }

@@ -3514,45 +3514,9 @@ struct wram_s
                 uint8_t legacyBattleAnimByteReserved;
                 uint8_t legacyBattleAnimOAMPointerReserved;
                 union {
-                    struct {
-                        uint8_t wBattleObjectTempID;
-                        uint8_t wBattleObjectTempXCoord;
-                        uint8_t wBattleObjectTempYCoord;
-                        uint8_t wBattleObjectTempParam;
-                    };
-                    struct {
-                        uint8_t wBattleBGEffectTempID;
-                        uint8_t wBattleBGEffectTempJumptableIndex;
-                        uint8_t wBattleBGEffectTempTurn;
-                        uint8_t wBattleBGEffectTempParam;
-                    };
-                    struct {
-                        uint8_t wBattleAnimTempOAMFlags;
-                        uint8_t wBattleAnimTempFixY;
-                        uint8_t wBattleAnimTempTileID;
-                        uint8_t wBattleAnimTempXCoord;
-                        uint8_t wBattleAnimTempYCoord;
-                        uint8_t wBattleAnimTempXOffset;
-                        uint8_t wBattleAnimTempYOffset;
-                        uint8_t wBattleAnimTempFrameOAMFlags;
-                        uint8_t wBattleAnimTempPalette;
-                    };
-                    struct {
-                        union {
-                            uint8_t wBattleAnimGFXTempTileID;
-                            uint8_t wBattleAnimGFXTempPicHeight;
-                        };
-                    };
-                    struct {
-                        uint8_t wBattleSineWaveTempProgress;
-                        uint8_t wBattleSineWaveTempOffset;
-                        uint8_t wBattleSineWaveTempAmplitude;
-                        uint8_t wBattleSineWaveTempTimer;
-                    };
-                    struct {
-                        uint8_t wBattlePicResizeTempBaseTileID;
-                        uint16_t wBattlePicResizeTempPointer;
-                    };
+                    uint8_t legacyBattleAnimationCommandReserved[4];
+                    uint8_t legacyBattleAnimationRenderReserved[9];
+                    uint8_t legacyBattleAnimationEffectScratchReserved[4];
                 };
                 union {
                     struct {

@@ -966,16 +966,16 @@ void BattleAnimCmd_Obj(uint8_t index, uint8_t x, uint8_t y, uint8_t param){
 //  index, x, y, param
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleObjectTempID);
-    wram->wBattleObjectTempID = index;
+    BattleAnimationCommandState()->objectId = index;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleObjectTempXCoord);
-    wram->wBattleObjectTempXCoord = x;
+    BattleAnimationCommandState()->objectX = x;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleObjectTempYCoord);
-    wram->wBattleObjectTempYCoord = y;
+    BattleAnimationCommandState()->objectY = y;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleObjectTempParam);
-    wram->wBattleObjectTempParam = param;
+    BattleAnimationCommandState()->objectParam = param;
     // CALL(aQueueBattleAnimation);
     QueueBattleAnimation();
     // RET;
@@ -984,16 +984,16 @@ void BattleAnimCmd_Obj(uint8_t index, uint8_t x, uint8_t y, uint8_t param){
 void BattleAnimCmd_BGEffect(uint8_t index, uint8_t jt, uint8_t turn, uint8_t param){
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleBGEffectTempID);
-    wram->wBattleBGEffectTempID = index;
+    BattleAnimationCommandState()->bgEffectId = index;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleBGEffectTempJumptableIndex);
-    wram->wBattleBGEffectTempJumptableIndex = jt;
+    BattleAnimationCommandState()->bgEffectJumptableIndex = jt;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleBGEffectTempTurn);
-    wram->wBattleBGEffectTempTurn = turn;
+    BattleAnimationCommandState()->bgEffectTurn = turn;
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleBGEffectTempParam);
-    wram->wBattleBGEffectTempParam = param;
+    BattleAnimationCommandState()->bgEffectParam = param;
     // CALL(av_QueueBGEffect);
     v_QueueBGEffect();
     // RET;
@@ -1114,7 +1114,7 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
     uint8_t* hl = BattleAnimationTileDictionary();
     // XOR_A_A;
     // LD_addr_A(wBattleAnimGFXTempTileID);
-    wram->wBattleAnimGFXTempTileID = 0;
+    BattleAnimationEffectScratchState()->gfxTileId = 0;
     log_debug("NGFX %d - ", c);
     va_list v;
     va_start(v, c);
@@ -1124,7 +1124,7 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
         // LD_A_addr(wBattleAnimGFXTempTileID);
         // CP_A((vTiles1 - vTiles0) / LEN_2BPP_TILE - BATTLEANIM_BASE_TILE);
         // RET_NC ;
-        if(wram->wBattleAnimGFXTempTileID >= (vTiles1 - vTiles0) / LEN_2BPP_TILE - BATTLEANIM_BASE_TILE) {
+        if(BattleAnimationEffectScratchState()->gfxTileId >= (vTiles1 - vTiles0) / LEN_2BPP_TILE - BATTLEANIM_BASE_TILE) {
             va_end(v);
             log_debug("\n");
             return;
@@ -1136,7 +1136,7 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
         *(hl++) = byte;
         // LD_A_addr(wBattleAnimGFXTempTileID);
         // LD_hli_A;
-        *(hl++) = wram->wBattleAnimGFXTempTileID;
+        *(hl++) = BattleAnimationEffectScratchState()->gfxTileId;
         // PUSH_BC;
         // PUSH_HL;
         // LD_L_A;
@@ -1146,13 +1146,13 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
         // }
         // LD_DE(vTiles0 + LEN_2BPP_TILE * BATTLEANIM_BASE_TILE);
         // ADD_HL_DE;
-        uint8_t* de = (vram->vTiles0 + LEN_2BPP_TILE * BATTLEANIM_BASE_TILE) + (wram->wBattleAnimGFXTempTileID << 4);
+        uint8_t* de = (vram->vTiles0 + LEN_2BPP_TILE * BATTLEANIM_BASE_TILE) + (BattleAnimationEffectScratchState()->gfxTileId << 4);
         // LD_A_addr(wBattleAnimByte);
         // CALL(aLoadBattleAnimGFX);
         // LD_A_addr(wBattleAnimGFXTempTileID);
         // ADD_A_C;
         // LD_addr_A(wBattleAnimGFXTempTileID);
-        wram->wBattleAnimGFXTempTileID += LoadBattleAnimGFX(de, byte);
+        BattleAnimationEffectScratchState()->gfxTileId += LoadBattleAnimGFX(de, byte);
         // POP_HL;
         // POP_BC;
         // DEC_C;
@@ -1333,14 +1333,14 @@ void BattleAnimCmd_BattlerGFX_1Row(void){
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x06);  // Enemy feet start tile
     // LD_A(7 * LEN_2BPP_TILE);  // Enemy pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
-    wram->wBattleAnimGFXTempPicHeight = 7 * LEN_2BPP_TILE;
+    BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x1 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_1Row_LoadFeet);
     uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(vram->vTiles0 + LEN_2BPP_TILE * (0x80 - 6 - 7), vram->vTiles2 + LEN_2BPP_TILE * (6 * 7), 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
-    wram->wBattleAnimGFXTempPicHeight = 6 * LEN_2BPP_TILE;
+    BattleAnimationEffectScratchState()->gfxPicHeight = 6 * LEN_2BPP_TILE;
     // LD_A(6);  // Copy 6x1 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_1Row_LoadFeet);
     BattleAnimCmd_BattlerGFX_1Row_LoadFeet(hl2, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 6);
@@ -1355,7 +1355,7 @@ static uint8_t* BattleAnimCmd_BattlerGFX_2Row_LoadHead(uint8_t* hl, const uint8_
         // LD_BC((BANK(aBattleAnimCmd_BattlerGFX_2Row_LoadHead) << 8) | 2);
         // CALL(aRequest2bpp);
         CopyBytes(hl, de, LEN_2BPP_TILE);
-        CopyBytes(hl + LEN_2BPP_TILE, de + wram->wBattleAnimGFXTempPicHeight, LEN_2BPP_TILE);
+        CopyBytes(hl + LEN_2BPP_TILE, de + BattleAnimationEffectScratchState()->gfxPicHeight, LEN_2BPP_TILE);
         // POP_DE;
         // LD_A_addr(wBattleAnimGFXTempPicHeight);
         // LD_L_A;
@@ -1411,14 +1411,14 @@ void BattleAnimCmd_BattlerGFX_2Row(void){
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x05);  // Enemy feet start tile
     // LD_A(7 * LEN_2BPP_TILE);  // Enemy pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
-    wram->wBattleAnimGFXTempPicHeight = 7 * LEN_2BPP_TILE;
+    BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x2 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_2Row_LoadHead);
     uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(vram->vTiles0 + LEN_2BPP_TILE * (0x80 - 6 * 2 - 7 * 2), vram->vTiles2 + LEN_2BPP_TILE * 7 * 5, 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
-    wram->wBattleAnimGFXTempPicHeight = 6 * LEN_2BPP_TILE;
+    BattleAnimationEffectScratchState()->gfxPicHeight = 6 * LEN_2BPP_TILE;
     // LD_A(6);  // Copy 6x2 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_2Row_LoadHead);
     BattleAnimCmd_BattlerGFX_2Row_LoadHead(hl2, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 6);

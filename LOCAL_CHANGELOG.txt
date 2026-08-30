@@ -3872,3 +3872,174 @@ Exact stopping point and next recommended task
   state machine includes its assembly-defined terminal state.
 - Next: migrate battle-animation temporary command staging and then replace
   virtual-OAM submission with a capacity-aware native render queue.
+
+Session addendum: 2026-08-30 — native battle-animation command staging
+=========================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.c` and `.h`: added a native command-state object
+  owned by `NativeBattleAnimationState` for object and background-effect
+  creation parameters.
+- `engine/battle_anims/anim_commands.c`, `core.c`, and `bg_effects.c`:
+  migrated every live C producer and consumer of those parameters to the
+  native command-state object.
+- `wram.h` and `wram.c`: replaced the four-byte overlapping legacy command
+  span with a mapped layout reserve. No live C reader remains for its WRAM
+  names.
+
+Architectural impact
+---------------------
+- Object and background-effect command arguments no longer depend on the
+  original overlapping Game Boy scratch bytes. They reset as part of the
+  existing native battle-animation-state reset.
+
+Temporary migration state and removal condition
+------------------------------------------------
+- `legacyBattleAnimationCommandReserved[4]` exists only for the current packed
+  WRAM layout assertion. Remove it when packed WRAM layout support is retired.
+
+Partially completed work
+------------------------
+- Other animation render/GFX/sine temporary state and virtual-OAM output still
+  remain legacy-oriented and require a later complete render-queue migration.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source inspection confirmed no live C `wBattleObjectTemp*` or
+  `wBattleBGEffectTemp*` access remains. Next migrate the render scratch state
+  together with a native render queue; do not delete ASM sources while they
+  remain repository reference material.
+
+Session addendum: 2026-08-30 — native battle-animation render scratch state
+===========================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.h` and `.c`: added `BattleAnimationRenderState`,
+  owned and reset by `NativeBattleAnimationState`, for the transient per-object
+  OAM flags, coordinates, offsets, tile, palette, and frame-flip state.
+- `engine/battle_anims/core.c` and `helpers.c`: migrated every live C reader
+  and writer of the nine render-scratch fields to that native state object.
+- `wram.h` and `wram.c`: replaced the corresponding nine-byte WRAM structure
+  with `legacyBattleAnimationRenderReserved[9]`, mapped only to retain the
+  current packed WRAM layout assertion.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Battle-animation frame expansion no longer uses Game Boy WRAM scratch bytes
+  as its authoritative render state. The transient state is now owned by the
+  native animation runtime alongside its command state, object pool, and
+  background-effect pool.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyBattleAnimationRenderReserved[9]` exists only for the retained packed
+  WRAM layout. Remove it when packed WRAM layout support and its address
+  assertions are removed during native memory/save conversion.
+
+Partially completed work
+------------------------
+- The battle animation GFX, sine-wave, and picture-resize scratch spans still
+  use legacy WRAM. `BattleAnimOAMUpdate` still writes the legacy fixed-capacity
+  virtual OAM array, so a complete native render queue remains unfinished.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; versioned saves;
+  packed WRAM retirement; native renderer/entity/map/script/audio and content
+  database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- Render scratch state remains a single animation-wide object, matching the
+  existing synchronous virtual-OAM expansion flow. A future parallel or queued
+  renderer must make its per-object ownership explicit rather than reusing this
+  transient singleton.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source inspection confirmed no live C access remains to
+  `wBattleAnimTempOAMFlags` through `wBattleAnimTempPalette`.
+- Next: move the GFX/sine/picture-resize animation scratch state into the same
+  native owner, then design and migrate the virtual-OAM writer to a
+  capacity-aware native render queue. No ASM source was deleted because its
+  continued reference role cannot be proven unnecessary from the current build
+  graph alone.
+
+Session addendum: 2026-08-30 — native battle-animation effect scratch state
+===========================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.h` and `.c`: added native effect-scratch state to
+  `NativeBattleAnimationState` for animation GFX loading, battler-picture
+  height, picture-resize tile base, and sine/deformation calculation state.
+- `engine/battle_anims/anim_commands.c` and `bg_effects.c`: migrated all live
+  C producers and consumers of those fields to the native owner.
+- `wram.h` and `wram.c`: replaced the four-byte overlapping legacy scratch
+  span with `legacyBattleAnimationEffectScratchReserved[4]`, retained only for
+  the existing packed WRAM layout assertion.
+
+Architectural change and dependency removed
+-------------------------------------------
+- The migrated animation GFX, picture-resize, and sine-wave helper operations
+  no longer use the shared Game Boy WRAM scratch bytes. Their independent
+  native fields deliberately remove the legacy address overlap from runtime
+  semantics.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyBattleAnimationEffectScratchReserved[4]` exists only to preserve the
+  packed WRAM layout. Remove it when packed WRAM layout support and its address
+  assertions are removed during native memory/save conversion.
+
+Partially completed work
+------------------------
+- Battle animation still writes to the fixed-capacity virtual OAM array and
+  directly targets GB-style VRAM tile buffers. A capacity-aware native render
+  queue and resource system remain required before the renderer can be called
+  native.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; versioned saves;
+  packed WRAM retirement; native renderer/entity/map/script/audio and content
+  database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- The old GFX/picture/sine fields intentionally shared four hardware-address
+  bytes. The migrated operations are synchronous and have no live C callers
+  relying on that overlap; any later concurrent renderer work must retain
+  explicit per-operation state ownership.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source inspection confirmed no live C WRAM access remains to
+  the command, render, GFX, sine, or picture-resize battle-animation scratch
+  spans migrated in this session.
+- Next: replace virtual-OAM submission with a native capacity-aware render
+  queue, including explicit layer/priority semantics and a migration plan for
+  direct VRAM tile writes. No ASM source was deleted because its continued
+  reference role cannot be proven unnecessary from the current build graph.
