@@ -9,6 +9,7 @@
 #include "tilemap.h"
 #include "window.h"
 #include "joypad.h"
+#include "../util/input.h"
 #include "../charmap.h"
 #include "../engine/menus/menu.h"
 
@@ -54,8 +55,8 @@ uint8_t ScrollingMenuJoypad(void) {
 }
 
 uint8_t GetMenuJoypad(void) {
-    uint8_t pad_last = (hram.hJoyLast & (D_PAD));
-    uint8_t button_last = (hram.hJoyPressed & (BUTTONS));
+    uint8_t pad_last = NativeInputLogicalLast() & (D_PAD);
+    uint8_t button_last = NativeInputLogicalPressed() & (BUTTONS);
     return (pad_last | button_last);
 }
 

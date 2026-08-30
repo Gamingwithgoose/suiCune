@@ -20,6 +20,7 @@
 #include "../engine/pokedex/pokedex.h"
 #include "../data/pokemon/ezchat_order.h"
 #include "../charmap.h"
+#include "../util/input.h"
 
 uint8_t gEZChatTextStringBuffer[32];
 const txt_cmd_s EZChatTextBuffer[] = {
@@ -715,7 +716,7 @@ void EZChat_MasterLoop(void){
         JoyTextDelay();
         // LDH_A_addr(hJoyPressed);
         // LDH_addr_A(hJoypadPressed);
-        hram.hJoypadPressed = hram.hJoyPressed;
+        NativeInputOverridePressed(hram.hJoyPressed);
         // LD_A_addr(wJumptableIndex);
         // BIT_A(7);
         // IF_NZ goto exit;
@@ -1176,7 +1177,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x8);
     // IF_NZ goto asm_11c426;
-    if(hram.hJoypadPressed & START) {
+    if(NativeInputPressed() & START) {
     // asm_11c426:
         // LD_A(0x8);
         // LD_addr_A(wcd20);
@@ -1187,7 +1188,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x2);
     // IF_NZ goto asm_11c41a;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     // asm_11c41a:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -1203,7 +1204,7 @@ void Function11c3ed(void){
     // LD_A_de;
     // AND_A(0x1);
     // IF_NZ goto asm_11c42c;
-    else if(hram.hJoypadPressed & A_BUTTON) {
+    else if(NativeInputPressed() & A_BUTTON) {
     // asm_11c42c:
         // LD_A_addr(wcd20);
         // CP_A(0x6);
@@ -1491,7 +1492,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(START);
     // IF_NZ goto start;
-    if(hram.hJoypadPressed & START) {
+    if(NativeInputPressed() & START) {
     // start:
         // LD_HL(wcd24);
         // SET_hl(0);
@@ -1505,7 +1506,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(SELECT);
     // IF_NZ goto select;
-    else if(hram.hJoypadPressed & SELECT) {
+    else if(NativeInputPressed() & SELECT) {
     // select:
         // LD_A_addr(wcd2b);
         // XOR_A(0x1);
@@ -1519,7 +1520,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(B_BUTTON);
     // IF_NZ goto b;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     b:
         // LD_A(0x4);
         a = EZCHAT_DRAW_CHAT_WORDS;
@@ -1529,7 +1530,7 @@ void Function11c53d(void){
     // LD_A_de;
     // AND_A(A_BUTTON);
     // IF_NZ goto a;
-    else if(hram.hJoypadPressed & A_BUTTON) {
+    else if(NativeInputPressed() & A_BUTTON) {
     // a:
         // LD_A_addr(wcd21);
         // CP_A(15);
@@ -2019,7 +2020,7 @@ void Function11c675(void){
     // LD_A_de;
     // AND_A(A_BUTTON);
     // IF_NZ goto a;
-    if(hram.hJoypadPressed & A_BUTTON) {
+    if(NativeInputPressed() & A_BUTTON) {
     // a:
         // call EZChat_SetOneWord
         // jr nc, .failure_to_set
@@ -2069,7 +2070,7 @@ void Function11c675(void){
     // LD_A_de;
     // AND_A(B_BUTTON);
     // IF_NZ goto b;
-    if(hram.hJoypadPressed & B_BUTTON) {
+    if(NativeInputPressed() & B_BUTTON) {
     // b:
         // call EZChat_CheckCategorySelectionConsistency
         EZChat_CheckCategorySelectionConsistency();
@@ -2100,7 +2101,7 @@ void Function11c675(void){
     // LD_A_de;
     // AND_A(START);
     // IF_NZ goto start;
-    if(hram.hJoypadPressed & START) {
+    if(NativeInputPressed() & START) {
     // start:
         // LD_HL(wcd28);
         // LD_A_addr(wcd26);
@@ -2153,7 +2154,7 @@ void Function11c675(void){
     // LD_A_de;
     // AND_A(SELECT);
     // IF_Z goto select;
-    if((hram.hJoypadPressed & SELECT) == 0) {
+    if((NativeInputPressed() & SELECT) == 0) {
     // select:
         // LD_DE(hJoyLast);
         // LD_A_de;
@@ -3544,7 +3545,7 @@ void Function11c9c3(void){
     // LD_A_de;
     // AND_A(0x1);
     // IF_NZ goto asm_11c9de;
-    if(hram.hJoypadPressed & A_BUTTON) {
+    if(NativeInputPressed() & A_BUTTON) {
     // asm_11c9de:
         // LD_A_hl;
         // AND_A_A;
@@ -3561,7 +3562,7 @@ void Function11c9c3(void){
     // LD_A_de;
     // AND_A(0x2);
     // IF_NZ goto asm_11c9e9;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     asm_11c9e9:
         // LD_HL(wcd24);
         // SET_hl(4);
@@ -3577,7 +3578,7 @@ void Function11c9c3(void){
     // LD_A_de;
     // AND_A(0x40);
     // IF_NZ goto asm_11c9f7;
-    else if(hram.hJoypadPressed & D_UP) {
+    else if(NativeInputPressed() & D_UP) {
     // asm_11c9f7:
         // LD_A_hl;
         // AND_A_A;
@@ -3592,7 +3593,7 @@ void Function11c9c3(void){
     // LD_A_de;
     // AND_A(0x80);
     // IF_NZ goto asm_11c9fc;
-    else if(hram.hJoypadPressed & D_DOWN) {
+    else if(NativeInputPressed() & D_DOWN) {
     // asm_11c9fc:
         // LD_A_hl;
         // AND_A_A;
@@ -3769,7 +3770,7 @@ void Function11cab3(void){
     // LD_A_de;
     // AND_A(0x1);
     // IF_NZ goto asm_11cace;
-    if(hram.hJoypadPressed & A_BUTTON) {
+    if(NativeInputPressed() & A_BUTTON) {
     // asm_11cace:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -3808,7 +3809,7 @@ void Function11cab3(void){
     // LD_A_de;
     // AND_A(0x2);
     // IF_NZ goto asm_11caf9;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     // asm_11caf9:
         // CALL(aPlayClickSFX);
         PlayClickSFX();
@@ -3834,7 +3835,7 @@ void Function11cab3(void){
     // LD_A_de;
     // AND_A(0x40);
     // IF_NZ goto asm_11cb12;
-    else if(hram.hJoypadPressed & D_UP) {
+    else if(NativeInputPressed() & D_UP) {
     // asm_11cb12:
         // LD_A_hl;
         // AND_A_A;
@@ -3849,7 +3850,7 @@ void Function11cab3(void){
     // LD_A_de;
     // AND_A(0x80);
     // IF_NZ goto asm_11cb17;
-    else if(hram.hJoypadPressed & D_DOWN) {
+    else if(NativeInputPressed() & D_DOWN) {
     // asm_11cb17:
         // LD_A_hl;
         // AND_A_A;
@@ -3906,7 +3907,7 @@ void Function11cb66(void){
     // LD_A_de;
     // AND_A(0x1);
     // IF_NZ goto asm_11cb81;
-    if(hram.hJoypadPressed & A_BUTTON) {
+    if(NativeInputPressed() & A_BUTTON) {
     // asm_11cb81:
         // LD_A_hl;
         // AND_A_A;
@@ -3983,7 +3984,7 @@ void Function11cb66(void){
     // LD_A_de;
     // AND_A(0x2);
     // IF_NZ goto asm_11cbd7;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     asm_11cbd7:
         // LD_DE(mUnknown_11cfba);
         // CALL(aFunction11cfce);
@@ -4002,7 +4003,7 @@ void Function11cb66(void){
     // LD_A_de;
     // AND_A(0x40);
     // IF_NZ goto asm_11cbeb;
-    else if(hram.hJoypadPressed & D_UP) {
+    else if(NativeInputPressed() & D_UP) {
     // asm_11cbeb:
         // LD_A_hl;
         // AND_A_A;
@@ -4017,7 +4018,7 @@ void Function11cb66(void){
     // LD_A_de;
     // AND_A(0x80);
     // IF_NZ goto asm_11cbf0;
-    else if(hram.hJoypadPressed & D_DOWN) {
+    else if(NativeInputPressed() & D_DOWN) {
     // asm_11cbf0:
         // LD_A_hl;
         // AND_A_A;
@@ -4124,7 +4125,7 @@ void Function11cd04(void){
     // LD_A_de;
     // AND_A_A;
     // RET_Z ;
-    if(hram.hJoypadPressed == 0)
+    if(NativeInputPressed() == 0)
         return;
     // LD_A(0x4);
     // LD_addr_A(wJumptableIndex);
@@ -4184,7 +4185,7 @@ void Function11cd54(void){
     // LD_A_de;
     // AND_A(A_BUTTON);
     // IF_NZ goto asm_11cd6f;
-    if(hram.hJoypadPressed & A_BUTTON) {
+    if(NativeInputPressed() & A_BUTTON) {
     // asm_11cd6f:
         // LD_A_hl;
         // LD_addr_A(wcd2b);
@@ -4208,7 +4209,7 @@ void Function11cd54(void){
     // LD_A_de;
     // AND_A(B_BUTTON);
     // IF_NZ goto asm_11cd73;
-    if(hram.hJoypadPressed & B_BUTTON) {
+    if(NativeInputPressed() & B_BUTTON) {
     // asm_11cd73:
         // LD_A_addr(wcd2b);
         // AND_A_A;
@@ -4244,7 +4245,7 @@ void Function11cd54(void){
     // AND_A(D_UP);
     const char* de;
     // IF_NZ goto asm_11cd8b;
-    if(hram.hJoypadPressed & D_UP) {
+    if(NativeInputPressed() & D_UP) {
     // asm_11cd8b:
         // LD_A_hl;
         // AND_A_A;
@@ -4260,7 +4261,7 @@ void Function11cd54(void){
     // LD_A_de;
     // AND_A(D_DOWN);
     // IF_NZ goto asm_11cd94;
-    else if(hram.hJoypadPressed & D_DOWN) {
+    else if(NativeInputPressed() & D_DOWN) {
     // asm_11cd94:
         // LD_A_hl;
         // AND_A_A;
@@ -4414,7 +4415,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(START);
     // IF_NZ goto start;
-    if(hram.hJoypadPressed & START) {
+    if(NativeInputPressed() & START) {
     // start:
         // LD_HL(wcd24);
         // SET_hl(0);
@@ -4427,7 +4428,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(SELECT);
     // IF_NZ goto select;
-    else if(hram.hJoypadPressed & SELECT) {
+    else if(NativeInputPressed() & SELECT) {
     // select:
         // LD_A_addr(wcd2b);
         // XOR_A(0x1);
@@ -4440,7 +4441,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(A_BUTTON);
     // IF_NZ goto a;
-    else if(hram.hJoypadPressed & A_BUTTON) {
+    else if(NativeInputPressed() & A_BUTTON) {
     // a:
         // LD_A_addr(wcd22);
         // CP_A(NUM_KANA);
@@ -4510,7 +4511,7 @@ void Function11ce2b(void){
     // LD_A_de;
     // AND_A(B_BUTTON);
     // IF_NZ goto b;
-    else if(hram.hJoypadPressed & B_BUTTON) {
+    else if(NativeInputPressed() & B_BUTTON) {
     b:
         // LD_A(0x4);
         a = EZCHAT_DRAW_CHAT_WORDS;

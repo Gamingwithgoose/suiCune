@@ -18,6 +18,7 @@
 #include "../../data/default_options.h"
 #include "../../data/text/common.h"
 #include "../../util/serialize.h"
+#include "../../util/input.h"
 
 struct BoxAddress {
     uint32_t address;
@@ -570,13 +571,7 @@ void SavingDontTurnOffThePower(void){
 // Prevent joypad interrupts
     // XOR_A_A;
     // LDH_addr_A(hJoypadReleased);
-    hram.hJoypadReleased = 0;
-    // LDH_addr_A(hJoypadPressed);
-    hram.hJoypadPressed = 0;
-    // LDH_addr_A(hJoypadSum);
-    hram.hJoypadSum = 0;
-    // LDH_addr_A(hJoypadDown);
-    hram.hJoypadDown = 0;
+    NativeInputClearFrame();
 // Save the text speed setting to the stack
     // LD_A_addr(wOptions);
     // PUSH_AF;

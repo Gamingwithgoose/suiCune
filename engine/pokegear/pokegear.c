@@ -22,6 +22,7 @@
 #include "../smallflag.h"
 #include "../overworld/landmarks.h"
 #include "../overworld/wildmons.h"
+#include "../../util/input.h"
 #include "../gfx/player_gfx.h"
 #include "../gfx/sprites.h"
 #include "../gfx/mon_icons.h"
@@ -3933,14 +3934,14 @@ void Pokedex_GetArea(uint8_t e, species_t species){
         // LDH_A_addr(hJoypadDown);
         // AND_A(SELECT);
         // IF_NZ goto select;
-        if(hram.hJoypadDown & SELECT) {
+        if(NativeInputHeld() & SELECT) {
         // select:
             // CALL(aPokedex_GetArea_HideNestsShowPlayer);
             Pokedex_GetArea_HideNestsShowPlayer();
         }
         else {
             // CALL(aPokedex_GetArea_LeftRightInput);
-            Pokedex_GetArea_LeftRightInput(hram.hJoypadDown, species);
+            Pokedex_GetArea_LeftRightInput(NativeInputHeld(), species);
             // CALL(aPokedex_GetArea_BlinkNestIcons);
             Pokedex_GetArea_BlinkNestIcons();
             // goto next;
@@ -4384,7 +4385,7 @@ uint8_t EntireFlyMap(void){
         // LD_A_hl;
         // AND_A(A_BUTTON);
         // IF_NZ goto pressedA;
-        else if(hram.hJoypadPressed & A_BUTTON) {
+        else if(NativeInputPressed() & A_BUTTON) {
         // pressedA:
             // LD_A_addr(wTownMapPlayerIconLandmark);
             // LD_L_A;

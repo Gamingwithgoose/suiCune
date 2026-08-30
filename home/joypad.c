@@ -16,6 +16,13 @@ struct AutoInputState {
 
 static struct AutoInputState s_autoInput;
 
+static void SyncLegacyLogicalJoypadMirrors(void) {
+    hram.hJoyReleased = NativeInputLogicalReleased();
+    hram.hJoyPressed = NativeInputLogicalPressed();
+    hram.hJoyDown = NativeInputLogicalHeld();
+    hram.hJoyLast = NativeInputLogicalLast();
+}
+
 void Joypad(void) {
         //  Replaced by UpdateJoypad, called from VBlank instead of the useless
     //  joypad interrupt.
@@ -25,10 +32,29 @@ void Joypad(void) {
 }
 
 void ClearJoypad(void) {
-    //  Pressed this frame (delta)
-    hram.hJoyPressed = 0;
-    //  Currently pressed
-    hram.hJoyDown = 0;
+    NativeInputClearLogicalPressed();
+    NativeInputClearLogicalHeld();
+    SyncLegacyLogicalJoypadMirrors();
+}
+
+void ResetJoypadInput(void) {
+    NativeInputClearLogicalState();
+    SyncLegacyLogicalJoypadMirrors();
+}
+
+void ClearJoypadPressed(void) {
+    NativeInputClearLogicalPressed();
+    SyncLegacyLogicalJoypadMirrors();
+}
+
+void ClearJoypadHeld(void) {
+    NativeInputClearLogicalHeld();
+    SyncLegacyLogicalJoypadMirrors();
+}
+
+void ClearJoypadLast(void) {
+    NativeInputClearLogicalLast();
+    SyncLegacyLogicalJoypadMirrors();
 }
 
 // This is called automatically every frame in VBlank. SDL input arrives as
@@ -51,16 +77,11 @@ void UpdateJoypad(void) {
     if(wram->wGameLogicPaused)
         return;
 
-    uint8_t input = NativeInputHeld();
-
-    // The legacy frame mirrors remain authoritative until their direct
-    // writers/readers migrate together.
-    uint8_t last_frame = hram.hJoypadDown;
-    uint8_t last_changed = last_frame ^ input;
-    hram.hJoypadReleased = last_changed & last_frame;
-    hram.hJoypadPressed = last_changed & input;
-    hram.hJoypadSum |= hram.hJoypadPressed;
-    hram.hJoypadDown = input;
+    NativeInputAdvanceFrame();
+    hram.hJoypadReleased = NativeInputReleased();
+    hram.hJoypadPressed = NativeInputPressed();
+    hram.hJoypadSum = NativeInputPressesSinceClear();
+    hram.hJoypadDown = NativeInputHeld();
 
     //  Now that we have the input, we can do stuff with it.
 
@@ -131,29 +152,27 @@ void GetJoypad(void) {
                     input = NO_INPUT;
                 }
             }
-            hram.hJoyPressed = input;  // pressed
-            hram.hJoyDown = input;     // input
+            NativeInputSetAutoLogicalFrame(input);
         }
         else 
         {
             //  Until then, don't change anything.
             s_autoInput.framesRemaining = --len;
         }
+        SyncLegacyLogicalJoypadMirrors();
         return;
     }
     else 
     {
 
         //  To get deltas, take this and last frame's input.
-        uint8_t real_input = hram.hJoypadDown;  // real input
-        uint8_t last_input = hram.hJoyDown;  // last frame mirror
+        uint8_t real_input = NativeInputHeld();
         //LDH_A_addr(hJoypadDown);  // real input
         //LD_B_A;
         //LDH_A_addr(hJoyDown);  // last frame mirror
         //LD_E_A;
 
         //  Released this frame:
-        hram.hJoyReleased = (real_input ^ last_input) & last_input;
         //XOR_A_B;
         //LD_D_A;
         //AND_A_E;
@@ -163,13 +182,8 @@ void GetJoypad(void) {
         //LD_A_D;
         //AND_A_B;
         //LDH_addr_A(hJoyPressed);
-        hram.hJoyPressed = (real_input ^ last_input) & real_input;
-
-        //  It looks like the collective presses got commented out here.
-        //LD_C_A;
-
-        //  Currently pressed:
-        hram.hJoyDown = real_input;  // frame input
+        NativeInputAdvanceLogicalFrame(real_input);
+        SyncLegacyLogicalJoypadMirrors();
         //LD_A_B;
         //LDH_addr_A(hJoyDown);  // frame input
     }
@@ -188,9 +202,8 @@ void StartAutoInput(const uint8_t* hl) {
     //  Start reading the stream immediately.
     s_autoInput.framesRemaining = 0;
     //  Reset input mirrors.
-    hram.hJoyPressed = 0;   // pressed this frame
-    hram.hJoyReleased = 0;  // released this frame
-    hram.hJoyDown = 0;      // currently pressed
+    NativeInputClearLogicalFrame();
+    SyncLegacyLogicalJoypadMirrors();
 
     s_autoInput.active = true;
 }
@@ -248,7 +261,7 @@ void JoyWaitAorB(void) {
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON | B_BUTTON);
         // RET_NZ;
-        if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) != 0)
+        if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) != 0)
             break;
         
         // CALL(aUpdateTimeAndPals);
@@ -292,18 +305,18 @@ void JoyTextDelay(void) {
     {
         // LDH_A_addr(hJoyDown);
         // LDH_addr_A(hJoyLast);
-        hram.hJoyLast = hram.hJoyDown;
+        NativeInputSetLogicalLast(NativeInputLogicalHeld());
     }
     else 
     {
         // LDH_addr_A(hJoyLast);
-        hram.hJoyLast = hram.hJoyPressed;
+        NativeInputSetLogicalLast(NativeInputLogicalPressed());
     }
 
     // LDH_A_addr(hJoyPressed);
     // AND_A_A;
     // IF_Z goto checkframedelay;
-    if(hram.hJoyPressed == 0)
+    if(NativeInputLogicalPressed() == 0)
     {
 // checkframedelay:
         // LD_A_addr(wTextDelayFrames);
@@ -315,6 +328,7 @@ void JoyTextDelay(void) {
             // LD_A(5);
             // LD_addr_A(wTextDelayFrames);
             wram->wTextDelayFrames = 5;
+            SyncLegacyLogicalJoypadMirrors();
 
             // RET;
             return;
@@ -322,7 +336,8 @@ void JoyTextDelay(void) {
 
         // XOR_A_A;
         // LDH_addr_A(hJoyLast);
-        hram.hJoyLast = 0;
+        NativeInputClearLogicalLast();
+        SyncLegacyLogicalJoypadMirrors();
 
         // RET;
         return;
@@ -331,6 +346,7 @@ void JoyTextDelay(void) {
     // LD_A(15);
     // LD_addr_A(wTextDelayFrames);
     wram->wTextDelayFrames = 15;
+    SyncLegacyLogicalJoypadMirrors();
 
     // RET;
     return;
@@ -373,7 +389,7 @@ void WaitPressAorB_BlinkCursor(void) {
         // LDH_A_addr(hJoyLast);
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_Z goto loop;
-    } while((hram.hJoyLast & (A_BUTTON | B_BUTTON)) == 0);
+    } while((NativeInputLogicalLast() & (A_BUTTON | B_BUTTON)) == 0);
 
     // POP_AF;
     // LDH_addr_A(hObjectStructIndex);
@@ -395,7 +411,7 @@ void SimpleWaitPressAorB(void) {
         DelayFrame();
         // LDH_A_addr(hJoyLast);
         // AND_A(A_BUTTON | B_BUTTON);
-    } while((hram.hJoyLast & (A_BUTTON | B_BUTTON)) == 0);
+    } while((NativeInputLogicalLast() & (A_BUTTON | B_BUTTON)) == 0);
     // IF_Z goto loop;
     // RET;
 }
@@ -450,7 +466,7 @@ static void PromptButton_wait_input(void) {
         // LDH_A_addr(hJoyPressed);
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_NZ goto received_input;
-        if((hram.hJoyPressed & (A_BUTTON | B_BUTTON)) != 0)
+        if((NativeInputLogicalPressed() & (A_BUTTON | B_BUTTON)) != 0)
         {
             // PEEK("received_input");
         // received_input:

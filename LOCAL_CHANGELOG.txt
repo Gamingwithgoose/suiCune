@@ -1097,6 +1097,164 @@ Build/test results
 Build/runtime validation: NOT PERFORMED — per user instruction.
 
 
+Latest handoff marker: 2026-08-30 — native logical input ownership
+---------------------------------------------------------------------
+Logical game input now has a native C owner. All direct C writers of the
+logical HRAM joypad mirrors were removed, and shared menu/text paths consume
+the native API. The current stopping point is the remaining read-only mirror
+consumers outside those shared paths.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Build-feedback correction: 2026-08-30
+--------------------------------------
+- User-provided `build_windows_release.log` showed a `-Werror=parentheses`
+  failure in `home/menu.c` caused by macro expressions used as bit masks after
+  the native input migration.
+- Corrected the required mask parentheses in `home/menu.c` and the matching
+  shared scrolling-menu expression in `engine/menus/scrolling_menu.c`.
+- The failed user build removed tracked `Release/` output assets before
+  stopping. Those deletions are user/build-owned state and were preserved;
+  this session did not restore, remove, or otherwise alter them.
+- Build/runtime validation after this correction: NOT PERFORMED by Codex.
+
+
+Session: 2026-08-30 — Native logical input-frame ownership
+============================================================
+
+Task worked on
+--------------
+- Continued Phase 7 by moving the translated game's logical input frame
+  (held, pressed, released, and menu/text last input) into the native input
+  subsystem.
+
+Files modified
+--------------
+- `util/input.c`, `util/input.h`: added native logical-input state and its
+  explicit frame, scripted-input, and reset operations.
+- `home/joypad.c`, `home/joypad.h`: made native logical state authoritative;
+  the legacy HRAM logical joypad fields are now synchronized output mirrors.
+- `engine/printer/printer.c`, `engine/events/catch_tutorial.c`,
+  `engine/movie/splash.c`, `engine/menus/intro_menu.c`,
+  `engine/pokemon/mail_2.c`, and `engine/menus/options_menu.c`: replaced
+  direct logical-HRAM state mutation with semantic joypad reset operations.
+- `home/menu.c`, `home/scrolling_menu.c`, `home/print_text.c`, `home/text.c`,
+  `engine/menus/scrolling_menu.c`, and `engine/menus/options_menu.c`:
+  migrated their common menu/text input reads to native logical-input APIs.
+- `LOCAL_CHANGELOG.txt`: recorded this conversion.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- Logical game input no longer uses the packed HRAM bytes as authoritative
+  state. `GetJoypad`, scripted tutorial input, and text-delay processing now
+  update native C state; HRAM receives compatibility copies only.
+- All direct C writers of `hJoyReleased`, `hJoyPressed`, `hJoyDown`, and
+  `hJoyLast` outside `home/joypad.c` were removed.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- The four logical HRAM joypad bytes remain output mirrors for unconverted C
+  consumers and any non-C legacy-layout user. Remove them only after every
+  remaining reader is migrated and the packed HRAM layout has no compatibility
+  obligation for these offsets.
+
+Compatibility and save-format implications
+------------------------------------------
+- Physical SDL timing, text/menu repeat behavior, scripted-input duration,
+  and existing input-reset points are retained. No save or external data
+  format changed.
+
+Partially completed work
+------------------------
+- Common menu, scrolling-menu, text, printer, tutorial, splash, intro, mail,
+  and options input paths use native logical state. Other menu, overworld,
+  battle, mobile, link, and debug consumers still read logical HRAM mirrors.
+
+Untouched remaining work
+------------------------
+- Remaining logical-mirror consumers, action remapping UI, native party and
+  save ownership, and subsequent native-conversion roadmap phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after establishing native logical input ownership and migrating the
+  shared text/menu paths plus all direct external logical-mirror writers.
+- Next: migrate the overworld input consumer group (`events.c`, player
+  movement, and text/menu callers reached from it) to native logical APIs,
+  then continue with bounded menu/battle groups.
+
+
+Session: 2026-08-30 — Native input-frame ownership
+====================================================
+
+Task worked on
+--------------
+- Continued Phase 7 by migrating the physical-input frame state and every
+  direct C consumer/writer of the legacy `hJoypad*` physical mirrors.
+
+Files modified
+--------------
+- `util/input.c`, `util/input.h`: added native held/pressed/released and
+  accumulated-press state, frame advancement, reset, and explicit override
+  operations.
+- `home/joypad.c`: makes native input state authoritative for physical frame
+  deltas and writes the HRAM physical joypad bytes as compatibility mirrors.
+- `engine/menus/save.c`: clears native frame state at the existing save-input
+  suppression point.
+- `engine/games/slot_machine.c`: uses native accumulated presses and clears
+  them through the native API between reels.
+- `engine/pokegear/pokegear.c`, `engine/movie/credits.c`, and
+  `mobile/fixed_words.c`: migrated all direct physical held/pressed reads to
+  native APIs; the EZChat override is now explicit native state.
+- `LOCAL_CHANGELOG.txt`: recorded the migration.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- Physical input frame state is now native SDL-derived state, not HRAM state.
+  The remaining `hJoypadDown`, `hJoypadPressed`, `hJoypadReleased`, and
+  `hJoypadSum` fields are output mirrors written only by `UpdateJoypad`.
+- All direct C reads and writes of those four HRAM physical-input fields were
+  removed outside the compatibility-mirror writer.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- The four HRAM fields remain to support unconverted legacy-facing consumers
+  outside C and the packed HRAM model. Remove them when all remaining direct
+  mirror consumers (`hJoyDown`, `hJoyPressed`, `hJoyReleased`, and `hJoyLast`)
+  have been migrated to native input snapshots and HRAM layout is retired.
+
+Compatibility and save-format implications
+------------------------------------------
+- Button bit meanings, input timing, tutorial overrides, save input clearing,
+  and slot-machine press accumulation are preserved. No persistent format
+  changed.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after the physical input owner and its direct C mirror consumers
+  were migrated as one coherent group.
+- Next: migrate the logical menu-input mirrors (`hJoyDown`, `hJoyPressed`,
+  `hJoyReleased`, and `hJoyLast`) in bounded menu/text groups, then retire
+  their HRAM authority.
+
+
 Session: 2026-08-30 — Native SDL input source
 ================================================
 
@@ -2951,5 +3109,29 @@ Latest handoff marker: 2026-08-30
 Native physical SDL input and scripted-input control now have separate native
 owners. Legacy HRAM mirrors remain only as compatibility state for their
 still-unmigrated consumers and writers.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Latest handoff marker: 2026-08-30 — native input-frame ownership
+------------------------------------------------------------------
+Physical input-frame state (held, pressed, released, and accumulated presses)
+now has one native C owner in util/input.c. All live C consumers and writers
+of hJoypadDown, hJoypadPressed, hJoypadReleased, and hJoypadSum have migrated
+to that API; UpdateJoypad is the sole compatibility-mirror writer.
+
+The remaining HRAM fields are output mirrors for legacy-layout compatibility.
+Remove them only after the packed HRAM representation itself is replaced and
+no serialized, offset-validated, or non-C consumer requires those offsets.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Latest handoff marker: 2026-08-30 — native logical input ownership
+---------------------------------------------------------------------
+Logical game input now has a native C owner. All direct C writers of the
+logical HRAM joypad mirrors were removed, and shared menu/text paths consume
+the native API. The current stopping point is the remaining read-only mirror
+consumers outside those shared paths.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

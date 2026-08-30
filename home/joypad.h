@@ -3,6 +3,10 @@
 
 void Joypad(void);
 void ClearJoypad(void);
+void ResetJoypadInput(void);
+void ClearJoypadPressed(void);
+void ClearJoypadHeld(void);
+void ClearJoypadLast(void);
 void UpdateJoypad(void);
 void GetJoypad(void);
 void StartAutoInput(const uint8_t* hl);

@@ -9,6 +9,7 @@
 #include "../../data/credits_script.h"
 #include "../../data/credits_strings.h"
 #include "../../gfx/misc.h"
+#include "../../util/input.h"
 
 // INCLUDE "constants.asm"
 
@@ -169,7 +170,7 @@ bool Credits_HandleAButton(void){
     // LDH_A_addr(hJoypadDown);
     // AND_A(A_BUTTON);
     // RET_Z ;
-    if(hram.hJoypadDown & A_BUTTON) {
+    if(NativeInputHeld() & A_BUTTON) {
         // LD_A_addr(wJumptableIndex);
         // BIT_A(7);
         return bit_test(wram->wJumptableIndex, 7) != 0;
@@ -182,7 +183,7 @@ void Credits_HandleBButton(void){
     // LDH_A_addr(hJoypadDown);
     // AND_A(B_BUTTON);
     // RET_Z ;
-    if((hram.hJoypadDown & B_BUTTON) == 0)
+    if((NativeInputHeld() & B_BUTTON) == 0)
         return;
     // LD_A_addr(wJumptableIndex);
     // BIT_A(6);

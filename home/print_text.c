@@ -1,6 +1,7 @@
 #include "../constants.h"
 #include "print_text.h"
 #include "joypad.h"
+#include "../util/input.h"
 #include "delay.h"
 #include "../engine/math/print_num.h"
 #include "../mobile/mobile_41.h"
@@ -97,12 +98,12 @@ void PrintLetterDelay(void) {
         // LDH_A_addr(hJoyDown);
         // BIT_A(A_BUTTON_F);
         // IF_Z goto checkb;
-        else if(!bit_test(hram.hJoyDown, A_BUTTON_F))
+        else if(!bit_test(NativeInputLogicalHeld(), A_BUTTON_F))
         {
         // checkb:
             // BIT_A(B_BUTTON_F);
             // IF_Z goto wait;
-            if(!bit_test(hram.hJoyDown, B_BUTTON_F))
+            if(!bit_test(NativeInputLogicalHeld(), B_BUTTON_F))
             {
             // wait:
                 // LD_A_addr(wTextDelayFrames);

@@ -3,6 +3,7 @@
 #include "copy.h"
 #include "tilemap.h"
 #include "joypad.h"
+#include "../util/input.h"
 #include "delay.h"
 #include "print_text.h"
 #include "pokedex_flags.h"
@@ -1798,7 +1799,7 @@ void TextCommand_PAUSE_GB(struct TextPrintState* state) {
     // LDH_A_addr(hJoyDown);
     // AND_A(A_BUTTON | B_BUTTON);
     // IF_NZ goto done;
-    if(((hram.hJoyDown) & (A_BUTTON | B_BUTTON)) == 0)
+    if((NativeInputLogicalHeld() & (A_BUTTON | B_BUTTON)) == 0)
     {
         // LD_C(30);
         // CALL(aDelayFrames);
@@ -1822,7 +1823,7 @@ void TextCommand_PAUSE(struct TextCmdState* state, const struct TextCmd* cmd) {
     // LDH_A_addr(hJoyDown);
     // AND_A(A_BUTTON | B_BUTTON);
     // IF_NZ goto done;
-    if(((hram.hJoyDown) & (A_BUTTON | B_BUTTON)) == 0)
+    if((NativeInputLogicalHeld() & (A_BUTTON | B_BUTTON)) == 0)
     {
         // LD_C(30);
         // CALL(aDelayFrames);
@@ -2018,7 +2019,7 @@ void TextCommand_DOTS_GB(struct TextPrintState* state) {
         // LDH_A_addr(hJoyDown);
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_NZ goto next;
-        if(((hram.hJoyDown) & (A_BUTTON | B_BUTTON)) == 0)
+        if((NativeInputLogicalHeld() & (A_BUTTON | B_BUTTON)) == 0)
         {
             // LD_C(10);
             // CALL(aDelayFrames);
@@ -2060,7 +2061,7 @@ void TextCommand_DOTS(struct TextCmdState* state, const struct TextCmd* cmd) {
         // LDH_A_addr(hJoyDown);
         // AND_A(A_BUTTON | B_BUTTON);
         // IF_NZ goto next;
-        if(((hram.hJoyDown) & (A_BUTTON | B_BUTTON)) == 0)
+        if((NativeInputLogicalHeld() & (A_BUTTON | B_BUTTON)) == 0)
         {
             // LD_C(10);
             // CALL(aDelayFrames);

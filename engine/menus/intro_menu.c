@@ -2094,7 +2094,7 @@ void GameInit(void) {
     // LDH_addr_A(hBGMapAddress);
     hram.hBGMapAddress = vBGMap0;
     // LDH_addr_A(hJoyDown);
-    hram.hJoyDown = 0x0;
+    ClearJoypadHeld();
     // LDH_addr_A(hSCX);
     hram.hSCX = 0x0;
     // LDH_addr_A(hSCY);

@@ -60,7 +60,7 @@ bool SplashScreen(void){
     // LDH_addr_A(hBGMapAddress);
     hram.hBGMapAddress = vBGMap0;
     // LDH_addr_A(hJoyDown);
-    hram.hJoyDown = 0;
+    ClearJoypadHeld();
     // LDH_addr_A(hSCX);
     hram.hSCX = 0;
     // LDH_addr_A(hSCY);

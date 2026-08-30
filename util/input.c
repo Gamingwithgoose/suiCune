@@ -38,10 +38,22 @@ const char* game_input_e_strings[] = {
     STRINGIFY(GAME_INPUT_RECORD),
 };
 
-// SDL input is held in native, active-high game-action bits. The legacy HRAM
-// joypad fields remain responsible for frame-delta behavior while their
-// direct consumers are migrated.
-static uint8_t s_nativeInputHeld;
+// SDL input is held in native, active-high game-action bits. Legacy HRAM
+// joypad fields are compatibility mirrors for unmigrated consumers.
+struct NativeInputState {
+    uint8_t held;
+    uint8_t previousHeld;
+    uint8_t pressed;
+    uint8_t released;
+    uint8_t pressesSinceClear;
+    uint8_t logicalHeld;
+    uint8_t logicalPreviousHeld;
+    uint8_t logicalPressed;
+    uint8_t logicalReleased;
+    uint8_t logicalLast;
+};
+
+static struct NativeInputState s_nativeInput;
 
 typedef struct {
     SDL_Scancode key;
@@ -277,9 +289,9 @@ static void handle_input(game_input_e input, bool released) {
         case GAME_INPUT_D_UP: {
             uint8_t bit = game_input_to_joypad_bit(input);
             if(released)
-                s_nativeInputHeld &= (uint8_t)~bit;
+                s_nativeInput.held &= (uint8_t)~bit;
             else
-                s_nativeInputHeld |= bit;
+                s_nativeInput.held |= bit;
         } break;
         case GAME_INPUT_SCREENSHOT: {
             if(released)
@@ -321,5 +333,80 @@ void handle_input_event(const SDL_Event* e) {
 }
 
 uint8_t NativeInputHeld(void) {
-    return s_nativeInputHeld;
+    return s_nativeInput.held;
+}
+
+uint8_t NativeInputPressed(void) { return s_nativeInput.pressed; }
+uint8_t NativeInputReleased(void) { return s_nativeInput.released; }
+uint8_t NativeInputPressesSinceClear(void) { return s_nativeInput.pressesSinceClear; }
+
+void NativeInputAdvanceFrame(void) {
+    uint8_t changed = s_nativeInput.previousHeld ^ s_nativeInput.held;
+    s_nativeInput.released = changed & s_nativeInput.previousHeld;
+    s_nativeInput.pressed = changed & s_nativeInput.held;
+    s_nativeInput.pressesSinceClear |= s_nativeInput.pressed;
+    s_nativeInput.previousHeld = s_nativeInput.held;
+}
+
+void NativeInputClearFrame(void) {
+    s_nativeInput.previousHeld = 0;
+    s_nativeInput.pressed = 0;
+    s_nativeInput.released = 0;
+    s_nativeInput.pressesSinceClear = 0;
+}
+
+void NativeInputClearPressesSinceClear(void) {
+    s_nativeInput.pressesSinceClear = 0;
+}
+
+void NativeInputOverridePressed(uint8_t pressed) {
+    s_nativeInput.pressed = pressed;
+}
+
+uint8_t NativeInputLogicalHeld(void) { return s_nativeInput.logicalHeld; }
+uint8_t NativeInputLogicalPressed(void) { return s_nativeInput.logicalPressed; }
+uint8_t NativeInputLogicalReleased(void) { return s_nativeInput.logicalReleased; }
+uint8_t NativeInputLogicalLast(void) { return s_nativeInput.logicalLast; }
+
+void NativeInputAdvanceLogicalFrame(uint8_t held) {
+    uint8_t changed = s_nativeInput.logicalPreviousHeld ^ held;
+    s_nativeInput.logicalReleased = changed & s_nativeInput.logicalPreviousHeld;
+    s_nativeInput.logicalPressed = changed & held;
+    s_nativeInput.logicalHeld = held;
+    s_nativeInput.logicalPreviousHeld = held;
+}
+
+void NativeInputSetAutoLogicalFrame(uint8_t held) {
+    s_nativeInput.logicalPressed = held;
+    s_nativeInput.logicalHeld = held;
+    s_nativeInput.logicalPreviousHeld = held;
+}
+
+void NativeInputClearLogicalFrame(void) {
+    s_nativeInput.logicalHeld = 0;
+    s_nativeInput.logicalPreviousHeld = 0;
+    s_nativeInput.logicalPressed = 0;
+    s_nativeInput.logicalReleased = 0;
+}
+
+void NativeInputClearLogicalPressed(void) {
+    s_nativeInput.logicalPressed = 0;
+}
+
+void NativeInputClearLogicalHeld(void) {
+    s_nativeInput.logicalHeld = 0;
+    s_nativeInput.logicalPreviousHeld = 0;
+}
+
+void NativeInputClearLogicalLast(void) {
+    s_nativeInput.logicalLast = 0;
+}
+
+void NativeInputClearLogicalState(void) {
+    NativeInputClearLogicalFrame();
+    NativeInputClearLogicalLast();
+}
+
+void NativeInputSetLogicalLast(uint8_t input) {
+    s_nativeInput.logicalLast = input;
 }

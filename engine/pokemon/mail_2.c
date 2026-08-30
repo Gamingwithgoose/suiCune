@@ -224,7 +224,7 @@ void ReadAnyMail(const struct MailMsg* de){
     SetPalettes();
     // XOR_A_A;
     // LDH_addr_A(hJoyPressed);
-    hram.hJoyPressed = 0x0;
+    ClearJoypadPressed();
     // CALL(aReadAnyMail_loop);
     ReadAnyMail_loop();
     // CALL(aClearBGPalettes);

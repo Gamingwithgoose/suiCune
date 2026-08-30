@@ -18,6 +18,7 @@
 #include "../../mobile/mobile_41.h"
 #include "../../data/text/common.h"
 #include "../../util/misc.h"
+#include "../../util/input.h"
 #include "../../charmap.h"
 
 //  wSlotMatched values
@@ -590,7 +591,7 @@ void SlotsAction_WaitStart(void){
     SlotsAction_Next();
     // XOR_A_A;
     // LDH_addr_A(hJoypadSum);
-    hram.hJoypadSum = 0x0;
+    NativeInputClearPressesSinceClear();
     // RET;
 }
 
@@ -599,7 +600,7 @@ void SlotsAction_WaitReel1(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // RET_Z ;
-    if((hram.hJoypadSum & A_BUTTON) == 0)
+    if((NativeInputPressesSinceClear() & A_BUTTON) == 0)
         return;
     // CALL(aSlotsAction_Next);
     SlotsAction_Next();
@@ -626,7 +627,7 @@ void SlotsAction_WaitStopReel1(void){
     SlotsAction_Next();
     // XOR_A_A;
     // LDH_addr_A(hJoypadSum);
-    hram.hJoypadSum = 0x0;
+    NativeInputClearPressesSinceClear();
     return SlotsAction_WaitReel2();
 }
 
@@ -635,7 +636,7 @@ void SlotsAction_WaitReel2(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // RET_Z ;
-    if((hram.hJoypadSum & A_BUTTON) == 0)
+    if((NativeInputPressesSinceClear() & A_BUTTON) == 0)
         return;
     // CALL(aSlotsAction_Next);
     SlotsAction_Next();
@@ -662,7 +663,7 @@ void SlotsAction_WaitStopReel2(void){
     SlotsAction_Next();
     // XOR_A_A;
     // LDH_addr_A(hJoypadSum);
-    hram.hJoypadSum = 0x0;
+    NativeInputClearPressesSinceClear();
     return SlotsAction_WaitReel3();
 }
 
@@ -671,7 +672,7 @@ void SlotsAction_WaitReel3(void){
     // LD_A_hl;
     // AND_A(A_BUTTON);
     // RET_Z ;
-    if((hram.hJoypadSum & A_BUTTON) == 0)
+    if((NativeInputPressesSinceClear() & A_BUTTON) == 0)
         return;
     // CALL(aSlotsAction_Next);
     SlotsAction_Next();
@@ -698,7 +699,7 @@ void SlotsAction_WaitStopReel3(void){
     SlotsAction_Next();
     // XOR_A_A;
     // LDH_addr_A(hJoypadSum);
-    hram.hJoypadSum = 0x0;
+    NativeInputClearPressesSinceClear();
     // RET;
 }
 

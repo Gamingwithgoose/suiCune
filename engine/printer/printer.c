@@ -730,13 +730,7 @@ void Printer_CopyBufferToTilemap(void){
 void Printer_ResetJoypadRegisters(void){
     // XOR_A_A;
     // LDH_addr_A(hJoyReleased);
-    hram.hJoyReleased = 0;
-    // LDH_addr_A(hJoyPressed);
-    hram.hJoyPressed = 0;
-    // LDH_addr_A(hJoyDown);
-    hram.hJoyDown = 0;
-    // LDH_addr_A(hJoyLast);
-    hram.hJoyLast = 0;
+    ResetJoypadInput();
     // RET;
 }
 

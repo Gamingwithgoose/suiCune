@@ -4,6 +4,7 @@
 #include "../../home/menu.h"
 #include "../../home/text.h"
 #include "../../home/delay.h"
+#include "../../util/input.h"
 #include "../../charmap.h"
 
 static void ScrollingMenu_InitDisplay(const struct MenuData* data);
@@ -135,11 +136,11 @@ static u8_flag_s ScrollingMenuJoyAction(const struct MenuData* data){
         // LDH_A_addr(hJoyLast);
         // AND_A(D_PAD);
         // LD_B_A;
-        uint8_t pad_last = hram.hJoyLast & (D_PAD);
+        uint8_t pad_last = NativeInputLogicalLast() & (D_PAD);
         // LDH_A_addr(hJoyPressed);
         // AND_A(BUTTONS);
         // OR_A_B;
-        uint8_t input = (hram.hJoyPressed & (BUTTONS)) | pad_last;
+        uint8_t input = (NativeInputLogicalPressed() & (BUTTONS)) | pad_last;
         // BIT_A(A_BUTTON_F);
         // JP_NZ (mScrollingMenuJoyAction_a_button);
         if(bit_test(input, A_BUTTON_F)) {

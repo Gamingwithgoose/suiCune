@@ -6,6 +6,7 @@
 #include "tilemap.h"
 #include "time_palettes.h"
 #include "text.h"
+#include "../util/input.h"
 #include "../engine/menus/scrolling_menu.h"
 
 static void ScrollingMenu_UpdatePalettes(void){
@@ -88,5 +89,6 @@ uint8_t JoyTextDelay_ForcehJoyDown(void){
     // OR_A_C;
     // LD_C_A;
     // RET;
-    return (hram.hJoyLast & (D_RIGHT + D_LEFT + D_UP + D_DOWN)) | (hram.hJoyPressed & (A_BUTTON + B_BUTTON + SELECT + START));
+    return (NativeInputLogicalLast() & (D_RIGHT + D_LEFT + D_UP + D_DOWN))
+        | (NativeInputLogicalPressed() & (A_BUTTON + B_BUTTON + SELECT + START));
 }
