@@ -3411,7 +3411,7 @@ void get_input(void) {
             } break;
 #endif
         }
-        handle_input_event(&event, &gb.direct.joypad);
+        handle_input_event(&event);
     }
 }
 

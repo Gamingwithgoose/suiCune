@@ -2309,8 +2309,11 @@ struct PlayerData {
 
 struct PokemonData {
     uint8_t partyCount;
-    LegacySpeciesId partySpecies[PARTY_LENGTH];
-    uint8_t partyEnd; // unused
+    // Crystal party-list representation retained for save/link/mobile
+    // compatibility. It also carries EGG as the legacy hatch-state marker
+    // while the packed party record retains the concealed species.
+    LegacySpeciesId legacyPartySpecies[PARTY_LENGTH];
+    uint8_t partyEnd; // Crystal terminator when all PARTY_LENGTH entries are active
     // older code doesn't check wPartyCount
     // wPartyMon1 - wPartyMon6
     //union wPartyMons

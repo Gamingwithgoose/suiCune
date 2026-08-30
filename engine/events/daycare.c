@@ -663,9 +663,9 @@ bool DayCare_GiveEgg(void){
 
     uint8_t c = gPokemon.partyCount;
     gPokemon.partyCount++;
-    gPokemon.partySpecies[c] = EGG;
+    gPokemon.legacyPartySpecies[c] = EGG;
     if(c + 1 < PARTY_LENGTH)
-        gPokemon.partySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
+        gPokemon.legacyPartySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
     else
         gPokemon.partyEnd = LEGACY_SPECIES_LIST_END;
 

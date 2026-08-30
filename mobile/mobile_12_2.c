@@ -691,7 +691,7 @@ u8_flag_s Function4ab1a(void){
         // ADD_HL_BC;
         // LD_A_hl;
         // LD_addr_A(wCurPartySpecies);
-        wram->wCurPartySpecies = gPokemon.partySpecies[wram->wCurPartyMon];
+        wram->wCurPartySpecies = gPokemon.legacyPartySpecies[wram->wCurPartyMon];
         // LD_DE(SFX_READ_TEXT_2);
         // CALL(aPlaySFX);
         PlaySFX(SFX_READ_TEXT_2);

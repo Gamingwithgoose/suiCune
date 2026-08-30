@@ -166,7 +166,7 @@ uint8_t* Utf8ToCrystal(const char* src)
         src++;
     nextchar:;
     }
-    if(i >= sizeof(lCrystalTextConvBuffer) - 1) {
+    if(*src != '\0') {
         log_warn("Truncated string of size %zu+ to size %zu.\n", i, sizeof(lCrystalTextConvBuffer) - 1);
     }
     lCrystalTextConvBuffer[i] = CHAR_TERM;
@@ -177,6 +177,10 @@ uint8_t* Utf8ToCrystal(const char* src)
 // Returns address to passed buffer containing encoded string.
 uint8_t* Utf8ToCrystalBuffer(uint8_t* dest, size_t dest_size, const char* src)
 {
+    if(dest_size == 0) {
+        log_err("Cannot convert UTF-8 text into a zero-length Crystal buffer.\n");
+        return dest;
+    }
     size_t i = 0;
     while(i < dest_size - 1 && *src)
     {
@@ -211,7 +215,7 @@ uint8_t* Utf8ToCrystalBuffer(uint8_t* dest, size_t dest_size, const char* src)
         src++;
     nextchar:;
     }
-    if(i - 1 >= dest_size) {
+    if(*src != '\0') {
         log_warn("Truncated string of size %zu+ to size %zu.\n", i, dest_size);
     }
     dest[i] = CHAR_TERM;

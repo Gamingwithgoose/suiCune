@@ -494,7 +494,7 @@ MasterLoop:
         // POP_HL;
         // LD_A_addr(wTempMonSpecies);
         // LD_hl_A;
-        gPokemon.partySpecies[wram->wCurPartyMon] = wram->wTempMon.mon.species;
+        gPokemon.legacyPartySpecies[wram->wCurPartyMon] = wram->wTempMon.mon.species;
         // PUSH_HL;
         // LD_L_E;
         // LD_H_D;

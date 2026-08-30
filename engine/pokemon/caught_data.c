@@ -139,12 +139,12 @@ void CheckPartyFullAfterContest(void){
     // ADD_HL_BC;
     // LD_A_addr(wContestMonSpecies);
     // LD_hli_A;
-    gPokemon.partySpecies[i] = legacyContest.mon.species;
+    gPokemon.legacyPartySpecies[i] = legacyContest.mon.species;
     // LD_addr_A(wCurSpecies);
     wram->wCurSpecies = legacyContest.mon.species;
     // LD_A(-1);
     // LD_hl_A;
-    gPokemon.partySpecies[i+1] = (species_t)-1;
+    gPokemon.legacyPartySpecies[i+1] = (species_t)-1;
     // LD_HL(wPartyMon1Species);
     // LD_A_addr(wPartyCount);
     // DEC_A;

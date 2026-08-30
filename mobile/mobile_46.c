@@ -6507,7 +6507,7 @@ bool BattleTower_UbersCheck(void){
     struct PartyMon* hl = gPokemon.partyMon;
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // LD_DE(wPartySpecies);
-    species_t* de = gPokemon.partySpecies;
+    species_t* de = gPokemon.legacyPartySpecies;
     // LD_A_addr(wPartyCount);
     uint8_t a = gPokemon.partyCount;
 
@@ -11688,7 +11688,7 @@ void AddMobileMonToParty(const species_t* species, const struct PartyMon* mobile
     // LD_H_A;
     // INC_HL;
     // LD_BC(wPartySpecies);
-    species_t* bc = gPokemon.partySpecies + e;
+    species_t* bc = gPokemon.legacyPartySpecies + e;
     // LD_D_E;
 
 // loop1:

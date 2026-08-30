@@ -631,7 +631,7 @@ const struct SerialField Struc_PlayerData[] = {
 #define FLD_TYPE struct PokemonData
 const struct SerialField Struc_PokemonData[] = {
     FLD(TY_U8, partyCount),
-    FLD_ARR_(TY_LEGACY_SPECIES, partySpecies),
+    FLD_ARR_(TY_LEGACY_SPECIES, legacyPartySpecies),
     FLD(TY_U8, partyEnd), // unused
     // older code doesn't check wPartyCount
     // wPartyMon1 - wPartyMon6

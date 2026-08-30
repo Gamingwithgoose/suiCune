@@ -1097,6 +1097,153 @@ Build/test results
 Build/runtime validation: NOT PERFORMED — per user instruction.
 
 
+Session: 2026-08-30 — Native SDL input source
+================================================
+
+Task worked on
+--------------
+- Audited whether assembly is part of the Windows executable and migrated the
+  active SDL input path off the emulator's joypad register.
+
+Files modified
+--------------
+- `util/input.c`, `util/input.h`: made SDL event handling own an active-high
+  native action-state byte and exposed it through `NativeInputHeld`.
+- `home/joypad.c`: changed `UpdateJoypad` to read that native state instead of
+  selecting and reading Game Boy `rJOYP` hardware.
+- `tools/emu/peanut_sdl.c`: stopped routing SDL events through
+  `gb.direct.joypad`.
+- `constants/types.h`: corrected the `legacyPartySpecies` comment to document
+  its real `EGG` hatch-marker meaning; no layout or behavior changed.
+- `LOCAL_CHANGELOG.txt`: recorded this source-level audit and migration.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- The executable's Makefile and CMake source lists compile C sources only;
+  neither invokes an assembler nor lists `.asm` inputs. The repository's ASM
+  files are reference/source-material files, so their file-count percentage is
+  not a measure of live executable implementation.
+- SDL input is now native runtime state. The gameplay input update no longer
+  depends on emulated JOYP selection, active-low conversion, or repeated
+  hardware-register reads.
+
+Legacy/transitional state and removal condition
+------------------------------------------------
+- `UpdateJoypad` still copies native input into HRAM-compatible pressed/down
+  mirrors because current menus, battle, text, and overworld consumers read
+  those fields directly. Remove those mirrors only after all such consumers
+  use a native input snapshot/API; they are now outputs, not the input source.
+- The emulator's `gb.direct.joypad` storage remains for emulator internals but
+  is no longer fed by SDL events or read by the game input path. Remove it
+  when the remaining emulator JOYP register implementation has no users.
+
+Compatibility and save-format implications
+------------------------------------------
+- Action bit positions and key/controller mappings are unchanged. No save,
+  link, input configuration, or party layout changed.
+
+Partially completed work
+------------------------
+- Phase 7 native input has begun: physical input acquisition is native, but
+  gameplay consumers still use legacy mirror bytes.
+- Player-party conversion remains unstarted. `legacyPartySpecies` cannot be
+  derived from packed party species because it stores the `EGG` hatch marker.
+
+Untouched remaining work
+------------------------
+- Native input snapshots/actions at game consumers, input remapping UI, native
+  party ownership with explicit egg state, native saves, and later roadmap
+  phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after replacing the live emulated JOYP input route with native SDL
+  action state and retaining behavior-compatible mirrors.
+- Next: migrate a bounded group of direct HRAM input consumers to a native
+  snapshot API, then remove their mirror dependency. Continue choosing work by
+  live runtime dependency rather than raw reference-ASM file counts.
+
+
+Correction: 2026-08-30 — Party-species cache semantics
+========================================================
+
+This correction supersedes the immediately preceding "Party-species
+compatibility-cache demotion" completion claims.
+
+During source inspection, `Script_giveegg(TOGEPI, ...)` and `GiveEgg` showed
+that Crystal intentionally stores the concealed species in the packed party
+record while placing `EGG` in the party-species list as the hatch-state marker.
+The list therefore is not yet a purely redundant cache. Rebuilding it from the
+packed record would silently erase that marker and regress egg behavior/save
+compatibility.
+
+Completed work
+--------------
+- Retained the explicit field rename to `legacyPartySpecies` in all C users,
+  clarifying that it is a legacy compatibility representation rather than a
+  general native content-ID container.
+- Preserved every existing party mutation, link, Mobile Adapter, Time Capsule,
+  Bug Contest, reset, and serializer behavior after the inspection found the
+  egg-state dependency.
+- The earlier false UTF-8 diagnostic correction in `util/util_string.c`
+  remains completed and is unrelated to party ownership.
+
+Partially completed work
+------------------------
+- The field rename documents the real migration boundary, but it does not
+  remove the legacy list or convert player-party ownership. No cache-derived
+  serializer, synchronization helper, native sidecar, or party layout change
+  remains in the source.
+
+Investigated but not implemented
+--------------------------------
+- A native party migration must represent egg/hatch state explicitly (for
+  example, a semantic egg field in a native Pokemon record) before it can
+  remove `legacyPartySpecies`. Inferring egg state from the current packed
+  species field is incorrect.
+- The preceding attempted cache-derivation edit was fully removed in this
+  session before handoff; it must not be treated as completed work.
+
+Compatibility and save-format implications
+------------------------------------------
+- None beyond the C field rename. Crystal save, link, Mobile Adapter, Time
+  Capsule, and egg marker bytes retain their existing behavior.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped with `legacyPartySpecies` explicitly named, but still behaviorally
+  required by the packed-party compatibility model.
+- Next recommended Phase 1 task: design an ownership-complete native party
+  record that includes a first-class egg/hatch-state field, then migrate party
+  creation, hatching, serialization, and legacy link/mobile projections
+  together. Do not derive the legacy party list from the packed species field.
+- The original long-term conversion request remains partially complete.
+
+
+Latest handoff marker: 2026-08-30
+---------------------------------
+The latest source inspection preserved the legacy egg marker and corrected the
+party-cache handoff record. Native player-party ownership remains unfinished.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
 Session: 2026-08-29 — Windows Release build script
 ===================================================
 
@@ -2456,5 +2603,272 @@ Latest handoff marker: 2026-08-30
 The full 2026-08-30 "Native current-item action state" section above is the
 latest session record. Current item selection is native ItemId state in live C
 runtime paths; legacy byte record boundaries remain explicitly checked.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Session: 2026-08-30 — UTF-8 conversion diagnostic correction
+==============================================================
+
+Task worked on
+--------------
+- Investigated the non-fatal repeated `Utf8ToCrystalBuffer` truncation warnings
+  reported during battle stat-lowering text.
+- Audited the next recommended native player-party migration slice enough to
+  confirm that the packed party record remains used by 369 direct C references;
+  no partial parallel party owner was introduced.
+
+Files modified
+--------------
+- `util/util_string.c`: corrected the UTF-8-to-Crystal buffer truncation test to
+  warn only when unconverted source text remains, and made the shared
+  zero-length destination case fail explicitly without writing past the buffer.
+- `LOCAL_CHANGELOG.txt`: recorded this diagnostic correction and the exact
+  player-party migration stopping point.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed work
+--------------
+- `Utf8ToCrystalBuffer` no longer underflows its warning expression when an
+  empty string is converted. The previous `i - 1` check falsely reported a
+  truncation with a size of `0+` even though no source text was lost.
+- `Utf8ToCrystal` now uses the same source-remainder rule, so it also avoids
+  warning when text exactly fills its destination capacity.
+- A zero-sized caller buffer is diagnosed and returned without a destination
+  write; valid existing callers retain their normal terminator behavior.
+
+Architectural changes made
+--------------------------
+- None. This is a shared string-conversion correctness repair, not a native
+  data-model migration.
+
+Investigated but not implemented
+--------------------------------
+- The authoritative player party is still packed `PartyMon` storage in
+  `PokemonData`; `NativePartyMon` and explicit conversion functions already
+  exist, but the live party has 369 direct C consumers spanning battle, party
+  menu, link, save, mail, breeding, and field systems.
+- Replacing only the storage declaration would leave endian-sensitive HP/stat
+  code, pointer consumers, and packed link/save boundaries incoherent. No
+  duplicate sidecar or partial ownership change was made.
+
+Compatibility and save-format implications
+------------------------------------------
+- None. No save, party, box, or serialization data changed.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Suspected source-level risks / unresolved validation
+----------------------------------------------------
+- The reported battle warnings should be gone when their source text fits the
+  destination, but runtime validation remains user-owned.
+- Actual truncations still emit warnings intentionally.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after correcting the reported false diagnostic and documenting the
+  required player-party dependency scope.
+- Next recommended Phase 1 task: migrate the authoritative player party as one
+  ownership-complete slice. Convert `PokemonData.partyMon` and its party-species
+  metadata together to native records, then migrate battle staging, party UI,
+  creation/movement, held items/mail, link projections, and explicit save
+  serialization before deleting packed player-party ownership.
+- The original long-term conversion request remains partially complete.
+
+
+Latest handoff marker: 2026-08-30
+---------------------------------
+The latest session corrected the false UTF-8 truncation diagnostics and left
+the native player-party migration intentionally unstarted pending an
+ownership-complete implementation plan.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Session: 2026-08-30 — Party-species compatibility-cache demotion
+==================================================================
+
+Task worked on
+--------------
+- Continued the Phase 1 player-party preparation rather than starting an
+  incomplete parallel `NativePartyMon` owner.
+- Moved the remaining normal player-party mutation paths to derive Crystal's
+  redundant party-species list from the party records, and made save output do
+  the same at its explicit legacy boundary.
+
+Files modified
+--------------
+- `constants/types.h`: renamed `partySpecies` to `legacyPartySpecies` and
+  documented it as a Crystal save/link/mobile compatibility cache; clarified
+  the role of `partyEnd`.
+- `home/pokemon.c`, `home/pokemon.h`: added
+  `RefreshLegacyPartySpeciesCache`, which rebuilds the legacy list from active
+  `partyMon[i].mon.species` records and validates the party count.
+- `util/serialize.c`: rebuilds the legacy party-species cache in a local save
+  projection before serializing `PokemonData`, rejects an invalid party count,
+  and does not mutate live state during save output.
+- `engine/pokemon/move_mon.c`, `engine/pokemon/move_mon_wo_mail.c`,
+  `engine/pokemon/switchpartymons.c`, `engine/pokemon/evolve.c`,
+  `engine/pokemon/caught_data.c`, `engine/pokemon/breeding.c`, and
+  `engine/events/daycare.c`: removed independent normal-gameplay cache writes
+  from party creation, insertion, withdrawal, removal, switching, evolution,
+  contest capture, hatching, and Day-Care paths; they refresh the cache only
+  after the authoritative party record mutation is complete.
+- `engine/menus/debugmenu.c`: derives the debug trade-test legacy list from its
+  seeded party record.
+- `engine/menus/intro_menu.c`, `engine/events/bug_contest/contest_2.c`,
+  `engine/link/link.c`, `engine/link/time_capsule.c`, `mobile/mobile_12_2.c`,
+  `mobile/mobile_40.c`, and `mobile/mobile_46.c`: mechanically renamed the
+  remaining explicit compatibility-cache users. Their legacy behavior was not
+  otherwise changed.
+- `LOCAL_CHANGELOG.txt`: recorded this party-cache ownership change.
+
+Files created
+-------------
+- None.
+
+Files deleted
+-------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- `partyMon[i].mon.species` remains the sole normal C gameplay owner of each
+  player's species. `legacyPartySpecies` is now named and treated as a derived
+  Crystal-format cache, not a general-purpose gameplay list.
+- Player-party mutation paths no longer independently shift, write, or choose
+  the cached species list. They mutate party records first, then rebuild the
+  legacy view once.
+- Save serialization constructs its legacy species list from the authoritative
+  party records in a temporary projection. A stale runtime cache therefore
+  cannot become persistent save authority.
+
+Obsolete Game Boy/emulation dependency removed
+-----------------------------------------------
+- The normal creation/removal/swap/evolution/egg/Day-Care/contest mutation
+  paths no longer depend on Crystal's byte species-list mutation algorithm.
+- Crystal's terminator-based list remains only where actual legacy save, link,
+  Time Capsule, Mobile Adapter, reset, or Bug Contest compatibility behavior
+  still requires the byte view.
+
+Temporary migration code and exact removal condition
+------------------------------------------------------
+- `legacyPartySpecies`, `partyEnd`, and `RefreshLegacyPartySpeciesCache` are
+  transitional compatibility code. Remove them when player-party ownership is
+  native and the save/link/mobile/Time Capsule/contest boundaries construct
+  explicit legacy payloads directly from native party records.
+- The Bug Contest uses the cache temporarily to mask player-party membership.
+  It remains unchanged because its exact compatibility behavior has not yet
+  been replaced by a native contest-party state model.
+- Packed `PartyMon` remains authoritative. This session did not add a native
+  sidecar, duplicate owner, or fallback path.
+
+Compatibility and save-format implications
+------------------------------------------
+- Existing Crystal-format party serialization remains byte-compatible for
+  valid data: it writes the active species and terminator derived from the same
+  packed party records that gameplay owns.
+- No save version, save size, link packet, Mobile Adapter format, or party
+  record layout changed.
+- If a corrupted runtime party count exceeds `PARTY_LENGTH`, cache refresh logs
+  an error and save serialization rejects the data rather than writing an
+  invalid legacy image.
+
+Partially completed work
+------------------------
+- Player species ownership is consolidated at the packed party record level,
+  but `PartyMon` itself still uses legacy byte species/item/move fields and
+  Crystal-endian stat fields.
+- Link, Time Capsule, Mobile Adapter, reset, and Bug Contest still read the
+  explicit legacy cache as compatibility consumers. They are not native
+  player-party implementations.
+
+Untouched remaining work
+------------------------
+- Full native `NativePartyMon` ownership, semantic party IDs, native stats/HP,
+  menu/battle migration, held-item/mail migration, and native party save
+  serialization.
+- Native opponent/battle record ownership, versioned native saves, and all
+  later roadmap phases remain unfinished.
+
+Build and test commands executed
+--------------------------------
+- None.
+
+Build/runtime validation
+------------------------
+- NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped with the legacy party-species list no longer independently mutated
+  by normal player-party operations and save output deriving it from party
+  records.
+- Next recommended Phase 1 task: convert the authoritative player party from
+  packed `PartyMon` to `NativePartyMon` in one ownership-complete slice,
+  beginning with party creation/removal/switching and save serialization, then
+  migrating battle/menu/link projections as explicit boundaries.
+- The original long-term conversion request remains partially complete.
+
+
+Latest handoff marker: 2026-08-30
+---------------------------------
+The preceding party-species cache-demotion record was superseded by the final
+egg-state inspection below; it is retained only as an audit trail of a reverted
+edit, not as completed conversion work.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Final correction: 2026-08-30 — Legacy party-species semantics preserved
+==========================================================================
+
+Completed work
+--------------
+- Renamed the packed Crystal list field to `legacyPartySpecies` throughout C
+  source and serialization metadata. The rename does not alter its layout,
+  save bytes, or behavior.
+- Corrected the reported false UTF-8 truncation diagnostics in
+  `util/util_string.c`.
+
+Investigated and deliberately not implemented
+----------------------------------------------
+- An attempted derivation of `legacyPartySpecies` from `partyMon` records was
+  fully reverted after source inspection established that `giveegg` stores the
+  concealed species in the party record but writes `EGG` into the list as the
+  hatch-state marker. Treating the list as redundant would regress egg state.
+- No native party sidecar, synchronization helper, serializer projection, or
+  packed-party layout change remains in the working tree.
+
+Current stopping point and next recommended task
+-------------------------------------------------
+- The legacy list is now explicitly named but remains behaviorally required.
+- Before converting player-party ownership, add a first-class native egg/hatch
+  state to the native party model and migrate creation, hatching, save, and
+  legacy link/mobile projections together. Do not derive egg state from the
+  existing packed species field.
+
+Build/runtime validation: NOT PERFORMED — per user instruction.
+
+
+Latest handoff marker: 2026-08-30
+---------------------------------
+The current source-level stopping point is the native SDL input migration.
+Assembly source files are not compiled into this executable; future progress
+will be measured by removal of live Game Boy runtime dependencies, beginning
+with the remaining HRAM input-mirror consumers.
 
 Build/runtime validation: NOT PERFORMED — per user instruction.

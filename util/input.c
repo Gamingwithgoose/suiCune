@@ -38,20 +38,10 @@ const char* game_input_e_strings[] = {
     STRINGIFY(GAME_INPUT_RECORD),
 };
 
-typedef union {
-    struct
-    {
-        uint8_t a : 1;
-        uint8_t b : 1;
-        uint8_t select : 1;
-        uint8_t start : 1;
-        uint8_t right : 1;
-        uint8_t left : 1;
-        uint8_t up : 1;
-        uint8_t down : 1;
-    } joypad_bits;
-    uint8_t joypad;
-} joypad_bits_t;
+// SDL input is held in native, active-high game-action bits.  The legacy
+// hram joypad mirrors are written later by UpdateJoypad for existing game
+// consumers while they are migrated away from that byte layout.
+static uint8_t s_nativeInputHeld;
 
 typedef struct {
     SDL_Scancode key;
@@ -258,50 +248,78 @@ void init_input_mapping(void) {
     add_controller_button_binding(SDL_CONTROLLER_BUTTON_DPAD_RIGHT, GAME_INPUT_D_RIGHT);
 }
 
-void handle_input(game_input_e input, bool up, joypad_bits_t* jp) {
+static uint8_t game_input_to_joypad_bit(game_input_e input) {
     switch(input) {
-        case GAME_INPUT_A:      jp->joypad_bits.a = up; break;
-        case GAME_INPUT_B:      jp->joypad_bits.b = up; break;
-        case GAME_INPUT_START:  jp->joypad_bits.start = up; break;
-        case GAME_INPUT_SELECT: jp->joypad_bits.select = up; break;
-        case GAME_INPUT_D_DOWN: jp->joypad_bits.down = up; break;
-        case GAME_INPUT_D_LEFT: jp->joypad_bits.left = up; break;
-        case GAME_INPUT_D_RIGHT: jp->joypad_bits.right = up; break;
-        case GAME_INPUT_D_UP:   jp->joypad_bits.up = up; break;
+        case GAME_INPUT_A:      return (uint8_t)(1u << A_BUTTON_F);
+        case GAME_INPUT_B:      return (uint8_t)(1u << B_BUTTON_F);
+        case GAME_INPUT_START:  return (uint8_t)(1u << START_F);
+        case GAME_INPUT_SELECT: return (uint8_t)(1u << SELECT_F);
+        case GAME_INPUT_D_UP:   return (uint8_t)(1u << D_UP_F);
+        case GAME_INPUT_D_DOWN: return (uint8_t)(1u << D_DOWN_F);
+        case GAME_INPUT_D_LEFT: return (uint8_t)(1u << D_LEFT_F);
+        case GAME_INPUT_D_RIGHT: return (uint8_t)(1u << D_RIGHT_F);
+        case GAME_INPUT_SCREENSHOT:
+        case GAME_INPUT_RECORD:
+            return 0;
+    }
+    return 0;
+}
+
+static void handle_input(game_input_e input, bool released) {
+    switch(input) {
+        case GAME_INPUT_A:
+        case GAME_INPUT_B:
+        case GAME_INPUT_START:
+        case GAME_INPUT_SELECT:
+        case GAME_INPUT_D_DOWN:
+        case GAME_INPUT_D_LEFT:
+        case GAME_INPUT_D_RIGHT:
+        case GAME_INPUT_D_UP: {
+            uint8_t bit = game_input_to_joypad_bit(input);
+            if(released)
+                s_nativeInputHeld &= (uint8_t)~bit;
+            else
+                s_nativeInputHeld |= bit;
+        } break;
         case GAME_INPUT_SCREENSHOT: {
-            if(up)
+            if(released)
                 return;
             TakeScreenshot(NULL);
         } return;
         case GAME_INPUT_RECORD:
-            if(!up) StartRecording(NULL, NULL);
+            if(!released)
+                StartRecording(NULL, NULL);
+            break;
     }
 }
 
-void handle_input_key(const SDL_KeyboardEvent* e, joypad_bits_t* jp) {
+static void handle_input_key(const SDL_KeyboardEvent* e) {
     key_input* k = input_get_key(e->keysym.scancode);
     if(!k)
         return;
-    bool up = e->state == SDL_RELEASED ? true : false;
-    return handle_input(k->game_input, up, jp);
+    handle_input(k->game_input, e->state == SDL_RELEASED);
 }
 
-void handle_input_button(const SDL_ControllerButtonEvent* e, joypad_bits_t* jp) {
+static void handle_input_button(const SDL_ControllerButtonEvent* e) {
     button_input* b = input_get_controller_button(e->button);
     if(!b)
         return;
-    bool up = e->state == SDL_RELEASED ? true : false;
-    return handle_input(b->game_input, up, jp);
+    handle_input(b->game_input, e->state == SDL_RELEASED);
 }
 
-void handle_input_event(const SDL_Event* e, uint8_t* jp) {
+void handle_input_event(const SDL_Event* e) {
     switch(e->type) {
         case SDL_KEYUP:
         case SDL_KEYDOWN:
-            return handle_input_key(&e->key, (joypad_bits_t*)jp);
+            handle_input_key(&e->key);
+            break;
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:
-            return handle_input_button(&e->cbutton, (joypad_bits_t*)jp);
+            handle_input_button(&e->cbutton);
+            break;
     }
 }
 
+uint8_t NativeInputHeld(void) {
+    return s_nativeInputHeld;
+}

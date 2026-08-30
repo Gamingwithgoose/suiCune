@@ -73,7 +73,7 @@ void InsertPokemonIntoBox(void){
 void InsertPokemonIntoParty(void){
     // LD_HL(wPartyCount);
     // CALL(aInsertSpeciesIntoBoxOrParty);
-    InsertSpeciesIntoBoxOrParty(&gPokemon.partyCount, gPokemon.partySpecies);
+    InsertSpeciesIntoBoxOrParty(&gPokemon.partyCount, gPokemon.legacyPartySpecies);
     // LD_A_addr(wPartyCount);
     // DEC_A;
     // LD_addr_A(wNextBoxOrPartyIndex);

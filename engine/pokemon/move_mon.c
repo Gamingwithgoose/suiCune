@@ -53,7 +53,7 @@ bool TryAddMonToParty(SpeciesId species, uint8_t level){
     // LD_DE(wOTPartyCount);
     struct PartyMon* de = (wram->wMonType & 0xf)? wram->wOTPartyMon: gPokemon.partyMon;
     uint8_t* partyCount = (wram->wMonType & 0xf)? &wram->wOTPartyCount: &gPokemon.partyCount;
-    species_t* partySpecies = (wram->wMonType & 0xf)? wram->wOTPartySpecies: gPokemon.partySpecies;
+    species_t* partySpecies = (wram->wMonType & 0xf)? wram->wOTPartySpecies: gPokemon.legacyPartySpecies;
 
 // getpartylocation:
 // Do we have room for it?
@@ -586,9 +586,9 @@ bool AddTempmonToParty(void){
     // ADD_HL_BC;
     // LD_A_addr(wCurPartySpecies);
     // LD_hli_A;
-    gPokemon.partySpecies[c-1] = wram->wCurPartySpecies;
+    gPokemon.legacyPartySpecies[c-1] = wram->wCurPartySpecies;
     // LD_hl(0xff);
-    gPokemon.partySpecies[c] = (species_t)-1;
+    gPokemon.legacyPartySpecies[c] = (species_t)-1;
 
     // LD_HL(wPartyMon1Species);
     // LD_A_addr(wPartyCount);
@@ -717,7 +717,7 @@ bool SendGetMonIntoFromBox(uint8_t param){
     // check_IfPartyIsFull:
         // LD_HL(wPartyCount);
         count = &gPokemon.partyCount;
-        legacySpecies = gPokemon.partySpecies;
+        legacySpecies = gPokemon.legacyPartySpecies;
         // LD_A_hl;
         // CP_A(PARTY_LENGTH);
         // JP_Z (mCloseSRAM_And_SetCarryFlag);
@@ -1131,9 +1131,9 @@ bool RetrieveBreedmon(void){
 
     uint8_t c = gPokemon.partyCount;
     gPokemon.partyCount++;
-    gPokemon.partySpecies[c] = legacyBreedmon.species;
+    gPokemon.legacyPartySpecies[c] = legacyBreedmon.species;
     if(c + 1 < PARTY_LENGTH)
-        gPokemon.partySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
+        gPokemon.legacyPartySpecies[c + 1] = LEGACY_SPECIES_LIST_END;
     else
         gPokemon.partyEnd = LEGACY_SPECIES_LIST_END;
 
@@ -1521,7 +1521,7 @@ bool GiveEgg(void){
     // ADD_HL_BC;
     // LD_A(EGG);
     // LD_hl_A;
-    gPokemon.partySpecies[gPokemon.partyCount - 1] = EGG;
+    gPokemon.legacyPartySpecies[gPokemon.partyCount - 1] = EGG;
     // LD_A_addr(wPartyCount);
     // DEC_A;
     // LD_HL(wPartyMonNicknames);
@@ -1580,7 +1580,7 @@ void RemoveMonFromPartyOrBox(uint8_t param){
         // DEC_A;
         // LD_hli_A;
         gPokemon.partyCount--;
-        wptr = gPokemon.partySpecies + wram->wCurPartyMon;
+        wptr = gPokemon.legacyPartySpecies + wram->wCurPartyMon;
         species_t a;
         do {
         // loop:

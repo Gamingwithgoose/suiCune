@@ -116,10 +116,10 @@ void ContestDropOffMons(void){
         // LD_A_hl;
         // LD_addr_A(wBugContestSecondPartySpecies);
         gPokemon.bugContestSecondPartySpecies =
-            (gPokemon.partySpecies[1] == LEGACY_SPECIES_LIST_END)? SPECIES_LIST_END: gPokemon.partySpecies[1];
+            (gPokemon.legacyPartySpecies[1] == LEGACY_SPECIES_LIST_END)? SPECIES_LIST_END: gPokemon.legacyPartySpecies[1];
     //  ... and replacing it with the terminator byte
         // LD_hl(-1);
-        gPokemon.partySpecies[1] = (species_t)-1;
+        gPokemon.legacyPartySpecies[1] = (species_t)-1;
         // XOR_A_A;
         // LD_addr_A(wScriptVar);
         wram->wScriptVar = 0x0;
@@ -137,7 +137,7 @@ void ContestDropOffMons(void){
 void ContestReturnMons(void){
 //  Restore the species of the second mon.
     // LD_HL(wPartySpecies + 1);
-    species_t* hl = gPokemon.partySpecies + 1;
+    species_t* hl = gPokemon.legacyPartySpecies + 1;
     // LD_A_addr(wBugContestSecondPartySpecies);
     // LD_hl_A;
     LegacySpeciesId restoredSpecies;

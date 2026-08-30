@@ -402,7 +402,7 @@ void HatchEggs(void){
 
             // LD_A_addr(wCurPartySpecies);
             // DEC_DE;
-            gPokemon.partySpecies[mon] = partySpecies;
+            gPokemon.legacyPartySpecies[mon] = partySpecies;
             // LD_addr_A(wNamedObjectIndex);
             // LD_addr_A(wCurSpecies);
             // CALL(aGetPokemonName);

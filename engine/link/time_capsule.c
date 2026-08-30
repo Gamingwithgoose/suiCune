@@ -199,7 +199,7 @@ void PlaceTradePartnerNamesAndParty(void){
     // hlcoord(7, 1, wTilemap);
     // LD_DE(wPartySpecies);
     // CALL(aPlaceTradePartnerNamesAndParty_PlaceSpeciesNames);
-    PlaceTradePartnerNamesAndParty_PlaceSpeciesNames(coord(7, 1, wram->wTilemap), gPokemon.partySpecies);
+    PlaceTradePartnerNamesAndParty_PlaceSpeciesNames(coord(7, 1, wram->wTilemap), gPokemon.legacyPartySpecies);
     // hlcoord(7, 9, wTilemap);
     // LD_DE(wOTPartySpecies);
     PlaceTradePartnerNamesAndParty_PlaceSpeciesNames(coord(7, 9, wram->wTilemap), wram->wOTPartySpecies);

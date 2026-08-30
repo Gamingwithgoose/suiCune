@@ -330,7 +330,7 @@ static void v_ResetWRAM(void) {
 
     // LD_HL(wPartyCount);
     // CALL(av_ResetWRAM_InitList);
-    v_ResetWRAM_InitMonList(&gPokemon.partyCount, gPokemon.partySpecies);
+    v_ResetWRAM_InitMonList(&gPokemon.partyCount, gPokemon.legacyPartySpecies);
 
     // XOR_A_A;
     // LD_addr_A(wCurBox);

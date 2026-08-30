@@ -1064,8 +1064,8 @@ void DebugMenu_TradeTest(void) {
     U82CA(gPlayer.playerName, "PLAYER@");
     U82CA(wram->wOTPlayerName, "OTHER@");
     gPokemon.partyCount = 1;
-    gPokemon.partySpecies[0] = TEDDIURSA;
-    gPokemon.partySpecies[1] = (species_t)-1;
+    gPokemon.legacyPartySpecies[0] = TEDDIURSA;
+    gPokemon.legacyPartySpecies[1] = (species_t)-1;
     gPokemon.partyMon[0].mon.species = TEDDIURSA;
     U82CA(gPokemon.partyMonNickname[0], "KODA@");
     wram->wOTPartyCount = 1;

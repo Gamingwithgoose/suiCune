@@ -6,6 +6,7 @@
 #include "../charmap.h"
 #include "time_palettes.h"
 #include "../engine/events/catch_tutorial_input.h"
+#include "../util/input.h"
 
 const uint8_t* gAutoInputAddress = NULL;
 
@@ -24,10 +25,9 @@ void ClearJoypad(void) {
     hram.hJoyDown = 0;
 }
 
-//  This is called automatically every frame in VBlank.
-//  Read the joypad register and translate it to something more
-//  workable for use in-game. There are 8 buttons, so we can use
-//  one byte to contain all player input.
+// This is called automatically every frame in VBlank. SDL input arrives as
+// native action bits; legacy HRAM mirrors remain until their C consumers are
+// migrated to native input state.
 void UpdateJoypad(void) {
     //  Updates:
 
@@ -45,35 +45,7 @@ void UpdateJoypad(void) {
     if(wram->wGameLogicPaused)
         return;
 
-    //  We can only get four inputs at a time.
-    //  We take d-pad first for no particular reason.
-    gb_write(rJOYP, R_DPAD);
-
-    //  Read twice to give the request time to take.
-    gb_read(rJOYP);
-    uint8_t dpad = gb_read(rJOYP);
-
-    //  The Joypad register output is in the lo nybble (inversed).
-    //  We make the hi nybble of our new container d-pad input.
-
-    //  We'll keep this in b for now.
-    dpad = ((dpad ^ 0xff) & 0xf) << 4;
-
-    //  Buttons make 8 total inputs (A, B, Select, Start).
-    //  We can fit this into one byte.
-    gb_write(rJOYP, R_BUTTONS);
-
-    //  Wait for input to stabilize.
-    uint8_t buttons;
-    for (int rept = 0; rept < 6; rept++) {
-        buttons = gb_read(rJOYP);
-    }
-    //  Buttons take the lo nybble.
-    buttons = (buttons ^ 0xFF) & 0xF;
-    uint8_t input = (buttons | dpad);
-
-    //  Reset the joypad register since we're done with it.
-    gb_write(rJOYP, 0x30);
+    uint8_t input = NativeInputHeld();
 
     //  To get the delta we xor the last frame's input with the new one.
     uint8_t last_frame = hram.hJoypadDown;  // last frame

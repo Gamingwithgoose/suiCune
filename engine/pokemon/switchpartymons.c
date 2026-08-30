@@ -44,12 +44,12 @@ static void v_SwitchPartyMons_SwapMonAndMail(uint8_t from, uint8_t to) {
     // ADD_HL_BC;
     // LD_D_H;
     // LD_E_L;
-    species_t* species_to = gPokemon.partySpecies + to;
+    species_t* species_to = gPokemon.legacyPartySpecies + to;
     // LD_A_addr(wSwitchMonFrom);
     // LD_L_A;
     // LD_H(0);
     // ADD_HL_BC;
-    species_t* species_from = gPokemon.partySpecies + from;
+    species_t* species_from = gPokemon.legacyPartySpecies + from;
     // LD_A_hl;
     // PUSH_AF;
     species_t temp_species = *species_from;

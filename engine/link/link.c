@@ -1240,7 +1240,7 @@ void Link_PrepPartyData_Gen1(void){
         // LD_A_hli;
         // CP_A(-1);
         // IF_Z goto done_party;
-        if(gPokemon.partySpecies[i] == (species_t)-1)
+        if(gPokemon.legacyPartySpecies[i] == (species_t)-1)
             break;
         // LD_addr_A(wTempSpecies);
         // PUSH_HL;
@@ -1250,7 +1250,7 @@ void Link_PrepPartyData_Gen1(void){
         // POP_HL;
         // LD_A_addr(wTempSpecies);
         // LD_de_A;
-        de[i] = ConvertMon_2to1(gPokemon.partySpecies[i]);
+        de[i] = ConvertMon_2to1(gPokemon.legacyPartySpecies[i]);
         // INC_DE;
         // goto loop2;
     }
@@ -1321,8 +1321,8 @@ static void Link_PrepPartyData_Gen2(void){
     // LD_HL(wPartyCount);
     // LD_BC(1 + PARTY_LENGTH + 1);
     // CALL(aCopyBytes);
-    CopyBytes(de, gPokemon.partySpecies, sizeof(gPokemon.partySpecies));
-    de += sizeof(gPokemon.partySpecies);
+    CopyBytes(de, gPokemon.legacyPartySpecies, sizeof(gPokemon.legacyPartySpecies));
+    de += sizeof(gPokemon.legacyPartySpecies);
     CopyBytes(de, &gPokemon.partyEnd, sizeof(gPokemon.partyEnd));
     de += sizeof(gPokemon.partyEnd);
 
@@ -3069,7 +3069,7 @@ void LinkTrade(void){
     // LD_B(0);
     // ADD_HL_BC;
     // LD_A_hl;
-    species_t s = gPokemon.partySpecies[wram->wCurTradePartyMon];
+    species_t s = gPokemon.legacyPartySpecies[wram->wCurTradePartyMon];
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetPokemonName);
     // LD_HL(wStringBuffer1);
@@ -3260,7 +3260,7 @@ void LinkTrade(void){
         // ADD_HL_BC;
         // LD_A_hl;
         // LD_addr_A(wPlayerTrademonSpecies);
-        wram->wPlayerTrademon.species = gPokemon.partySpecies[wram->wCurTradePartyMon];
+        wram->wPlayerTrademon.species = gPokemon.legacyPartySpecies[wram->wCurTradePartyMon];
         // PUSH_AF;
     //  OT name
         // LD_A_addr(wCurTradePartyMon);
@@ -3363,7 +3363,7 @@ void LinkTrade(void){
         // ADD_HL_BC;
         // LD_A_hl;
         // LD_addr_A(wCurTradePartyMon);
-        wram->wCurTradePartyMon = gPokemon.partySpecies[wram->wCurTradePartyMon];
+        wram->wCurTradePartyMon = gPokemon.legacyPartySpecies[wram->wCurTradePartyMon];
 
         // XOR_A_A;  // REMOVE_PARTY
         // LD_addr_A(wPokemonWithdrawDepositParameter);
@@ -3601,18 +3601,18 @@ void CheckTimeCapsuleCompatibility(void){
     // LD_HL(wPartySpecies);
     // LD_B(PARTY_LENGTH);
 /// We could probably combine these loops into one loop.
-    for(uint32_t i = 0; i < PARTY_LENGTH && gPokemon.partySpecies[i] != (species_t)-1; ++i) {
+    for(uint32_t i = 0; i < PARTY_LENGTH && gPokemon.legacyPartySpecies[i] != (species_t)-1; ++i) {
     // loop:
         // LD_A_hli;
         // CP_A(-1);
         // IF_Z goto checkitem;
         // CP_A(JOHTO_POKEMON);
         // IF_NC goto mon_too_new;
-        if(gPokemon.partySpecies[i] >= JOHTO_POKEMON) {
+        if(gPokemon.legacyPartySpecies[i] >= JOHTO_POKEMON) {
         // mon_too_new:
             // LD_addr_A(wNamedObjectIndex);
             // CALL(aGetPokemonName);
-            GetPokemonName(gPokemon.partySpecies[i]);
+            GetPokemonName(gPokemon.legacyPartySpecies[i]);
             // LD_A(0x1);
             // goto done;
             wram->wScriptVar = 0x1;
@@ -3718,7 +3718,7 @@ uint8_t* GetIncompatibleMonName(uint32_t index){
     // LD_addr_A(wNamedObjectIndex);
     // CALL(aGetPokemonName);
     // RET;
-    return GetPokemonName(gPokemon.partySpecies[index]);
+    return GetPokemonName(gPokemon.legacyPartySpecies[index]);
 }
 
 void EnterTimeCapsule(void){
