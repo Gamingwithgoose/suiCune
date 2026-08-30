@@ -49,37 +49,11 @@ int CheckRTCSupport(void) {
     return TRUE;
 }
 
-// Update the RTC if there is RTC support.
-// Returns 0 if RTC is not supported.
-// otherwise, updates the RTC timestamp.
-int UpdateRTC(void) {
-    time_t t = time(NULL);
-    if(t == (time_t)-1)
-        return FALSE;
-    sLastTimestamp = t;
-
-    struct tm lastTime = *localtime(&sLastTimestamp);
-    gb.cart_rtc[2] = lastTime.tm_hour;
-    gb.cart_rtc[1] = lastTime.tm_min;
-    gb.cart_rtc[0] = lastTime.tm_sec;
-
-    if(sStartTimestamp == 0) {
-        SetStartTimeToSystemTime();
-    }
-
-    struct tm startTime = *localtime(&sStartTimestamp);
-    uint16_t dayCount = CountDays(&startTime, &lastTime);
-    gb.cart_rtc[4] &= 0xFE;
-    gb.cart_rtc[4] |= (dayCount >> 8) & 1;
-    gb.cart_rtc[3] = (dayCount & 0xff);
-    return TRUE;
-}
-
 // The game will write the system timestamp to SRAM.
 // This will be used on subsequent program runs to determine
 // the start date for the current save file.
-void SetStartTimeToSystemTime(void) {
-    sStartTimestamp = time(NULL);
+static void StoreRTCStartTimestamp(time_t timestamp) {
+    sStartTimestamp = timestamp;
 
     uint64_t value = (uint64_t)sStartTimestamp;
     char buffer[8];
@@ -95,7 +69,64 @@ void SetStartTimeToSystemTime(void) {
         gPlayer.skip_104[i] = buffer[i];
     for(size_t i = 0; i < 4; ++i)
         gPlayer.skip_109[i] = buffer[4 + i];
-    log_debug("start = %lld\n", (long long)*(time_t*)buffer);
+    log_debug("start = %lld\n", (long long)sStartTimestamp);
+}
+
+void SetStartTimeToSystemTime(void) {
+    time_t timestamp = time(NULL);
+    if(timestamp != (time_t)-1)
+        StoreRTCStartTimestamp(timestamp);
+}
+
+int ReadNativeRTCClock(struct NativeRTCClock* dest) {
+    if(dest == NULL)
+        return FALSE;
+
+    sLastTimestamp = time(NULL);
+    if(sLastTimestamp == (time_t)-1)
+        return FALSE;
+
+    if(sStartTimestamp == 0)
+        SetStartTimeToSystemTime();
+    if(sStartTimestamp == 0)
+        return FALSE;
+
+    const struct tm* startTime = localtime(&sStartTimestamp);
+    if(startTime == NULL)
+        return FALSE;
+    struct tm start = *startTime;
+    const struct tm* lastTime = localtime(&sLastTimestamp);
+    if(lastTime == NULL)
+        return FALSE;
+    struct tm current = *lastTime;
+
+    dest->day = CountDays(&start, &current);
+    dest->hours = current.tm_hour;
+    dest->minutes = current.tm_min;
+    dest->seconds = current.tm_sec;
+    return TRUE;
+}
+
+int SetNativeRTCClockDay(uint16_t day) {
+    time_t now = time(NULL);
+    if(now == (time_t)-1)
+        return FALSE;
+
+    const struct tm* current = localtime(&now);
+    if(current == NULL)
+        return FALSE;
+
+    // The native clock supplies the time of day. Rebase only the persisted
+    // epoch so its calendar-day counter matches Crystal's wrapped RTC day.
+    struct tm start = *current;
+    start.tm_mday -= day;
+    start.tm_isdst = -1;
+    time_t timestamp = mktime(&start);
+    if(timestamp == (time_t)-1)
+        return FALSE;
+
+    StoreRTCStartTimestamp(timestamp);
+    return TRUE;
 }
 
 static char tempTimeBuffer[32];
@@ -138,10 +169,13 @@ void LoadRTCStartTime(void) {
 }
 
 void RTCSyncWithSystemTime(void) {
-    if(!UpdateRTC())
+    struct NativeRTCClock clock;
+    if(!ReadNativeRTCClock(&clock))
         return;
 
-    struct tm* lastTime = localtime(&sLastTimestamp);
+    const struct tm* lastTime = localtime(&sLastTimestamp);
+    if(lastTime == NULL)
+        return;
     gPlayer.curDay = lastTime->tm_wday;
     if(lastTime->tm_isdst >= 0) {
         gPlayer.DST = ((lastTime->tm_isdst == 0)? 0: (1 << 7));
@@ -149,15 +183,18 @@ void RTCSyncWithSystemTime(void) {
 }
 
 void RTCInitTimeWithSystemTime(void) {
-    if(!UpdateRTC())
+    struct NativeRTCClock clock;
+    if(!ReadNativeRTCClock(&clock))
         return;
     
     gPlayer.startHour = 0;
     gPlayer.startMinute = 0;
     gPlayer.startSecond = 0;
-    gPlayer.startDay = 6 - ((gb.cart_rtc[3] | ((gb.cart_rtc[4] & 1) << 8)) % 7);
+    gPlayer.startDay = 6 - (clock.day % 7);
 
-    struct tm* lastTime = localtime(&sLastTimestamp);
+    const struct tm* lastTime = localtime(&sLastTimestamp);
+    if(lastTime == NULL)
+        return;
     gPlayer.curDay = lastTime->tm_wday;
     if(lastTime->tm_isdst >= 0) {
         gPlayer.DST = ((lastTime->tm_isdst == 0)? 0: (1 << 7));
@@ -165,6 +202,9 @@ void RTCInitTimeWithSystemTime(void) {
 }
 
 uint8_t RTCGetCurrentWeekday(void) {
-    struct tm* lastTime = localtime(&sLastTimestamp);
-    return lastTime->tm_wday;
+    struct NativeRTCClock clock;
+    if(!ReadNativeRTCClock(&clock))
+        return 0;
+    const struct tm* lastTime = localtime(&sLastTimestamp);
+    return lastTime == NULL? 0: lastTime->tm_wday;
 }

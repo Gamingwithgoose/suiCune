@@ -19,6 +19,8 @@ bool ConvertBoxMonToNative(struct NativeBoxMon* dest, const struct BoxMon* src);
 bool ConvertNativeBoxMonToLegacy(struct BoxMon* dest, const struct NativeBoxMon* src);
 bool ConvertPartyMonToNative(struct NativePartyMon* dest, const struct PartyMon* src);
 bool ConvertNativePartyMonToLegacy(struct PartyMon* dest, const struct NativePartyMon* src);
+bool PlayerPartyMonIsEgg(uint8_t partyIndex);
+bool ConvertPlayerPartyMonToNative(struct NativePartyMon* dest, uint8_t partyIndex);
 void GetBaseData(SpeciesId species);
 uint8_t* GetCurNickname(void);
 void GetNickname(const uint8_t* hl, uint8_t a);

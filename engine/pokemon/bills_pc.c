@@ -1275,6 +1275,11 @@ static void v_MovePKMNWithoutMail_RunJumptable(void){
         DelayFrame();
         // RET;
     } return;
+
+    case 6:
+    // BillsPC_EndJumptableLoop:
+        BillsPC_EndJumptableLoop();
+        return;
     }
 }
 

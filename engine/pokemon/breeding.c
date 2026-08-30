@@ -259,10 +259,9 @@ bool DoEggStep(void){
     // loop:
         // LD_A_de;
         // INC_DE;
-        species_t a = hl->mon.species;
         // CP_A(EGG);
         // IF_NZ goto next;
-        if(a == EGG) {
+        if(PlayerPartyMonIsEgg(i)) {
             // DEC_hl;
             // IF_NZ goto next;
             if(--hl->mon.happiness == 0) {
@@ -355,7 +354,6 @@ void HatchEggs(void){
         // INC_DE;
         // CP_A(-1);
         // JP_Z (mHatchEggs_done);
-        species_t species = hl->mon.species;
         // PUSH_DE;
         // PUSH_HL;
         // CP_A(EGG);
@@ -363,7 +361,7 @@ void HatchEggs(void){
         // LD_A_hl;
         // AND_A_A;
         // JP_NZ (mHatchEggs_next);
-        if(species == EGG && hl->mon.happiness == 0) {
+        if(PlayerPartyMonIsEgg(mon) && hl->mon.happiness == 0) {
             // LD_hl(0x78);
             hl->mon.happiness = 0x78;
 

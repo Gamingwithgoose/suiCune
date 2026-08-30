@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../home/pokemon.h"
 #include "search2.h"
 
 uint8_t v_FindPartyMonAboveLevel(uint8_t level){
@@ -159,7 +160,7 @@ uint8_t RetroactivelyIgnoreEggs(uint8_t c){
         // RET_Z ;
         // CP_A(EGG);
         // IF_NZ goto skip_notegg;
-        if(gPokemon.partyMon[i].mon.species == EGG) {
+        if(PlayerPartyMonIsEgg(i)) {
             // LD_A_C;
             // AND_A_E;
             // LD_C_A;

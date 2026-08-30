@@ -3,6 +3,7 @@
 #include "../items/item_effects.h"
 #include "../battle/anim_hp_bar.h"
 #include "../../home/tilemap.h"
+#include "../../home/pokemon.h"
 
 void HealParty(void){
     // XOR_A_A;
@@ -17,7 +18,7 @@ void HealParty(void){
         // IF_Z goto done;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(gPokemon.partyMon[i].mon.species == EGG)
+        if(PlayerPartyMonIsEgg(i))
             continue;
 
         // PUSH_HL;

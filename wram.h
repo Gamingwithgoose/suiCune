@@ -2316,8 +2316,9 @@ struct wram_s
                     };
                     uint8_t wMenuScrollPosition;
                     uint8_t wMenuScrollPosition_skip[3];
-                    uint8_t wQueuedScriptBank;
-                    uint16_t wQueuedScriptAddr;
+                    // Legacy queued-script bank/address bytes. Native script
+                    // and callback pointers are owned by home/queue_script.c.
+                    uint8_t legacyQueuedScriptReserved[3];
                     uint8_t wNumMoves;
                     union {
                         uint8_t wFieldMoveSucceeded;
@@ -3488,26 +3489,30 @@ struct wram_s
                 // wBattleAnimTileDict pairs keys with values
                 // keys: ANIM_GFX_* indexes (taken from anim_*gfx arguments)
                 // values: vTiles0 offsets
-                uint8_t wBattleAnimTileDict[NUM_BATTLEANIMTILEDICT_ENTRIES * 2];
+                uint8_t legacyBattleAnimTileDictReserved[NUM_BATTLEANIMTILEDICT_ENTRIES * 2];
                 // wAnimObject1 - wAnimObject10
                 //union wActiveAnimObjects
                 // for n, 1, NUM_ANIM_OBJECTS + 1
-                // wAnimObject1 - wAnimObject10
-                struct BattleAnim wAnimObject[(NUM_ANIM_OBJECTS + 1) - 1];
+                // Native object/effect pools are owned by battle_anims/core.
+                // Preserve the legacy packed spans only for layout readers.
+                uint8_t legacyBattleAnimObjectsReserved[NUM_ANIM_OBJECTS * BATTLEANIMSTRUCT_LENGTH];
                 // wBGEffect1 - wBGEffect5
                 //union wActiveBGEffects
                 // for n, 1, NUM_BG_EFFECTS + 1
                 // wBGEffect1 - wBGEffect5
-                struct BattleBGEffect wBGEffect[(NUM_BG_EFFECTS + 1) - 1];
-                uint8_t wLastAnimObjectIndex;
-                uint8_t wBattleAnimFlags;
-                uint16_t wBattleAnimAddress;
-                uint8_t wBattleAnimDelay;
-                uint16_t wBattleAnimParent;
-                uint8_t wBattleAnimLoops;
-                uint8_t wBattleAnimVar;
-                uint8_t wBattleAnimByte;
-                uint8_t wBattleAnimOAMPointerLo;
+                uint8_t legacyBattleBGEffectsReserved[NUM_BG_EFFECTS * BG_EFFECT_STRUCT_LENGTH];
+                uint8_t legacyLastAnimObjectIndexReserved;
+                // Native battle animation scripts retain control state,
+                // host pointers, and positions in battleanim_s.  Preserve
+                // this complete legacy span only for packed-layout readers.
+                uint8_t legacyBattleAnimFlagsReserved;
+                uint8_t legacyBattleAnimAddressReserved[2];
+                uint8_t legacyBattleAnimDelayReserved;
+                uint8_t legacyBattleAnimParentReserved[2];
+                uint8_t legacyBattleAnimLoopsReserved;
+                uint8_t legacyBattleAnimVarReserved;
+                uint8_t legacyBattleAnimByteReserved;
+                uint8_t legacyBattleAnimOAMPointerReserved;
                 union {
                     struct {
                         uint8_t wBattleObjectTempID;

@@ -812,7 +812,7 @@ bool PartyMenuCheckEgg(uint8_t b){
     // LD_A_de;
     // CP_A(EGG);
     // RET;
-    return gPokemon.partyMon[b].mon.species == EGG;
+    return PlayerPartyMonIsEgg(b);
 }
 
 const uint8_t* GetPartyMenuQualityIndexes(void){

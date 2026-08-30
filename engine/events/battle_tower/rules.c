@@ -2,6 +2,7 @@
 #include "rules.h"
 #include "../../../data/text/common.h"
 #include "../../../home/text.h"
+#include "../../../home/pokemon.h"
 
 struct BattleTowerCheckText {
     bool (*func)(void);
@@ -276,7 +277,7 @@ bool BattleTower_CheckPartyHasThreeMonsThatAreNotEggs(void){
         // LD_A_hli;
         // CP_A(EGG);
         // IF_Z goto egg;
-        if(gPokemon.partyMon[i].mon.species != EGG) {
+        if(!PlayerPartyMonIsEgg(i)) {
             // INC_B;
             b++;
         }
@@ -497,7 +498,7 @@ bool CheckBTRule_HasPartyAnEgg(void){
         // LD_A_hli;
         // CP_A(EGG);
         // IF_Z goto found;
-        if(gPokemon.partyMon[i].mon.species == EGG) {
+        if(PlayerPartyMonIsEgg(i)) {
         // found:
             // SCF;
             // RET;

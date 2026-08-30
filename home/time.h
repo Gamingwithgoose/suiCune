@@ -1,5 +1,4 @@
 void Timer(void);
-void LatchClock(void);
 void UpdateTime(void);
 void GetClock(void);
 uint8_t FixDays(void);

@@ -1149,7 +1149,13 @@ const uint8_t* Deserialize_PlayerData(struct PlayerData* data, const uint8_t* sr
 }
 
 const uint8_t* Deserialize_PokemonData(struct PokemonData* data, const uint8_t* src) {
-    return Deserialize_Struct(data, Structs + STRUC_POKEMONDATA, src);
+    const uint8_t* end = Deserialize_Struct(data, Structs + STRUC_POKEMONDATA, src);
+    // Current Crystal-format saves contain no native party egg field. The only
+    // serialized NativePartyMon is the Bug-Catching Contest record, which
+    // cannot be an egg; keep the newly semantic field deterministic without
+    // changing the legacy save layout.
+    data->contestMon.isEgg = false;
+    return end;
 }
 
 int Test_Serialize_PlayerData(void) {

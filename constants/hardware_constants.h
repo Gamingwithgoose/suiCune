@@ -20,7 +20,6 @@
 #define MBC3SRamEnable 0x0000
 #define MBC3RomBank 0x2000
 #define MBC3SRamBank 0x4000
-#define MBC3LatchClock 0x6000
 #define MBC3RTC 0xa000
 
 #define SRAM_DISABLE 0x00

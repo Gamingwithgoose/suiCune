@@ -33,11 +33,7 @@ void OpenSRAM(uint8_t a){
 
 //  switch to sram bank a
     // PUSH_AF;
-//  latch clock data
-    // LD_A(1);
-    // LD_addr_A(MBC3LatchClock);
-    gb_write(MBC3LatchClock, 1);
-//  enable sram/clock write
+//  enable SRAM write
     // LD_A(SRAM_ENABLE);
     // LD_addr_A(MBC3SRamEnable);
     gb_write(MBC3SRamEnable, SRAM_ENABLE);
@@ -49,8 +45,6 @@ void OpenSRAM(uint8_t a){
 }
 
 void CloseSRAM(void){
-//  reset clock latch for next time
-    gb_write(MBC3LatchClock, SRAM_DISABLE);
-//  disable sram/clock write
+//  disable SRAM write
     gb_write(MBC3SRamEnable, SRAM_DISABLE);
 }

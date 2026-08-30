@@ -1,44 +1,11 @@
 #include "../constants.h"
 #include "battle.h"
-#include "array.h"
 #include "copy.h"
 #include "text.h"
 #include "tilemap.h"
 #include "map_objects.h"
 #include "delay.h"
 #include "../engine/battle/core.h"
-
-//  Get the location of parameter a from wCurPartyMon in hl
-//  DEPRECATED: Do gPokemon.partyMon + wram->wCurPartyMon and get field instead.
-uint16_t GetPartyParamLocation(uint8_t a){
-    // PUSH_BC;
-    // LD_HL(wPartyMons);
-    // LD_C_A;
-    // LD_B(0);
-    // ADD_HL_BC;
-    uint16_t hl = wPartyMons + a;
-
-    // LD_A_addr(wCurPartyMon);
-    // CALL(aGetPartyLocation);
-    // POP_BC;
-    // RET;
-    return GetPartyLocation_GB(hl, wram->wCurPartyMon);
-}
-
-//  Add the length of a PartyMon struct to hl a times.
-//  DEPRECATED: Do hl + a instead.
-struct PartyMon* GetPartyLocation(struct PartyMon* hl, uint8_t a){
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // JP(mAddNTimes);
-    return hl + a;
-}
-
-//  Add the length of a PartyMon struct to hl a times.
-uint16_t GetPartyLocation_GB(uint16_t hl, uint8_t a){
-    // LD_BC(PARTYMON_STRUCT_LENGTH);
-    // JP(mAddNTimes);
-    return AddNTimes_GB(PARTYMON_STRUCT_LENGTH, hl, a);
-}
 
 //  //  unreferenced
 //  Probably used in gen 1 to convert index number to dex number
@@ -60,21 +27,6 @@ void GetDexNumber(void){
     // RET;
 }
 
-// DEPRECATED: Use UserPartyMon and get its field instead.
-uint16_t UserPartyAttr(uint8_t a){
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_NZ goto ot;
-    if(hram.hBattleTurn != TURN_PLAYER)
-    {
-        // JR(mOTPartyAttr);
-        return OTPartyAttr(a);
-    }
-
-    // JR(mBattlePartyAttr);
-    return BattlePartyAttr(a);
-}
-
 struct PartyMon* UserPartyMon(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -89,21 +41,6 @@ struct PartyMon* UserPartyMon(void){
     return gPokemon.partyMon + wram->wCurPartyMon;
 }
 
-// DEPRECATED: Use OpponentPartyMon and get its field instead.
-uint16_t OpponentPartyAttr(uint8_t a){
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_Z goto ot;
-    if(hram.hBattleTurn == TURN_PLAYER)
-    {
-        // JR(mOTPartyAttr);
-        return OTPartyAttr(a);
-    }
-
-    // JR(mBattlePartyAttr);
-    return BattlePartyAttr(a);
-}
-
 struct PartyMon* OpponentPartyMon(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -116,40 +53,6 @@ struct PartyMon* OpponentPartyMon(void){
 
     // JR(mBattlePartyAttr);
     return gPokemon.partyMon + wram->wCurPartyMon;
-}
-
-//  Get attribute a from the party struct of the active battle mon.
-// DEPRECATED: Do wram->wPartyMons + a and get the field instead.
-uint16_t BattlePartyAttr(uint8_t a){
-    // PUSH_BC;
-    // LD_C_A;
-    // LD_B(0);
-    // LD_HL(wPartyMons);
-    // ADD_HL_BC;
-    uint16_t hl = wPartyMons + a;
-
-    // LD_A_addr(wCurBattleMon);
-    // CALL(aGetPartyLocation);
-    // POP_BC;
-    // RET;
-    return GetPartyLocation_GB(hl, wram->wCurBattleMon);
-}
-
-//  Get attribute a from the party struct of the active enemy mon.
-// DEPRECATED:  Do wram->wOTPartyMons + a and get the field instead.
-uint16_t OTPartyAttr(uint8_t a){
-    // PUSH_BC;
-    // LD_C_A;
-    // LD_B(0);
-    // LD_HL(wOTPartyMon1Species);
-    // ADD_HL_BC;
-    uint16_t hl = wOTPartyMon1Species + a;
-
-    // LD_A_addr(wCurOTMon);
-    // CALL(aGetPartyLocation);
-    // POP_BC;
-    // RET;
-    return GetPartyLocation_GB(hl, wram->wCurOTMon);
 }
 
 void ResetDamage(void){
@@ -262,31 +165,6 @@ void UpdateBattleHuds(void){
 
 }
 
-// Unused
-void FarCopyRadioText(void){
-    // INC_HL;
-    // LDH_A_addr(hROMBank);
-    // PUSH_AF;
-    // LD_A_hli;
-    // LD_E_A;
-    // LD_A_hli;
-    // LD_D_A;
-    // LD_A_hli;
-    // LDH_addr_A(hROMBank);
-    // LD_addr_A(MBC3RomBank);
-    // LD_A_E;
-    // LD_L_A;
-    // LD_A_D;
-    // LD_H_A;
-    // LD_DE(wRadioText);
-    // LD_BC(2 * SCREEN_WIDTH);
-    // CALL(aCopyBytes);
-    // POP_AF;
-    // LDH_addr_A(hROMBank);
-    // LD_addr_A(MBC3RomBank);
-    // RET;
-}
-
 // For mobile link battles only.
 void MobileTextBorder(void){
     // LD_A_addr(wLinkMode);
@@ -340,61 +218,6 @@ void StdBattleTextbox(const struct TextCmd* hl){
     // POP_AF;
     // RST(aBankswitch);
     // RET;
-}
-
-// Unused
-void GetBattleAnimPointer(uint16_t hl){
-    // LD_A(BANK(aBattleAnimations));
-    // RST(aBankswitch);
-    Bankswitch(BANK(aBattleAnimations));
-
-    // LD_A_hli;
-    // LD_addr_A(wBattleAnimAddress);
-    // LD_A_hl;
-    // LD_addr_A(wBattleAnimAddress + 1);
-    wram->wBattleAnimAddress = gb_read16(hl);
-
-// ClearBattleAnims is the only function that calls this...
-    // LD_A(BANK(aClearBattleAnims));
-    // RST(aBankswitch);
-    Bankswitch(BANK(aClearBattleAnims));
-}
-
-// Unused
-uint8_t GetBattleAnimByte(void){
-    // PUSH_HL;
-    // PUSH_DE;
-
-    // LD_HL(wBattleAnimAddress);
-    // LD_E_hl;
-    // INC_HL;
-    // LD_D_hl;
-    uint16_t de = gb_read16(wBattleAnimAddress);
-
-    // LD_A(BANK(aBattleAnimations));
-    // RST(aBankswitch);
-    Bankswitch(BANK(aBattleAnimations));
-
-    // LD_A_de;
-    // LD_addr_A(wBattleAnimByte);
-    // INC_DE;
-    wram->wBattleAnimByte = gb_read(de++);
-
-    // LD_A(BANK(aBattleAnimCommands));
-    // RST(aBankswitch);
-    Bankswitch(BANK(aBattleAnimCommands));
-
-    // LD_hl_D;
-    // DEC_HL;
-    // LD_hl_E;
-    gb_write16(wBattleAnimAddress, de);
-
-    // POP_DE;
-    // POP_HL;
-
-    // LD_A_addr(wBattleAnimByte);
-    // RET;
-    return wram->wBattleAnimByte;
 }
 
 void PushLYOverrides(void){

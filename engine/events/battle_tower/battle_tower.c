@@ -2005,7 +2005,7 @@ void BattleTowerAction_EggTicket(void){
         // LD_A_hli;
         // CP_A(EGG);
         // IF_NZ goto not_egg;
-        if(gPokemon.partyMon[b].mon.species == EGG) {
+        if(PlayerPartyMonIsEgg(b)) {
             // PUSH_HL;
             // LD_HL(wPartyMonOTs);
             // LD_DE(NAME_LENGTH_JAPANESE);

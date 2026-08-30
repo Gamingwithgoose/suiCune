@@ -535,6 +535,10 @@ struct NativePartyMon
     struct NativeBoxMon mon;
     uint8_t status;
     uint8_t unused;
+    // Party egg state is independent from the concealed species stored in a
+    // legacy PartyMon record. Native player-party ownership will persist this
+    // field directly instead of encoding it in a species-list marker.
+    bool isEgg;
     uint16_t HP;
     uint16_t maxHP;
     union
@@ -1376,6 +1380,10 @@ typedef struct BattleAnimScript {
     battleanim_func script;
     int parent_pos;
     battleanim_func parent;
+    uint8_t flags;
+    uint8_t delay;
+    uint8_t loops;
+    uint8_t var;
 } battleanim_s;
 
 struct MapCallback {

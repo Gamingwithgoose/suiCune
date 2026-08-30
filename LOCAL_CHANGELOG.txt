@@ -3374,3 +3374,501 @@ Exact stopping point and next recommended task
 - The logical HRAM input migration is complete. Next, design a native
   player-party owner with explicit egg/hatch state before migrating party
   creation, hatching, storage, and serialization.
+
+Session: 2026-08-30 — Player-party egg-state foundation
+=========================================================
+
+Task worked on
+--------------
+- Began the next Phase 1 player-party ownership slice by separating egg state
+  from the concealed species held in the packed Crystal party record.
+
+Files modified
+--------------
+- `constants/types.h`: added the first-class `isEgg` field to
+  `NativePartyMon`.
+- `home/pokemon.h`, `home/pokemon.c`: added the semantic
+  `PlayerPartyMonIsEgg` query and an explicit player-party-to-native projection
+  that carries the list-derived egg state.
+- `engine/pokemon/breeding.c`, `engine/pokemon/health.c`,
+  `engine/pokemon/party_menu.c`, `engine/pokemon/mon_menu.c`,
+  `engine/pokemon/search2.c`, `engine/battle/core.c`,
+  `engine/events/battle_tower/rules.c`,
+  `engine/events/battle_tower/battle_tower.c`,
+  `engine/events/overworld.c`, and `engine/events/happiness_egg.c`: migrated
+  player-party egg checks to the semantic query.
+- `util/serialize.c`: explicitly clears the non-serialized native egg field
+  on legacy Crystal save import for the contest-mon record.
+- `LOCAL_CHANGELOG.txt`: recorded this migration.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- `NativePartyMon` now represents egg/hatch state as a real field rather than
+  relying on a species sentinel.
+- All live C gameplay checks that were treating `PartyMon.mon.species` as the
+  player-party egg marker now use the actual current legacy source:
+  `legacyPartySpecies[index] == EGG`.
+- Egg step progression, hatching eligibility, battle eligibility, party-menu
+  behavior, healing, happiness, field-move checks, and Battle Tower rules now
+  share one semantic query. This preserves the concealed species required at
+  hatch time.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `PlayerPartyMonIsEgg` currently reads the packed party-list marker because
+  the player party is still legacy-owned. Change its implementation to read
+  `NativePartyMon.isEgg`, then remove the legacy marker from normal runtime
+  logic once all player-party records, names, mutators, battle/menu users, and
+  save projections have migrated to native ownership.
+- `ConvertPlayerPartyMonToNative` is a read-only transition boundary, not a
+  second authoritative party. Remove it when callers directly use the native
+  player-party owner.
+- `NativePartyMon.isEgg` is not added to Crystal-format save serialization.
+  The only currently serialized native party record is the non-egg contest
+  record; its field is cleared after import. Serialize native party egg state
+  only as part of the versioned native save conversion.
+
+Compatibility and save-format implications
+------------------------------------------
+- Existing Crystal saves and their byte layout are unchanged. The legacy party
+  list remains the egg marker until native player-party persistence exists.
+- No link, mobile, box, party-size, or name format changed.
+
+Partially completed work
+------------------------
+- The native party model has explicit egg state and an accurate projection
+  boundary, but the live player party remains packed `PartyMon` data.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership, native party names/OT data, mutation and
+  battle/menu migration, native party serialization, and all later roadmap
+  phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing the egg-state semantic boundary and migrating all
+  direct player-party egg tests found in C.
+- Next: introduce the native player-party owner and migrate the bounded party
+  creation/removal/switching operations with explicit legacy projections at
+  save/link/mobile boundaries.
+
+Session: 2026-08-30 — native RTC and obsolete address-route retirement
+==========================================================================
+
+Task worked on
+--------------
+- Continued Phase 1/13 native-runtime conversion with the existing native
+  OS-clock implementation, and retired dead C-only Game Boy address/banking
+  routes whose callers had already migrated.
+
+Files modified
+--------------
+- `util/rtc.h`, `util/rtc.c`: added `NativeRTCClock`, native snapshot and
+  day-counter rebase APIs; removed the runtime API that projected the OS clock
+  into `gb.cart_rtc`; centralized timestamp persistence without an unaligned
+  `time_t` read.
+- `home/time.c`, `home/time.h`: migrated `GetClock` and `SetClock` from MBC3
+  RTC registers to the native clock API and removed the now-unreferenced
+  latch entry point.
+- `engine/rtc/rtc.c`, `engine/rtc/rtc.h`: removed the halt/start MBC3 RTC
+  routines and changed save-time RTC cleanup to the existing status API.
+- `home/battle.c`, `home/battle.h`: removed unused byte-offset battle-party
+  helper APIs and their Game Boy address arithmetic. Live battle code already
+  uses typed `PartyMon` pointers.
+- `home/queue_script.c`, `home/queue_script.h`, `wram.h`, `wram.c`: removed
+  unused banked queued-script setters and demoted their three packed WRAM
+  bytes to reserved compatibility layout storage. Native script/callback
+  pointers remain the sole live queue owner.
+- `LOCAL_CHANGELOG.txt`: recorded this session.
+
+Files created/deleted
+---------------------
+- None.
+
+Completed architectural changes
+-------------------------------
+- Gameplay clock reads now come directly from the operating system through
+  `ReadNativeRTCClock`; the home time path and engine RTC save/start path no
+  longer read, write, latch, halt, or restart MBC3 RTC registers.
+- Crystal's 140-day wrap continues to be represented by rebasing the persisted
+  native epoch with `SetNativeRTCClockDay`, rather than mutating an emulated
+  cartridge day register.
+- The old Crystal timestamp slots in `PlayerData` remain an explicit legacy
+  save boundary for the native epoch. They are still serialized with existing
+  Crystal saves and are updated whenever the epoch is rebased.
+- Dead raw party byte-address APIs and dead banked queued-script setters have
+  been removed after a repository-wide C caller search found no live users.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyQueuedScriptReserved[3]` preserves the old WRAM offsets only. Remove
+  it when the packed WRAM representation and offset checks are retired.
+- RTC status flags and the timestamp bytes in `PlayerData` remain part of the
+  Crystal-format save path. Replace them only as part of the versioned native
+  save-system conversion with an explicit legacy importer.
+- The packed player party remains legacy-owned; the earlier native egg
+  projection remains transitional as documented in the preceding session.
+
+Compatibility and save-format implications
+------------------------------------------
+- No Crystal save layout, link/mobile payload, or player-facing time-setting
+  flow was intentionally changed. Existing timestamp bytes continue to seed
+  native day calculations across launches.
+- Native RTC availability failures preserve the previous in-memory clock
+  snapshot rather than consulting MBC3 registers. The pre-existing fallback
+  emulator tick remains outside this gameplay clock path.
+
+Partially completed work
+------------------------
+- Native OS clock ownership is complete for the gameplay time path, but the
+  surrounding save system remains Crystal SRAM-layout based and its RTC status
+  flag storage is still banked.
+- Native player-party ownership remains a read-only projection boundary; only
+  egg-state semantics have been migrated so far.
+
+Untouched remaining work
+------------------------
+- Native player-party mutation/ownership and serialization, native versioned
+  saves, packed memory retirement, native content databases, native renderer,
+  entity/map/script conversion, audio, and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- The native day counter is deliberately rebased using local calendar dates to
+  preserve the original 140-day behavior. Daylight-saving and system-clock
+  changes should be exercised during a later user-requested runtime test.
+- `FixTime` and the legacy `PlayerData` start offsets are retained unchanged;
+  they remain responsible for Crystal-compatible initial time/day selection.
+
+Regressions discovered
+----------------------
+- None through source inspection. Runtime validation was intentionally not
+  performed in this session.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source-level inspection confirmed no live C references remain
+  to `UpdateRTC` or RTC register constants in the migrated clock files, and no
+  live C users remain for the deleted raw battle/queued-script APIs.
+- Next: introduce a native player-party owner and migrate bounded
+  creation/removal/switching through explicit legacy save/link/mobile
+  projections; do not widen legacy party structs in place.
+
+Session addendum: 2026-08-30 — RTC latch removal
+==================================================
+
+Completed work
+--------------
+- `home/sram.c`: removed MBC3 clock-latch writes from SRAM bank open/close.
+  SRAM selection and enable/disable behavior remain unchanged.
+- `home/init.c`: removed the startup MBC3 clock-latch reset after native
+  clock initialization.
+- `constants/hardware_constants.h`: removed the now-unused MBC3 latch
+  register constant.
+
+Architectural impact
+---------------------
+- No live C runtime path now references the MBC3 clock-latch register. This
+  completes removal of latch behavior following the native OS-clock migration;
+  SRAM banking itself remains a separate legacy save-layout concern.
+
+Partially completed work
+------------------------
+- Player-party ownership was audited for the next conversion slice. It still
+  has approximately 240 direct packed-record accesses across gameplay,
+  battle, menu, link, and mobile code. No duplicate native party owner was
+  introduced because it would not be authoritative while those mutations
+  remain live.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection and the broader
+  native save, memory, renderer, entity, map, script, audio, and content work
+  remain as listed in the preceding handoff.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stop at the native-party ownership boundary rather than adding a parallel
+  party cache. Next, migrate a complete party mutation and its readers as one
+  coherent slice, beginning with party creation/removal/switching and their
+  save/link/mobile projections.
+
+Session addendum: 2026-08-30 — native battle-animation control state
+=======================================================================
+
+Task worked on
+--------------
+- Corrected the reported `wram.c` layout-assertion build failure and migrated
+  the active battle-animation script control bytes from packed WRAM into the
+  existing native `battleanim_s` runtime object.
+
+Completed work
+--------------
+- `wram.c`: replaced the invalid bare layout assertion for
+  `legacyQueuedScriptReserved` with `check_wramx_field_mapped`, associating the
+  renamed reserved span with its original `wQueuedScriptBank` address. This
+  directly fixes the undeclared-field build error reported for line 1180.
+- `constants/types.h`: extended `battleanim_s` with its own flags, wait delay,
+  loop counter, and animation variable.
+- `engine/battle_anims/anim_commands.c` and `.h`: moved all live readers and
+  writers for those values to the native animation object, initialized them in
+  `ClearBattleAnims`, and exposed a read-only variable accessor for macro
+  scripts.
+- `util/battle_anim_macros.h`: made `anim_if_var_equal` query the native
+  animation state rather than packed WRAM.
+- `wram.h` and `wram.c`: replaced the former battle-animation control fields
+  with explicitly named legacy layout reserves and mapped each reserve to the
+  original offset assertion. The OAM-pointer byte was also reserved after
+  confirming its live C implementation uses a local index instead.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Battle animation control flow now belongs to the same native structure that
+  already owns the host script function and host return pointer. It no longer
+  depends on Game Boy-sized WRAM bytes for stop/keep-sprites, delay, loop, or
+  animation-variable state.
+- The packed WRAM spans are retained solely to preserve the currently asserted
+  legacy layout; they are no longer authoritative runtime state.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyBattleAnim*Reserved` and `legacyQueuedScriptReserved` remain only to
+  preserve packed WRAM offsets. Remove them when the packed WRAM layout and
+  offset assertions are retired as part of the native memory/save migration.
+- `BattleAnimGetVar` is a narrow compatibility API for C animation data macros.
+  Remove it when those macros become native animation-data functions or accept
+  the active animation context directly.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save format, animation content, or timing values were intentionally
+  changed. The native fields are reset at the same animation-clear boundary
+  that previously zeroed the WRAM animation block.
+- The large pre-existing deleted `Release/` output tree and the pre-existing
+  nested `lib/libmobile` modification were observed but deliberately not
+  modified.
+
+Partially completed work
+------------------------
+- This is a contained battle-animation control-state conversion. Animation
+  objects, palettes, VRAM tile staging, OAM compatibility storage, and the
+  broader renderer still use legacy memory-oriented structures.
+- Native party ownership and versioned saves remain at the earlier documented
+  boundary; no parallel party cache was added.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; native versioned
+  saves; retirement of packed WRAM; native rendering, entities, maps, scripts,
+  audio, content databases, expanded data models, and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- Battle animation scripts are host C functions but retain the original
+  single-active-animation model. Future concurrent or expanded visual effects
+  require a native animation manager rather than widening this one object.
+- No compiler was run in this session; the source-level caller search found no
+  live C access to any renamed battle-animation WRAM field.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after moving the authoritative battle-animation control state into
+  `battleanim_s` and preserving the legacy packed spans with mapped assertions.
+- Next: migrate a coherent owner for battle animation objects/effects and their
+  render submission, then remove their fixed WRAM slot assumptions without
+  adding a post-render overlay or parallel authority.
+
+Session addendum: 2026-08-30 — native battle-animation pools
+==============================================================
+
+Task worked on
+--------------
+- Fixed the stale function-table registration reported by the Windows build
+  and continued the battle-animation conversion by making object/effect pools
+  native runtime state rather than WRAM-owned arrays.
+
+Completed work
+--------------
+- `functions.c`: removed the `REDIRECTED(FarCopyRadioText)` registration. The
+  function was removed as an unused banked helper; source inspection confirmed
+  no live C caller remains. Its address-map entry is retained as legacy map
+  metadata only.
+- `engine/battle_anims/core.c` and `.h`: introduced the single native
+  `NativeBattleAnimationState` owner for animation objects, background
+  effects, and the object serial index. Added explicit access/reset/clear and
+  index-increment APIs.
+- `engine/battle_anims/anim_commands.c` and `bg_effects.c`: migrated all live
+  object/effect pool accesses to the native owner. `ClearBattleAnims` now
+  resets the native pool at the same boundary that formerly cleared its WRAM
+  range. The intentional legacy partial-clear behavior in `anim_clearobjs`
+  remains byte-for-byte bounded through the native clear API.
+- `wram.h` and `wram.c`: replaced the object pool, background-effect pool, and
+  last-object-index fields with mapped legacy layout reserves. The previous
+  battle-script control-state reserves remain intact.
+- `engine/battle_anims/core.h`: added forward declarations and standard type
+  inclusion so the new API header is self-contained for its existing callers.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Live battle animation object/effect state and its allocation serial are no
+  longer authoritative in Game Boy WRAM. One native state owner serves every
+  current C producer, updater, and renderer submission path.
+- The fixed capacities are retained temporarily for behavior compatibility;
+  they are native array capacities, not packed WRAM or OAM storage. Expanding
+  them must be paired with a native render submission policy, rather than an
+  arbitrary constant increase.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyBattleAnimObjectsReserved`, `legacyBattleBGEffectsReserved`, and
+  `legacyLastAnimObjectIndexReserved` preserve only legacy WRAM addresses.
+  Remove them when the packed WRAM layout and address assertions are retired.
+- The native pool still has the original fixed capacities. Replace it with a
+  growable native collection only when all call sites use capacity-aware
+  allocation and the renderer accepts more entries without Game Boy OAM
+  clipping semantics.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save fields or serialized animation records were changed. The current
+  pools are transient battle state and reset at the existing clear boundary.
+- The reported `FarCopyRadioText` compile failure is corrected at its source:
+  a deleted function is no longer referenced by the function-pointer table.
+
+Partially completed work
+------------------------
+- Battle script control state and object/effect pools have native ownership,
+  but palette staging, temporary animation command bytes, VRAM tile staging,
+  virtual OAM output, and capacity limits remain legacy-oriented.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; native versioned
+  saves; packed WRAM retirement; native renderer/entity/map/script/audio and
+  content-database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- Runtime behavior was not exercised. The migrated pool preserves the original
+  allocation order, count limits, and clear timing, but battle effects should
+  be tested when the user requests runtime validation.
+- Legacy address-map symbols in `global.h`/`funcmap.h` remain intentionally for
+  compatibility metadata and must not be mistaken for live native state.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after verifying there are no live C WRAM accesses to the migrated
+  object/effect pool or object-index fields and no remaining function-table
+  registration for `FarCopyRadioText`.
+- Next: define a capacity-aware native battle-animation render queue that feeds
+  the SDL renderer directly, migrate temporary command staging into that owner,
+  and only then retire the virtual-OAM dependency.
+
+Session addendum: 2026-08-30 — PC cancellation repair and animation tile state
+==============================================================================
+
+Task worked on
+--------------
+- Fixed the reported lockup when cancelling from a PC box in Move Pokémon
+  Without Mail, then continued the battle-animation native-state migration.
+
+Completed work
+--------------
+- `engine/pokemon/bills_pc.c`: added the missing terminal state (case 6) to
+  the Move Pokémon Without Mail C jumptable. Pressing B/cancel from the box
+  selection sets that exact state; the original assembly routes it to
+  `BillsPC_EndJumptableLoop`, but the translated C switch omitted it and kept
+  the modal input loop alive forever. The C path now sets the loop-end flag and
+  restores the caller normally.
+- `engine/battle_anims/core.c` and `.h`: added native ownership/access for the
+  battle animation tile dictionary within `NativeBattleAnimationState`.
+- `engine/battle_anims/anim_commands.c`: migrated all live tile-dictionary
+  readers/writers to the native animation owner.
+- `wram.h` and `wram.c`: replaced the tile-dictionary field with a mapped
+  legacy reserve, preserving its original packed offset without retaining it
+  as live runtime state.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Battle animation tile dictionary state no longer depends on a Game Boy WRAM
+  address. It resets with the same native animation owner as script state and
+  object/effect pools.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- `legacyBattleAnimTileDictReserved` preserves only the legacy WRAM span.
+  Remove it when packed WRAM layout assertions are retired during native memory
+  and save conversion.
+
+Compatibility and save-format implications
+------------------------------------------
+- The PC repair restores the original state-machine transition; no box or save
+  serialization was changed.
+- Battle animation tile dictionary data is transient and continues to clear at
+  the existing animation-reset boundary; no save-format change was made.
+
+Partially completed work
+------------------------
+- Battle script, pool, and dictionary state have native ownership. Temporary
+  battle command staging, palette/VRAM/OAM paths, original capacities, and the
+  renderer's Game Boy-oriented output model remain to be migrated.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; versioned saves;
+  packed WRAM retirement; native renderer/entity/map/script/audio and content
+  database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- The PC cancel repair was verified against the original assembly state table
+  and source flow, but runtime behavior was not executed in this session.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source search verified no live C WRAM access remains to the
+  moved animation object/effect/index/tile-dictionary state and the PC move
+  state machine includes its assembly-defined terminal state.
+- Next: migrate battle-animation temporary command staging and then replace
+  virtual-OAM submission with a capacity-aware native render queue.

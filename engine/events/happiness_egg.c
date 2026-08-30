@@ -3,14 +3,15 @@
 #include "haircut.h"
 #include "../pokemon/breeding.h"
 #include "../../home/names.h"
+#include "../../home/pokemon.h"
 #include "../../home/random.h"
 
 void GetFirstPokemonHappiness(void){
     // LD_HL(wPartyMon1Happiness);
-    struct PartyMon* hl = gPokemon.partyMon;
+    uint8_t partyIndex = 0;
     // LD_BC(PARTYMON_STRUCT_LENGTH);
     // LD_DE(wPartySpecies);
-    while(hl < gPokemon.partyMon + gPokemon.partyCount && hl->mon.species == EGG) {
+    while(partyIndex < gPokemon.partyCount && PlayerPartyMonIsEgg(partyIndex)) {
     // loop:
         // LD_A_de;
         // CP_A(EGG);
@@ -18,7 +19,7 @@ void GetFirstPokemonHappiness(void){
         // INC_DE;
         // ADD_HL_BC;
         // goto loop;
-        hl++;
+        partyIndex++;
     }
 
 
@@ -26,9 +27,9 @@ void GetFirstPokemonHappiness(void){
     // LD_addr_A(wNamedObjectIndex);
     // LD_A_hl;
     // LD_addr_A(wScriptVar);
-    wram->wScriptVar = hl->mon.happiness;
+    wram->wScriptVar = gPokemon.partyMon[partyIndex].mon.happiness;
     // CALL(aGetPokemonName);
-    GetPokemonName(hl->mon.species);
+    GetPokemonName(gPokemon.partyMon[partyIndex].mon.species);
     // JP(mCopyPokemonName_Buffer1_Buffer3);
     CopyPokemonName_Buffer1_Buffer3();
 }
@@ -40,7 +41,7 @@ void CheckFirstMonIsEgg(void){
     // LD_A(TRUE);
     // IF_Z goto egg;
     // XOR_A_A;
-    wram->wScriptVar = (gPokemon.partyMon[0].mon.species == EGG)? TRUE: FALSE;
+    wram->wScriptVar = PlayerPartyMonIsEgg(0)? TRUE: FALSE;
 
 // egg:
     // LD_addr_A(wScriptVar);
@@ -62,7 +63,7 @@ void ChangeHappiness(uint8_t c){
     // LD_A_hl;
     // CP_A(EGG);
     // RET_Z ;
-    if(gPokemon.partyMon[wram->wCurPartyMon].mon.species == EGG)
+    if(PlayerPartyMonIsEgg(wram->wCurPartyMon))
         return;
 
     // PUSH_BC;
@@ -180,13 +181,13 @@ void StepHappiness(void){
     // LD_HL(wPartyMon1Happiness);
     struct PartyMon* hl = gPokemon.partyMon;
 
-    do {
+    for(uint8_t partyIndex = 0; partyIndex < c; ++partyIndex, ++hl) {
     // loop:
         // INC_DE;
         // LD_A_de;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(hl->mon.species != EGG) {
+        if(!PlayerPartyMonIsEgg(partyIndex)) {
             // INC_hl;
             // IF_NZ goto next;
             // LD_hl(0xff);
@@ -201,7 +202,7 @@ void StepHappiness(void){
         // POP_DE;
         // DEC_C;
         // IF_NZ goto loop;
-    } while(hl++, --c != 0);
+    }
     // RET;
 }
 

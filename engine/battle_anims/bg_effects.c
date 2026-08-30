@@ -124,7 +124,7 @@ static bool BattleBGEffects_CheckSGB(void);
 void ExecuteBGEffects(void) {
     // SET_PC(aExecuteBGEffects);
     // LD_HL(wActiveBGEffects);
-    struct BattleBGEffect* hl = wram->wBGEffect;
+    struct BattleBGEffect* hl = BattleAnimationBGEffects();
     // LD_E(NUM_BG_EFFECTS);
     uint8_t e = NUM_BG_EFFECTS;
 
@@ -158,7 +158,7 @@ void ExecuteBGEffects(void) {
 bool QueueBGEffect(void) {
     // SET_PC(aQueueBGEffect);
     // LD_HL(wActiveBGEffects);
-    struct BattleBGEffect* hl = wram->wBGEffect;
+    struct BattleBGEffect* hl = BattleAnimationBGEffects();
     // LD_E(NUM_BG_EFFECTS);
     uint8_t e = NUM_BG_EFFECTS;
 
@@ -747,7 +747,7 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             if(BGEffect_CheckFlyDigStatus(bc)){
                 // LD_HL(wLastAnimObjectIndex);
                 // INC_hl;
-                wram->wLastAnimObjectIndex++;
+                IncrementBattleAnimationObjectIndex();
                 // CALL(aEndBattleBGEffect);
                 // RET;
                 return EndBattleBGEffect(bc);
@@ -862,7 +862,7 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             if(BGEffect_CheckFlyDigStatus(bc)){
                 // LD_HL(wLastAnimObjectIndex);
                 // INC_hl;
-                wram->wLastAnimObjectIndex++;
+                IncrementBattleAnimationObjectIndex();
                 // CALL(aEndBattleBGEffect);
                 // RET;
                 return EndBattleBGEffect(bc);
@@ -3458,7 +3458,7 @@ static void BattleBGEffect_Rollout(struct BattleBGEffect* bc) {
     // XOR_A(0xff);
     // INC_A;
     // LD_addr_A(wAnimObject1YOffset);
-    wram->wAnimObject[0].yOffset = (a ^ 0xff) + 1;
+    BattleAnimationObjects()[0].yOffset = (a ^ 0xff) + 1;
     // RET;
 }
 

@@ -219,8 +219,6 @@ void Init(void) {
     StartClock();
 
     // XOR_A_A;  // SRAM_DISABLE
-    // LD_addr_A(MBC3LatchClock);
-    gb_write(MBC3LatchClock, 0);
     // LD_addr_A(MBC3SRamEnable);
     gb_write(MBC3SRamEnable, SRAM_DISABLE);
 

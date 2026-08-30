@@ -1,5 +1,3 @@
-void StopRTC(void);
-void StartRTC(void);
 void GetTimeOfDay(void);
 void StageRTCTimeForSave(void);
 void SaveRTC(void);

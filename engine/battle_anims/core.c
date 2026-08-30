@@ -3,15 +3,51 @@
 #include "helpers.h"
 #include "bg_effects.h"
 #include "../../data/battle_anims/objects.h"
+#include <string.h>
 
 static void InitBattleAnimation(struct BattleAnim* bc);
 static void InitBattleAnimBuffer(struct BattleAnim* bc);
 static uint8_t GetBattleAnimTileOffset(uint8_t a);
 
+struct NativeBattleAnimationState {
+    uint8_t tileDictionary[NUM_BATTLEANIMTILEDICT_ENTRIES * 2];
+    struct BattleAnim objects[NUM_ANIM_OBJECTS];
+    struct BattleBGEffect bgEffects[NUM_BG_EFFECTS];
+    uint8_t lastObjectIndex;
+};
+
+static struct NativeBattleAnimationState sBattleAnimationState;
+
+struct BattleAnim* BattleAnimationObjects(void){
+    return sBattleAnimationState.objects;
+}
+
+struct BattleBGEffect* BattleAnimationBGEffects(void){
+    return sBattleAnimationState.bgEffects;
+}
+
+uint8_t* BattleAnimationTileDictionary(void){
+    return sBattleAnimationState.tileDictionary;
+}
+
+void ResetNativeBattleAnimationState(void){
+    memset(&sBattleAnimationState, 0, sizeof(sBattleAnimationState));
+}
+
+void ClearNativeBattleAnimationObjects(size_t byteCount){
+    if(byteCount > sizeof(sBattleAnimationState.objects))
+        byteCount = sizeof(sBattleAnimationState.objects);
+    memset(sBattleAnimationState.objects, 0, byteCount);
+}
+
+void IncrementBattleAnimationObjectIndex(void){
+    sBattleAnimationState.lastObjectIndex++;
+}
+
 bool QueueBattleAnimation(void){
     // LD_HL(wActiveAnimObjects);
     // LD_E(NUM_ANIM_OBJECTS);
-    struct BattleAnim* hl = wram->wAnimObject;
+    struct BattleAnim* hl = BattleAnimationObjects();
     uint8_t e = NUM_ANIM_OBJECTS;
 
     do {
@@ -25,7 +61,7 @@ bool QueueBattleAnimation(void){
             // LD_B_H;
             // LD_HL(wLastAnimObjectIndex);
             // INC_hl;
-            wram->wLastAnimObjectIndex++;
+            IncrementBattleAnimationObjectIndex();
             // CALL(aInitBattleAnimation);
             InitBattleAnimation(hl);
             // RET;
@@ -64,7 +100,7 @@ static void InitBattleAnimation(struct BattleAnim* bc){
     // ADD_HL_BC;
     // LD_A_addr(wLastAnimObjectIndex);
     // LD_hli_A;  // BATTLEANIMSTRUCT_INDEX
-    bc->index = wram->wLastAnimObjectIndex;
+    bc->index = sBattleAnimationState.lastObjectIndex;
     // LD_A_de;
     // INC_DE;
     // LD_hli_A;  // BATTLEANIMSTRUCT_OAMFLAGS
@@ -406,7 +442,7 @@ static uint8_t GetBattleAnimTileOffset(uint8_t a){
     // PUSH_HL;
     // PUSH_BC;
     // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = wram->wBattleAnimTileDict;
+    uint8_t* hl = BattleAnimationTileDictionary();
     // LD_B_A;
     // LD_C(NUM_BATTLEANIMTILEDICT_ENTRIES);
     uint8_t c = NUM_BATTLEANIMTILEDICT_ENTRIES;

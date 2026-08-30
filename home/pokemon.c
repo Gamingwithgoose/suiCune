@@ -366,6 +366,7 @@ bool ConvertPartyMonToNative(struct NativePartyMon* dest, const struct PartyMon*
 
     dest->status = src->status;
     dest->unused = src->unused;
+    dest->isEgg = false;
     dest->HP = BigEndianToNative16(src->HP);
     dest->maxHP = BigEndianToNative16(src->maxHP);
     for(size_t i = 0; i < lengthof(dest->stats); ++i)
@@ -383,6 +384,20 @@ bool ConvertNativePartyMonToLegacy(struct PartyMon* dest, const struct NativePar
     dest->maxHP = NativeToBigEndian16(src->maxHP);
     for(size_t i = 0; i < lengthof(src->stats); ++i)
         dest->stats[i] = NativeToBigEndian16(src->stats[i]);
+    return true;
+}
+
+bool PlayerPartyMonIsEgg(uint8_t partyIndex) {
+    return partyIndex < gPokemon.partyCount
+        && gPokemon.legacyPartySpecies[partyIndex] == EGG;
+}
+
+bool ConvertPlayerPartyMonToNative(struct NativePartyMon* dest, uint8_t partyIndex) {
+    if(dest == NULL || partyIndex >= gPokemon.partyCount)
+        return false;
+    if(!ConvertPartyMonToNative(dest, &gPokemon.partyMon[partyIndex]))
+        return false;
+    dest->isEgg = PlayerPartyMonIsEgg(partyIndex);
     return true;
 }
 

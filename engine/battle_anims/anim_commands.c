@@ -208,7 +208,7 @@ void RunBattleAnimScript(void){
             uint8_t b = NUM_BG_EFFECTS;
             // LD_DE(BG_EFFECT_STRUCT_LENGTH);
             // LD_HL(wBGEffect1Function);
-            struct BattleBGEffect* hl = wram->wBGEffect;
+            struct BattleBGEffect* hl = BattleAnimationBGEffects();
 
             do {
             // find:
@@ -232,7 +232,7 @@ void RunBattleAnimScript(void){
         // LD_A_addr(wBattleAnimFlags);
         // BIT_A(BATTLEANIM_STOP_F);
         // IF_Z goto playframe;
-    } while(!bit_test(wram->wBattleAnimFlags, BATTLEANIM_STOP_F));
+    } while(!bit_test(sBattleAnim.flags, BATTLEANIM_STOP_F));
 
     // CALL(aBattleAnim_ClearOAM);
     BattleAnim_ClearOAM();
@@ -387,7 +387,7 @@ void BattleAnim_ClearOAM(void){
     // LD_A_addr(wBattleAnimFlags);
     // BIT_A(BATTLEANIM_KEEPSPRITES_F);
     // IF_Z goto delete;
-    if(bit_test(wram->wBattleAnimFlags, BATTLEANIM_KEEPSPRITES_F)) {
+    if(bit_test(sBattleAnim.flags, BATTLEANIM_KEEPSPRITES_F)) {
     // Instead of deleting the sprites, make them all use PAL_BATTLE_OB_ENEMY
         // LD_HL(wVirtualOAMSprite00Attributes);
         struct SpriteOAM* hl = wram->wVirtualOAMSprite;
@@ -432,12 +432,12 @@ static bool RunBattleAnimCommand_CheckTimer(void) {
     // LD_A_addr(wBattleAnimDelay);
     // AND_A_A;
     // IF_Z goto done;
-    if(wram->wBattleAnimDelay == 0)
+    if(sBattleAnim.delay == 0)
         return true;
 
     // DEC_A;
     // LD_addr_A(wBattleAnimDelay);
-    wram->wBattleAnimDelay--;
+    sBattleAnim.delay--;
     // AND_A_A;
     // RET;
     return false;
@@ -464,7 +464,7 @@ static void RunBattleAnimCommand_RunScript(void) {
         // IF_NZ goto do_anim;
         if(res == 1 && !sBattleAnim.script) {
             // SET_hl(BATTLEANIM_STOP_F);
-            bit_set(wram->wBattleAnimFlags, BATTLEANIM_STOP_F);
+            bit_set(sBattleAnim.flags, BATTLEANIM_STOP_F);
             // RET;
             return;
         }
@@ -655,7 +655,7 @@ void RunBattleAnimCommand(void){
 
 void BattleAnimCmd_Wait(uint8_t a) {
     // LD_addr_A(wBattleAnimDelay);
-    wram->wBattleAnimDelay = a;
+    sBattleAnim.delay = a;
     // RET;
 }
 
@@ -678,7 +678,7 @@ void BattleAnimCmd_ED(void){
 void BattleAnimCmd_Ret(battleanim_s* anim){
     // LD_HL(wBattleAnimFlags);
     // RES_hl(BATTLEANIM_IN_SUBROUTINE_F);
-    bit_reset(wram->wBattleAnimFlags, BATTLEANIM_IN_SUBROUTINE_F);
+    bit_reset(anim->flags, BATTLEANIM_IN_SUBROUTINE_F);
     // LD_HL(wBattleAnimParent);
     // LD_E_hl;
     // INC_HL;
@@ -718,7 +718,7 @@ void BattleAnimCmd_Call(battleanim_s* anim, battleanim_func func){
     anim->pos = 0;
     // LD_HL(wBattleAnimFlags);
     // SET_hl(BATTLEANIM_IN_SUBROUTINE_F);
-    bit_set(wram->wBattleAnimFlags, BATTLEANIM_IN_SUBROUTINE_F);
+    bit_set(anim->flags, BATTLEANIM_IN_SUBROUTINE_F);
     // RET;
 }
 
@@ -741,15 +741,15 @@ void BattleAnimCmd_Loop(battleanim_s* anim, uint8_t count, battleanim_func func)
     // LD_HL(wBattleAnimFlags);
     // BIT_hl(BATTLEANIM_IN_LOOP_F);
     // IF_NZ goto continue_loop;
-    if(!bit_test(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F)) {
+    if(!bit_test(anim->flags, BATTLEANIM_IN_LOOP_F)) {
         // AND_A_A;
         // IF_Z goto perpetual;
         if(count != 0) {
             // DEC_A;
             // SET_hl(BATTLEANIM_IN_LOOP_F);
-            bit_set(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F);
+            bit_set(anim->flags, BATTLEANIM_IN_LOOP_F);
             // LD_addr_A(wBattleAnimLoops);
-            wram->wBattleAnimLoops = --count;
+            anim->loops = --count;
         }
         else {
             goto perpetual;
@@ -761,11 +761,11 @@ void BattleAnimCmd_Loop(battleanim_s* anim, uint8_t count, battleanim_func func)
     // LD_A_hl;
     // AND_A_A;
     // IF_Z goto return_from_loop;
-    if(wram->wBattleAnimLoops == 0) {
+    if(anim->loops == 0) {
     // return_from_loop:
         // LD_HL(wBattleAnimFlags);
         // RES_hl(BATTLEANIM_IN_LOOP_F);
-        bit_reset(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F);
+        bit_reset(anim->flags, BATTLEANIM_IN_LOOP_F);
         // LD_HL(wBattleAnimAddress);
         // LD_E_hl;
         // INC_HL;
@@ -779,7 +779,7 @@ void BattleAnimCmd_Loop(battleanim_s* anim, uint8_t count, battleanim_func func)
         return;
     }
     // DEC_hl;
-    wram->wBattleAnimLoops--;
+    anim->loops--;
 
 perpetual:
     // CALL(aGetBattleAnimByte);
@@ -796,17 +796,17 @@ perpetual:
 }
 
 bool BattleAnimCmd_LoopInline(uint8_t count) {
-    if(!bit_test(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F)) {
+    if(!bit_test(sBattleAnim.flags, BATTLEANIM_IN_LOOP_F)) {
         if(count == 0)
             return true;
-        bit_set(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F);
-        wram->wBattleAnimLoops = --count;
+        bit_set(sBattleAnim.flags, BATTLEANIM_IN_LOOP_F);
+        sBattleAnim.loops = --count;
     }
-    if(wram->wBattleAnimLoops == 0) {
-        bit_reset(wram->wBattleAnimFlags, BATTLEANIM_IN_LOOP_F);
+    if(sBattleAnim.loops == 0) {
+        bit_reset(sBattleAnim.flags, BATTLEANIM_IN_LOOP_F);
         return false;
     }
-    wram->wBattleAnimLoops--;
+    sBattleAnim.loops--;
     return true;
 }
 
@@ -848,7 +848,7 @@ void BattleAnimCmd_JumpUntil(battleanim_s* anim, battleanim_func func){
 void BattleAnimCmd_SetVar(uint8_t var){
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBattleAnimVar);
-    wram->wBattleAnimVar = var;
+    sBattleAnim.var = var;
     // RET;
 }
 
@@ -856,7 +856,11 @@ void BattleAnimCmd_IncVar(void){
     // LD_HL(wBattleAnimVar);
     // INC_hl;
     // RET;
-    wram->wBattleAnimVar++;
+    sBattleAnim.var++;
+}
+
+uint8_t BattleAnimGetVar(void){
+    return sBattleAnim.var;
 }
 
 void BattleAnimCmd_IfVarEqual(battleanim_s* anim, uint8_t n, battleanim_func func){
@@ -864,7 +868,7 @@ void BattleAnimCmd_IfVarEqual(battleanim_s* anim, uint8_t n, battleanim_func fun
     // LD_HL(wBattleAnimVar);
     // CP_A_hl;
     // IF_Z goto jump;
-    if(wram->wBattleAnimVar == n) {
+    if(anim->var == n) {
     // jump:
         // CALL(aGetBattleAnimByte);
         // LD_E_A;
@@ -1044,7 +1048,7 @@ void BattleAnimCmd_ClearObjs(void){
     // INC_HL;
     // DEC_A;
     // IF_NZ goto loop;
-    ByteFill(wram->wAnimObject, a, 0);
+    ClearNativeBattleAnimationObjects(a);
     // RET;
 }
 
@@ -1107,7 +1111,7 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
     // AND_A(0xf);
     // LD_C_A;
     // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = wram->wBattleAnimTileDict;
+    uint8_t* hl = BattleAnimationTileDictionary();
     // XOR_A_A;
     // LD_addr_A(wBattleAnimGFXTempTileID);
     wram->wBattleAnimGFXTempTileID = 0;
@@ -1165,7 +1169,7 @@ void BattleAnimCmd_IncObj(uint8_t a){
     // LD_E(NUM_ANIM_OBJECTS);
     uint8_t e = NUM_ANIM_OBJECTS;
     // LD_BC(wActiveAnimObjects);
-    struct BattleAnim* bc = wram->wAnimObject;
+    struct BattleAnim* bc = BattleAnimationObjects();
 
     do {
     // loop:
@@ -1200,7 +1204,7 @@ void BattleAnimCmd_IncBGEffect(uint8_t c){
     // LD_E(NUM_BG_EFFECTS);
     uint8_t e = NUM_BG_EFFECTS;
     // LD_BC(wBGEffect1Function);
-    struct BattleBGEffect* bc = wram->wBGEffect;
+    struct BattleBGEffect* bc = BattleAnimationBGEffects();
 
     do {
     // loop:
@@ -1235,7 +1239,7 @@ void BattleAnimCmd_SetObj(uint8_t a, uint8_t jt){
     // LD_E(NUM_ANIM_OBJECTS);
     uint8_t e = NUM_ANIM_OBJECTS;
     // LD_BC(wActiveAnimObjects);
-    struct BattleAnim* bc = wram->wAnimObject;
+    struct BattleAnim* bc = BattleAnimationObjects();
 
     do {
     // loop:
@@ -1297,7 +1301,7 @@ static uint8_t* BattleAnimCmd_BattlerGFX_1Row_LoadFeet(uint8_t* hl, const uint8_
 void BattleAnimCmd_BattlerGFX_1Row(void){
     log_debug("BattlerGFX_1Row::\n");
     // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = wram->wBattleAnimTileDict;
+    uint8_t* hl = BattleAnimationTileDictionary();
 
     while(*hl != 0) {
     // loop:
@@ -1375,7 +1379,7 @@ static uint8_t* BattleAnimCmd_BattlerGFX_2Row_LoadHead(uint8_t* hl, const uint8_
 void BattleAnimCmd_BattlerGFX_2Row(void){
     log_debug("BattlerGFX_2Row::\n");
     // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = wram->wBattleAnimTileDict;
+    uint8_t* hl = BattleAnimationTileDictionary();
 
     while(*hl != 0) {
     // loop:
@@ -1425,7 +1429,7 @@ void BattleAnimCmd_CheckPokeball(void){
     // CALLFAR(aGetPokeBallWobble);
     // LD_A_C;
     // LD_addr_A(wBattleAnimVar);
-    wram->wBattleAnimVar = GetPokeBallWobble();
+    sBattleAnim.var = GetPokeBallWobble();
     // RET;
 }
 
@@ -1809,7 +1813,7 @@ void BattleAnimCmd_OAMOff(void){
 void BattleAnimCmd_KeepSprites(void){
     // LD_HL(wBattleAnimFlags);
     // SET_hl(BATTLEANIM_KEEPSPRITES_F);
-    bit_set(wram->wBattleAnimFlags, BATTLEANIM_KEEPSPRITES_F);
+    bit_set(sBattleAnim.flags, BATTLEANIM_KEEPSPRITES_F);
     // RET;
 }
 
@@ -2064,6 +2068,8 @@ void ClearBattleAnims(void){
         // IF_NZ goto loop;
     } while(--bc != 0);
 
+    ResetNativeBattleAnimationState();
+
     // LD_HL(wFXAnimID);
     // LD_E_hl;
     // INC_HL;
@@ -2075,6 +2081,11 @@ void ClearBattleAnims(void){
     sBattleAnim.script = BattleAnimations[wram->wFXAnimID];
     sBattleAnim.pos = 0;
     sBattleAnim.parent = NULL;
+    sBattleAnim.parent_pos = 0;
+    sBattleAnim.flags = 0;
+    sBattleAnim.delay = 0;
+    sBattleAnim.loops = 0;
+    sBattleAnim.var = 0;
     // CALL(aBattleAnimAssignPals);
     BattleAnimAssignPals();
     // CALL(aBattleAnimDelayFrame);
@@ -2175,7 +2186,7 @@ void BattleAnim_UpdateOAM_All(void){
     // LD_addr_A(wBattleAnimOAMPointerLo);
     uint8_t oamIndex = 0;
     // LD_HL(wActiveAnimObjects);
-    struct BattleAnim* hl = wram->wAnimObject;
+    struct BattleAnim* hl = BattleAnimationObjects();
     // LD_E(NUM_ANIM_OBJECTS);
     uint8_t e = NUM_ANIM_OBJECTS;
 

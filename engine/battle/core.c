@@ -5793,7 +5793,7 @@ static bool CheckIfCurPartyMonIsFitToFight(void){
     // LD_A_hli;
     // OR_A_hl;
     // RET_NZ ;
-    if(gPokemon.partyMon[wram->wCurPartyMon].HP != 0 && gPokemon.partyMon[wram->wCurPartyMon].mon.species != EGG)
+    if(gPokemon.partyMon[wram->wCurPartyMon].HP != 0 && !PlayerPartyMonIsEgg(wram->wCurPartyMon))
         return true;
 
     // LD_A_addr(wBattleHasJustStarted);
@@ -5811,7 +5811,7 @@ static bool CheckIfCurPartyMonIsFitToFight(void){
     // CP_A(EGG);
     // LD_HL(mBattleText_AnEGGCantBattle);
     // IF_Z goto print_textbox;
-    if(gPokemon.partyMon[wram->wCurPartyMon].mon.species == EGG) {
+    if(PlayerPartyMonIsEgg(wram->wCurPartyMon)) {
         StdBattleTextbox(BattleText_AnEGGCantBattle);
     }
     else {

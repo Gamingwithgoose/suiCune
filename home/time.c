@@ -3,6 +3,7 @@
 #include "sram.h"
 #include "mobile.h"
 #include "../engine/rtc/rtc.h"
+#include "../util/rtc.h"
 
 //  Functions relating to the timer interrupt and the real-time-clock.
 
@@ -23,12 +24,6 @@ void Timer(void){
     // RET;
 }
 
-//  latch clock counter data
-void LatchClock(void){
-    gb_write(MBC3LatchClock, 0);
-    gb_write(MBC3LatchClock, 1);
-}
-
 void UpdateTime(void) {
     GetClock();
     FixDays();
@@ -38,42 +33,15 @@ void UpdateTime(void) {
 
 //  store clock data in hRTCDayHi-hRTCSeconds
 void GetClock(void){
-//  enable clock r/w
-    gb_write(MBC3SRamEnable, SRAM_ENABLE);
+    struct NativeRTCClock clock;
+    if(!ReadNativeRTCClock(&clock))
+        return;
 
-//  clock data is 'backwards' in hram
-    UpdateRTC();
-    LatchClock();
-    //LD_HL(MBC3SRamBank);
-    //LD_DE(MBC3RTC);
-
-    gb_write(MBC3SRamBank, RTC_S);
-    // REG_A = gb_read(de);
-    // maskbits(60, 0);
-    hram.hRTCSeconds = gb_read(MBC3RTC) & 0x3f;
-
-    gb_write(MBC3SRamBank, RTC_M);
-    // REG_A = gb_read(de);
-    // maskbits(60, 0);
-    // gb_write(hRTCMinutes, REG_A);
-    hram.hRTCMinutes = gb_read(MBC3RTC) & 0x3f;
-
-    gb_write(MBC3SRamBank, RTC_H);
-    // REG_A = gb_read(de);
-    // maskbits(24, 0);
-    // gb_write(hRTCHours, REG_A);
-    hram.hRTCHours = gb_read(MBC3RTC) & 0x1f;
-
-    gb_write(MBC3SRamBank, RTC_DL);
-    // REG_A = gb_read(de);
-    hram.hRTCDayLo = gb_read(MBC3RTC);
-
-    gb_write(MBC3SRamBank, RTC_DH);
-    // REG_A = gb_read(de);
-    hram.hRTCDayHi = gb_read(MBC3RTC);
-
-//  unlatch clock / disable clock r/w
-    CloseSRAM();
+    hram.hRTCSeconds = clock.seconds;
+    hram.hRTCMinutes = clock.minutes;
+    hram.hRTCHours = clock.hours;
+    hram.hRTCDayLo = (uint8_t)clock.day;
+    hram.hRTCDayHi = (uint8_t)(clock.day >> 8);
 }
 
 //  fix day count
@@ -259,43 +227,8 @@ void ClearClock(void){
 
 //  set clock data from hram
 void SetClock(void){
-//  enable clock r/w
-    gb_write(MBC3SRamEnable, SRAM_ENABLE);
-
-//  set clock data
-//  stored 'backwards' in hram
-
-    LatchClock();
-    const uint16_t hl = MBC3SRamBank;
-    const uint16_t de = MBC3RTC;
-
-//  seems to be a halt check that got partially commented out
-//  this block is totally pointless
-    // LD_hl(RTC_DH);
-    // LD_A_de;
-    // BIT_A(6);  // halt
-    // LD_de_A;
-
-//  seconds
-    gb_write(hl, RTC_S);
-    gb_write(de, hram.hRTCSeconds);
-//  minutes
-    gb_write(hl, RTC_M);
-    gb_write(de, hram.hRTCMinutes);
-//  hours
-    gb_write(hl, RTC_H);
-    gb_write(de, hram.hRTCHours);
-//  day lo
-    gb_write(hl, RTC_DL);
-    gb_write(de, hram.hRTCDayLo);
-//  day hi
-    gb_write(hl, RTC_DH);
-    uint8_t dayhi = hram.hRTCDayHi;
-    bit_reset(dayhi, 6);  // make sure timer is active
-    gb_write(de, dayhi);
-
-//  cleanup
-    CloseSRAM();  // unlatch clock, disable clock r/w
+    uint16_t day = hram.hRTCDayLo | ((uint16_t)(hram.hRTCDayHi & 1) << 8);
+    SetNativeRTCClockDay(day);
 }
 
 void ClearRTCStatus(void){

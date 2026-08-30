@@ -177,7 +177,7 @@ bool CheckPartyMove(move_t d){
             return false;
         // CP_A(EGG);
         // IF_Z goto next;
-        if(gPokemon.partyMon[e].mon.species == EGG)
+        if(PlayerPartyMonIsEgg(e))
             continue;
 
         // LD_BC(PARTYMON_STRUCT_LENGTH);

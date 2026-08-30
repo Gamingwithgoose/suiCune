@@ -1387,7 +1387,7 @@ static void MoveScreenLoop_cycle(int dir) {
             goto cycle_left;
         // CP_A(EGG);
         // RET_NZ ;
-        if(gPokemon.partyMon[c].mon.species != EGG)
+        if(!PlayerPartyMonIsEgg(c))
             return;
         goto cycle_right;
 
@@ -1411,7 +1411,7 @@ static void MoveScreenLoop_cycle(int dir) {
         // LD_A_hl;
         // CP_A(EGG);
         // RET_NZ ;
-        if(gPokemon.partyMon[c].mon.species != EGG)
+        if(!PlayerPartyMonIsEgg(c))
             return;
         // LD_A_addr(wCurPartyMon);
         // AND_A_A;

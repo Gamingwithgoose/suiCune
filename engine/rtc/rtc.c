@@ -6,48 +6,6 @@
 #include "../overworld/time.h"
 #include "../events/battle_tower/battle_tower.h"
 
-void StopRTC(void){
-//  //  unreferenced
-    // LD_A(SRAM_ENABLE);
-    // LD_addr_A(MBC3SRamEnable);
-    gb_write(MBC3SRamEnable, SRAM_ENABLE);
-    // CALL(aLatchClock);
-    UpdateRTC();
-    LatchClock();
-    // LD_A(RTC_DH);
-    // LD_addr_A(MBC3SRamBank);
-    gb_write(MBC3SRamBank, RTC_DH);
-    // LD_A_addr(MBC3RTC);
-    // SET_A(6);  // halt
-    // LD_addr_A(MBC3RTC);
-    gb_write(MBC3RTC, gb_read(MBC3RTC) | (1 << 6));
-    // CALL(aCloseSRAM);
-    CloseSRAM();
-    // RET;
-}
-
-void StartRTC(void){
-    // LD_A(SRAM_ENABLE);
-    // LD_addr_A(MBC3SRamEnable);
-    gb_write(MBC3SRamEnable, SRAM_ENABLE);
-
-    // CALL(aLatchClock);
-    UpdateRTC();
-    LatchClock();
-
-    // LD_A(RTC_DH);
-    // LD_addr_A(MBC3SRamBank);
-    gb_write(MBC3SRamBank, RTC_DH);
-
-    // LD_A_addr(MBC3RTC);
-    // RES_A(6);  // halt
-    // LD_addr_A(MBC3RTC);
-    gb_write(MBC3RTC, gb_read(MBC3RTC) & ((0xFE << 6) | (0xFF >> (8 - 6))));
-
-    // CALL(aCloseSRAM);
-    CloseSRAM();
-}
-
 //  get time of day based on the current hour
 void GetTimeOfDay(void){
     //  hours for the time of day
@@ -96,30 +54,7 @@ void StageRTCTimeForSave(void){
 }
 
 void SaveRTC(void){
-    // LD_A(SRAM_ENABLE);
-    // LD_addr_A(MBC3SRamEnable);
-    gb_write(MBC3SRamEnable, SRAM_ENABLE);
-
-    // CALL(aLatchClock);
-    LatchClock();
-
-    // LD_HL(MBC3RTC);
-    // LD_A(RTC_DH);
-    // LD_addr_A(MBC3SRamBank);
-    // RES_hl(7);
-    gb_write(MBC3SRamBank, RTC_DH);
-    gb_write(MBC3RTC, gb_read(MBC3RTC) & ~(1 << 7));
-
-    // LD_A(BANK(sRTCStatusFlags));
-    // LD_addr_A(MBC3SRamBank);
-    gb_write(MBC3SRamBank, MBANK(asRTCStatusFlags));
-
-    // XOR_A_A;
-    // LD_addr_A(sRTCStatusFlags);
-    gb_write(sRTCStatusFlags, 0);
-
-    // CALL(aCloseSRAM);
-    CloseSRAM();
+    ClearRTCStatus();
 }
 
 void StartClock(void){
@@ -140,9 +75,6 @@ void StartClock(void){
         RecordRTCStatus(a);
     }
 
-    // CALL(aStartRTC);
-    // RET;
-    StartRTC();
 }
 
 uint8_t v_FixDays(void){

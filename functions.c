@@ -51,7 +51,7 @@ void init_function_pointers(void) {
     CONVERTED(RefreshBattleHuds);
     CONVERTED(MobileTextBorder);
     // CONVERTED(OTPartyAttr);
-    REDIRECTED(FarCopyRadioText);
+    // FarCopyRadioText was an unused banked helper and has no native caller.
     // CONVERTED(BattleTextbox);
     CONVERTED(UpdateUserInParty);
     // CONVERTED(GetPartyParamLocation);

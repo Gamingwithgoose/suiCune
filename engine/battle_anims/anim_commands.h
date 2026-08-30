@@ -24,6 +24,7 @@ bool BattleAnimCmd_LoopInline(uint8_t count);
 void BattleAnimCmd_JumpUntil(battleanim_s* anim, battleanim_func func);
 void BattleAnimCmd_SetVar(uint8_t var);
 void BattleAnimCmd_IncVar(void);
+uint8_t BattleAnimGetVar(void);
 void BattleAnimCmd_IfVarEqual(battleanim_s* anim, uint8_t n, battleanim_func func);
 void BattleAnimCmd_IfParamEqual(battleanim_s* anim, uint8_t param, battleanim_func func);
 void BattleAnimCmd_IfParamAnd(battleanim_s* anim, uint8_t n, battleanim_func func);
