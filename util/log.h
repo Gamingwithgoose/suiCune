@@ -22,6 +22,8 @@ void log_runtime_end(void);
 void log_runtime_mark_fatal(const char* reason);
 void log_runtime_frame_advance(void);
 void log_runtime_set_battle_context(uint32_t turn, const char* phase);
+void log_runtime_set_boundary(const char* boundary);
+void log_runtime_windows_exception(uint32_t exceptionCode, const void* faultAddress);
 void log_runtime_event(const char* category, const char* fmt, ...);
 
 log_level_t log_get_level(void);

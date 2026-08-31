@@ -61,6 +61,16 @@ struct NativeBattleAnimationState {
     uint8_t lastObjectIndex;
 };
 
+struct NativeSpriteValidationRepeat {
+    bool active;
+    uint8_t resourceKind;
+    uint16_t tileId;
+    size_t tileSpan;
+    size_t capacity;
+    BattleAnimationId animationId;
+    size_t repeats;
+};
+
 struct BattleAnimationPresentationState {
     bool active;
     uint8_t dmgBGPalette;
@@ -84,6 +94,7 @@ struct NativeBattleSceneDisplayState {
 };
 
 static struct NativeBattleAnimationState sBattleAnimationState;
+static struct NativeSpriteValidationRepeat sNativeSpriteValidationRepeats[16];
 static struct BattleAnimationPresentationState sBattleAnimationPresentation;
 static struct NativeBattleSceneDisplayState sBattleSceneDisplay;
 // The parameter is supplied by battle logic before an animation begins and
@@ -93,6 +104,21 @@ static uint8_t sBattleAnimationParameter;
 // Battle animation selection is transient native battle state. It is kept
 // separate from the legacy WRAM layout so content IDs can outlive that layout.
 static BattleAnimationId sBattleAnimationId;
+
+static void BattleAnimationFlushSpriteValidationRepeats(const char* boundary){
+    for(size_t index = 0; index < lengthof(sNativeSpriteValidationRepeats); index++) {
+        struct NativeSpriteValidationRepeat* repeat = &sNativeSpriteValidationRepeats[index];
+        if(!repeat->active)
+            continue;
+        if(repeat->repeats != 0) {
+            log_runtime_event("ERROR", "native sprite resource rejection repeated=%zu boundary=%s kind=%u tile=%u span=%zu capacity=%zu animation=%u",
+                repeat->repeats, boundary == NULL ? "unspecified" : boundary,
+                (unsigned)repeat->resourceKind, (unsigned)repeat->tileId,
+                repeat->tileSpan, repeat->capacity, (unsigned)repeat->animationId);
+        }
+        memset(repeat, 0, sizeof(*repeat));
+    }
+}
 
 static const char* BattleSceneBattlerName(enum BattleSceneBattlerId battler){
     return battler == BATTLE_SCENE_BATTLER_PLAYER ? "player" : "opponent";
@@ -340,18 +366,35 @@ void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
     if(battler >= BATTLE_SCENE_BATTLER_COUNT)
         return;
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
-    size_t write = 0;
+    size_t masked = 0;
     int16_t right = x + width * TILE_WIDTH;
     int16_t bottom = y + height * TILE_WIDTH;
-    for(size_t read = 0; read < state->tileCount; read++) {
-        struct BattleSceneBattlerTile tile = state->tiles[read];
-        if(tile.x >= x && tile.x < right && tile.y >= y && tile.y < bottom)
-            continue;
-        state->tiles[write++] = tile;
+    for(size_t index = 0; index < state->tileCount; index++) {
+        struct BattleSceneBattlerTile* tile = &state->tiles[index];
+        if(tile->x >= x && tile->x < right && tile->y >= y && tile->y < bottom) {
+            tile->masked = true;
+            masked++;
+        }
     }
-    state->tileCount = write;
-    log_runtime_event("BATTLE_SCENE", "clear battler region battler=%s region=%d,%d grid=%ux%u remainingTiles=%zu",
-        BattleSceneBattlerName(battler), x, y, (unsigned)width, (unsigned)height, state->tileCount);
+    log_runtime_event("BATTLE_SCENE", "mask battler region battler=%s region=%d,%d grid=%ux%u maskedTiles=%zu persistentTiles=%zu",
+        BattleSceneBattlerName(battler), x, y, (unsigned)width, (unsigned)height, masked, state->tileCount);
+}
+
+void ClearBattleSceneBattlerPresentationMasks(void){
+    for(uint8_t battler = BATTLE_SCENE_BATTLER_PLAYER;
+        battler < BATTLE_SCENE_BATTLER_COUNT; battler++) {
+        struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+        size_t cleared = 0;
+        for(size_t tile = 0; tile < state->tileCount; tile++) {
+            if(state->tiles[tile].masked) {
+                state->tiles[tile].masked = false;
+                cleared++;
+            }
+        }
+        if(cleared != 0)
+            log_runtime_event("BATTLE_SCENE", "unmask battler presentation battler=%s restoredTiles=%zu",
+                BattleSceneBattlerName(battler), cleared);
+    }
 }
 
 void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
@@ -375,6 +418,7 @@ void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
             state->tiles[index].x = x + column * TILE_WIDTH;
             state->tiles[index].y = y + row * TILE_WIDTH;
             state->tiles[index].imageTile = imageTiles[index];
+            state->tiles[index].masked = false;
         }
     }
     state->visible = true;
@@ -539,6 +583,7 @@ void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler){
 }
 
 void ClearBattleSceneBattlers(void){
+    BattleAnimationFlushSpriteValidationRepeats("battle-scene-clear");
     for(size_t i = 0; i < BATTLE_SCENE_BATTLER_COUNT; i++) {
         free(sBattleAnimationState.battlers[i].pixels);
         free(sBattleAnimationState.battlers[i].basePixels);
@@ -574,9 +619,35 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
     // In 8x16 mode the draw host reads two complete native tiles, including
     // when Y-flipped. Validate the span before exposing a source pointer.
     if(pixels == NULL || sprite->tileId > capacity || tileSpan > capacity - sprite->tileId) {
+        BattleAnimationId animationId = BattleAnimationIdGet();
+        struct NativeSpriteValidationRepeat* available = NULL;
+        for(size_t index = 0; index < lengthof(sNativeSpriteValidationRepeats); index++) {
+            struct NativeSpriteValidationRepeat* repeat = &sNativeSpriteValidationRepeats[index];
+            if(repeat->active && repeat->resourceKind == sprite->resourceKind &&
+                repeat->tileId == sprite->tileId && repeat->tileSpan == tileSpan &&
+                repeat->capacity == capacity && repeat->animationId == animationId) {
+                if(repeat->repeats != SIZE_MAX)
+                    repeat->repeats++;
+                return NULL;
+            }
+            if(!repeat->active && available == NULL)
+                available = repeat;
+        }
+        if(available == NULL) {
+            BattleAnimationFlushSpriteValidationRepeats("validation-capacity");
+            available = &sNativeSpriteValidationRepeats[0];
+        }
+        struct NativeSpriteValidationRepeat* repeat = available;
+        repeat->active = true;
+        repeat->resourceKind = sprite->resourceKind;
+        repeat->tileId = sprite->tileId;
+        repeat->tileSpan = tileSpan;
+        repeat->capacity = capacity;
+        repeat->animationId = animationId;
+        repeat->repeats = 0;
         log_runtime_event("ERROR", "native sprite resource rejected kind=%u tile=%u span=%zu capacity=%zu animation=%u",
             (unsigned)sprite->resourceKind, (unsigned)sprite->tileId, tileSpan, capacity,
-            (unsigned)BattleAnimationIdGet());
+            (unsigned)animationId);
         return NULL;
     }
     return pixels + (size_t)sprite->tileId * LEN_2BPP_TILE;
@@ -625,6 +696,8 @@ void BeginBattleAnimationPresentation(void){
 }
 
 void EndBattleAnimationPresentation(void){
+    ClearBattleSceneBattlerPresentationMasks();
+    BattleAnimationFlushSpriteValidationRepeats("animation-end");
     sBattleAnimationPresentation.active = false;
     log_runtime_event("ANIMATION", "presentation end animation=%u", (unsigned)BattleAnimationIdGet());
 }
@@ -900,6 +973,8 @@ static struct BattleAnimationSprite* AppendBattleAnimationRenderSprite(void){
 }
 
 void ResetNativeBattleAnimationState(void){
+    BattleAnimationFlushSpriteValidationRepeats("animation-reset");
+    ClearBattleSceneBattlerPresentationMasks();
     RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_EFFECT);
     uint8_t* hudTilePixels = sBattleAnimationState.hudTilePixels;
     size_t hudTilePixelCapacity = sBattleAnimationState.hudTilePixelCapacity;

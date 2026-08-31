@@ -1189,8 +1189,11 @@ void BattleAnimCmd_BattlerGFX_1Row(void){
     const struct BattleSceneBattlerView* player = BattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER);
     if(opponent == NULL || player == NULL || opponent->pixelTileCount < 7 * 7 || player->pixelTileCount < 6 * 6)
         abort();
+    // The native image staging range contains both contiguous source rows.
+    // The returned pointer is the start of the player row, so reserve the
+    // opponent's seven tiles and the player's six tiles before either copy.
     uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(
-        BattleAnimationTileWritePointer(0x80 - 6 - 7, 7),
+        BattleAnimationTileWritePointer(0x80 - 6 - 7, 7 + 6),
         opponent->pixels + LEN_2BPP_TILE * (6 * 7), 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
@@ -1255,8 +1258,11 @@ void BattleAnimCmd_BattlerGFX_2Row(void){
     const struct BattleSceneBattlerView* player = BattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER);
     if(opponent == NULL || player == NULL || opponent->pixelTileCount < 7 * 7 || player->pixelTileCount < 6 * 6)
         abort();
+    // Each source row is copied as adjacent 8x16 pairs.  Reserve the
+    // complete opponent and player ranges because the second copy begins at
+    // the pointer returned by the first helper.
     uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(
-        BattleAnimationTileWritePointer(0x80 - 6 * 2 - 7 * 2, 14),
+        BattleAnimationTileWritePointer(0x80 - 6 * 2 - 7 * 2, 14 + 12),
         opponent->pixels + LEN_2BPP_TILE * 7 * 5, 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height

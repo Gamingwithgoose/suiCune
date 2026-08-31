@@ -6066,3 +6066,80 @@ Validation and next closure
 - Next task: run a normal battle through a player move and opponent action,
   retain `logs/suiCune_runtime.log`, and compare the same sequence with battle
   animations disabled before any additional battle-renderer migration.
+
+2026-08-31 — Targeted native battle stabilization
+==================================================
+
+Completed repairs
+-----------------
+- Repaired the native animation staging ownership error in
+  `BattleAnimCmd_BattlerGFX_1Row` and `BattleAnimCmd_BattlerGFX_2Row`. Each
+  command copied a contiguous opponent segment followed by a player segment,
+  but allocated only the first segment. The one-row path reserved tiles
+  115..121 then copied a further six tiles through 127; the two-row path had
+  the same incomplete contiguous reservation. Both commands now reserve their
+  complete contiguous native ranges before copying.
+- Converted temporary battler-region clearing into non-destructive native
+  presentation masking. Persistent decoded pixels and tile placement remain
+  authoritative; the compositor skips masked tiles only while an animation is
+  active. Animation reset and presentation completion clear all masks, giving
+  every temporary hide an explicit symmetric lifetime.
+- Added bounded validation-error aggregation for native animation sprite
+  resource ranges. Up to sixteen distinct rejection keys retain their first
+  detailed record; repeated matching records are counted and summarized at
+  animation end, reset, scene clear, or bounded-key rollover. No resource ID
+  is clamped, remapped, or read from legacy storage.
+- Added paired move-effect command boundaries. Each native command dispatch
+  records a flushed BEGIN and END event with move/effect, attacker/target,
+  opcode, table-resolved C handler identity, and existing turn/phase context.
+- Added a Windows-only best-effort unhandled-exception marker. It records the
+  exception code, fault address, diagnostic sequence/frame, battle turn/phase,
+  and most recently entered command boundary through the existing runtime-log
+  handle. A small private ABI declaration replaces the full Windows SDK header
+  import, avoiding collisions with retained game content identifiers such as
+  `SID`, `CAL`, and `CloseWindow`. Non-Windows builds retain a source-compatible
+  no-op implementation.
+
+Tile-order audit
+----------------
+- The current producer/consumer chain is row-major by source inspection:
+  `LoadPNG2bppAssetSectionToVRAM` and `LoadPNG2bppAssetToVRAM` decode
+  left-to-right/top-to-bottom tiles; `PadFrontpic` copies source tile bytes in
+  that sequence while adding row padding; `FixBackpicAlignment` reverses bits
+  within a tile only; battler placement indexes `row * width + column`; and
+  the native compositor reads that exact indexed tile. Right alignment mirrors
+  placement columns only. No further tile-order change was made.
+- Remaining visual verification is required because source inspection cannot
+  prove SDL output, palette selection, or retained host composition behavior.
+
+Files modified
+--------------
+- `engine/battle/effect_commands.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/render.c`
+- `tools/emu/peanut_sdl.c`
+- `util/log.c`
+- `util/log.h`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and remaining boundaries
+-----------------------------------
+- Static validation traced the Leer resource chain from object graphics
+  binding through frame/OAM tile offsets to the native range lookup. The
+  corrected one-row allocation reaches capacity 128, covering requested tiles
+  122..127; no arbitrary capacity increase was introduced.
+- Static validation reviewed every caller of battler-region clearing. The
+  one-row and two-row background effects are temporary presentation paths and
+  now mask; picture-resize scripts continue to replace explicit placement
+  patterns and retain their separate transform semantics.
+- Static validation reviewed all changed declarations/callers, mask reset
+  paths, bounded aggregation overflow handling, Windows guards, and the
+  non-Windows logger implementation.
+- Build/runtime validation: not performed.
+- Retained boundaries: packed move-effect scripts, picture-frame content,
+  generic battle UI/background rendering, and the transitional object host.
+- Next task: run the battle regression matrix with animations enabled and
+  disabled, retain `logs/suiCune_runtime.log`, and use paired command markers
+  plus any Windows crash marker to isolate any remaining crash boundary.

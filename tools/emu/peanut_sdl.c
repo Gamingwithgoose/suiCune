@@ -40,8 +40,43 @@
 #include <stdbool.h>
 #include "../../home/serial.h"
 #include <setjmp.h>
+#ifdef _WIN32
+/* Keep the crash marker isolated from Windows SDK namespace pollution: this
+ * project intentionally has legacy content identifiers such as SID, CAL, and
+ * CloseWindow that the full Windows headers also define. */
+#if defined(__i386__) && defined(__GNUC__)
+#define SUICUNE_WINDOWS_API __attribute__((stdcall))
+#else
+#define SUICUNE_WINDOWS_API
+#endif
+typedef long SuicuneWindowsLong;
+struct SuicuneWindowsExceptionRecord {
+    uint32_t code;
+    uint32_t flags;
+    struct SuicuneWindowsExceptionRecord* nested;
+    const void* address;
+};
+struct SuicuneWindowsExceptionPointers {
+    const struct SuicuneWindowsExceptionRecord* record;
+    const void* context;
+};
+typedef SuicuneWindowsLong (SUICUNE_WINDOWS_API *SuicuneUnhandledExceptionFilter)(
+    struct SuicuneWindowsExceptionPointers* exceptionInfo);
+extern SuicuneUnhandledExceptionFilter SUICUNE_WINDOWS_API SetUnhandledExceptionFilter(
+    SuicuneUnhandledExceptionFilter filter);
+#endif
 
 extern jmp_buf reset_point;
+
+#ifdef _WIN32
+static SuicuneWindowsLong SUICUNE_WINDOWS_API RuntimeUnhandledExceptionFilter(
+    struct SuicuneWindowsExceptionPointers* exceptionInfo) {
+    const struct SuicuneWindowsExceptionRecord* record = exceptionInfo == NULL ? NULL : exceptionInfo->record;
+    log_runtime_windows_exception(record == NULL ? 0 : record->code,
+        record == NULL ? NULL : record->address);
+    return 0; // EXCEPTION_CONTINUE_SEARCH
+}
+#endif
 
 #if defined(USE_SDLNET)
 #if defined(_MSC_VER)
@@ -3585,6 +3620,9 @@ void cleanup(void) {
 int main(int argc, char* argv[]) {
     (void)argc, (void)argv;
     log_runtime_begin("suiCune");
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(RuntimeUnhandledExceptionFilter);
+#endif
     atexit(log_runtime_end);
     atexit(cleanup);
     enum gb_init_error_e gb_ret;

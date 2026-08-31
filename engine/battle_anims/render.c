@@ -7,7 +7,7 @@ static void RenderBattler(const struct BattleSceneRenderLine* line,
         return;
     for(size_t tileIndex = 0; tileIndex < battler->tileCount; tileIndex++) {
         const struct BattleSceneBattlerTile* tile = &battler->tiles[tileIndex];
-        if(tile->imageTile >= battler->pixelTileCount)
+        if(tile->masked || tile->imageTile >= battler->pixelTileCount)
             continue;
         int16_t y = tile->y - BattleSceneVerticalOffsetForLine(line->line);
         int16_t x = tile->x - BattleSceneHorizontalOffsetForLine(line->line);

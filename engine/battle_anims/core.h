@@ -136,6 +136,9 @@ struct BattleSceneBattlerTile {
     int16_t x;
     int16_t y;
     uint16_t imageTile;
+    // Presentation masking is transient.  The decoded image and placement
+    // remain authoritative while an animation temporarily hides a region.
+    bool masked;
 };
 
 struct BattleSceneBattlerView {
@@ -182,6 +185,7 @@ void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDel
 void ClearBattleSceneBattlerTiles(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height);
+void ClearBattleSceneBattlerPresentationMasks(void);
 void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
     const uint8_t* imageTiles);

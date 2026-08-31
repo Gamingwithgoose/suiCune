@@ -33,6 +33,7 @@
 #include "../../data/battle/critical_hit_chances.h"
 #include "../pokemon/health.h"
 #include <stddef.h>
+#include <stdio.h>
 
 struct BattleCmdState gBattleCmdState;
 static uint32_t sBattleDiagnosticTurn;
@@ -195,8 +196,20 @@ void DoMove(void){
         // CALL(aGetFarWord);
 
         // CALL_hl;
-        log_runtime_event("TURN", "move effect dispatch command=%u", (unsigned)a);
-        BattleCommandPointers[a-1]();
+        const char* attacker = hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent";
+        const char* target = hram.hBattleTurn == TURN_PLAYER ? "opponent" : "player";
+        void (*handler)(void) = BattleCommandPointers[a - 1];
+        char boundary[128];
+        snprintf(boundary, sizeof(boundary), "effect-command opcode=%u handler=BattleCommandPointers[%u]",
+            (unsigned)a, (unsigned)(a - 1));
+        log_runtime_set_boundary(boundary);
+        log_runtime_event("COMMAND", "BEGIN move=%u effect=%u attacker=%s target=%s opcode=%u handler=BattleCommandPointers[%u]",
+            (unsigned)GetBattleVar(BATTLE_VARS_MOVE), (unsigned)effectId,
+            attacker, target, (unsigned)a, (unsigned)(a - 1));
+        handler();
+        log_runtime_event("COMMAND", "END move=%u effect=%u attacker=%s target=%s opcode=%u handler=BattleCommandPointers[%u]",
+            (unsigned)GetBattleVar(BATTLE_VARS_MOVE), (unsigned)effectId,
+            attacker, target, (unsigned)a, (unsigned)(a - 1));
         
         // goto ReadMoveEffectCommand;
     }

@@ -21,6 +21,7 @@ static uint64_t s_runtimeSequence;
 static uint64_t s_runtimeFrame;
 static uint32_t s_runtimeBattleTurn;
 static char s_runtimeBattlePhase[48];
+static char s_runtimeBoundary[128];
 static bool s_runtimeFatal;
 static bool s_runtimeClosed;
 
@@ -62,6 +63,7 @@ bool log_runtime_begin(const char* applicationName) {
     s_runtimeFrame = 0;
     s_runtimeBattleTurn = 0;
     s_runtimeBattlePhase[0] = '\0';
+    s_runtimeBoundary[0] = '\0';
     s_runtimeFatal = false;
     s_runtimeClosed = false;
     log_set_dest(s_runtimeLog);
@@ -123,6 +125,32 @@ void log_runtime_set_battle_context(uint32_t turn, const char* phase) {
         strncpy(s_runtimeBattlePhase, phase, sizeof(s_runtimeBattlePhase) - 1);
         s_runtimeBattlePhase[sizeof(s_runtimeBattlePhase) - 1] = '\0';
     }
+}
+
+void log_runtime_set_boundary(const char* boundary) {
+    if(boundary == NULL)
+        s_runtimeBoundary[0] = '\0';
+    else {
+        strncpy(s_runtimeBoundary, boundary, sizeof(s_runtimeBoundary) - 1);
+        s_runtimeBoundary[sizeof(s_runtimeBoundary) - 1] = '\0';
+    }
+}
+
+void log_runtime_windows_exception(uint32_t exceptionCode, const void* faultAddress) {
+#ifdef _WIN32
+    if(s_runtimeLog == NULL || s_runtimeClosed)
+        return;
+    s_runtimeFatal = true;
+    fprintf(s_runtimeLog, "[CRASH][sequence=%llu][frame=%llu][turn=%u phase=%s] windows exception=0x%08lx address=%p boundary=%s\n",
+        (unsigned long long)s_runtimeSequence, (unsigned long long)s_runtimeFrame,
+        s_runtimeBattleTurn, s_runtimeBattlePhase[0] == '\0' ? "none" : s_runtimeBattlePhase,
+        (unsigned long)exceptionCode, faultAddress,
+        s_runtimeBoundary[0] == '\0' ? "none" : s_runtimeBoundary);
+    fflush(s_runtimeLog);
+#else
+    (void)exceptionCode;
+    (void)faultAddress;
+#endif
 }
 
 void log_runtime_end(void) {
