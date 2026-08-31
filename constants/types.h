@@ -157,28 +157,6 @@ typedef uint16_t color_t;
 #pragma pack(push, 1)
 #endif
 
-struct BattleAnim
-{
-    uint8_t index;
-    uint8_t oamFlags;
-    uint8_t fixY;
-    uint8_t framesetId;
-    uint8_t function;
-    uint8_t palette;
-    uint8_t tileId;
-    uint8_t xCoord;
-    uint8_t yCoord;
-    uint8_t xOffset;
-    uint8_t yOffset;
-    uint8_t param;
-    uint8_t duration;
-    uint8_t frame;
-    uint8_t jumptableIndex;
-    uint8_t var1;
-    uint8_t var2;
-    uint8_t padding[7];
-};
-
 struct BattleAnimObj 
 {
     uint8_t flags;

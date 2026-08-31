@@ -1,8 +1,33 @@
+#ifndef SUICUNE_ENGINE_BATTLE_ANIMS_CORE_H
+#define SUICUNE_ENGINE_BATTLE_ANIMS_CORE_H
+
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
-struct BattleAnim;
 struct BattleBGEffect;
+
+// Native runtime object. Script content remains byte-coded at the loader
+// boundary, but animation instances are not a packed Crystal memory format.
+struct BattleAnim {
+    uint8_t index;
+    uint8_t oamFlags;
+    uint8_t fixY;
+    uint8_t framesetId;
+    uint8_t function;
+    uint8_t palette;
+    uint16_t tileId;
+    uint8_t xCoord;
+    uint8_t yCoord;
+    uint8_t xOffset;
+    uint8_t yOffset;
+    uint8_t param;
+    uint8_t duration;
+    uint8_t frame;
+    uint8_t jumptableIndex;
+    uint8_t var1;
+    uint8_t var2;
+};
 
 struct BattleAnimationCommandState {
     uint8_t objectId;
@@ -18,7 +43,7 @@ struct BattleAnimationCommandState {
 struct BattleAnimationRenderState {
     uint8_t oamFlags;
     uint8_t fixY;
-    uint8_t tileId;
+    uint16_t tileId;
     uint8_t xCoord;
     uint8_t yCoord;
     uint8_t xOffset;
@@ -28,7 +53,7 @@ struct BattleAnimationRenderState {
 };
 
 struct BattleAnimationEffectScratchState {
-    uint8_t gfxTileId;
+    uint16_t gfxTileId;
     uint8_t gfxPicHeight;
     uint8_t sineProgress;
     uint8_t sineOffset;
@@ -37,21 +62,42 @@ struct BattleAnimationEffectScratchState {
     uint8_t picResizeBaseTileId;
 };
 
+struct BattleAnimationSprite {
+    int16_t yCoord;
+    int16_t xCoord;
+    uint16_t tileId;
+    uint8_t attributes;
+};
+
+struct BattleAnimationTileBinding {
+    uint8_t graphicsId;
+    uint16_t tileOffset;
+};
+
 bool QueueBattleAnimation(void);
 void DeinitBattleAnimation(struct BattleAnim* bc);
 struct BattleAnim* BattleAnimationObjects(void);
 struct BattleBGEffect* BattleAnimationBGEffects(void);
-uint8_t* BattleAnimationTileDictionary(void);
+void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t tileOffset);
+void AppendBattleAnimationTileBinding(uint8_t graphicsId, uint16_t tileOffset);
+uint16_t BattleAnimationTileOffset(uint8_t graphicsId);
+uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount);
+const uint8_t* BattleAnimationTilePixels(uint16_t tileId);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
+const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);
+void BeginBattleAnimationRenderFrame(void);
+void ClearBattleAnimationRenderSprites(void);
+void SetBattleAnimationRenderSpritePalette(uint8_t paletteMask);
 void ResetNativeBattleAnimationState(void);
-void ClearNativeBattleAnimationObjects(size_t byteCount);
+void ClearNativeBattleAnimationObjects(size_t objectCount);
 void IncrementBattleAnimationObjectIndex(void);
 // void InitBattleAnimation(struct BattleAnim* bc);
-bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex);
+void BattleAnimOAMUpdate(struct BattleAnim* bc);
 // void InitBattleAnimBuffer(struct BattleAnim* bc);
-// uint8_t GetBattleAnimTileOffset(uint8_t a);
 void v_ExecuteBGEffects(void);
 bool v_QueueBGEffect(void);
 //#include "data/battle_anims/objects.h"
+
+#endif

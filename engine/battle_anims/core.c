@@ -3,17 +3,24 @@
 #include "helpers.h"
 #include "bg_effects.h"
 #include "../../data/battle_anims/objects.h"
+#include <stdlib.h>
 #include <string.h>
 
 static void InitBattleAnimation(struct BattleAnim* bc);
 static void InitBattleAnimBuffer(struct BattleAnim* bc);
-static uint8_t GetBattleAnimTileOffset(uint8_t a);
 
 struct NativeBattleAnimationState {
-    uint8_t tileDictionary[NUM_BATTLEANIMTILEDICT_ENTRIES * 2];
+    struct BattleAnimationTileBinding* tileBindings;
+    size_t tileBindingCount;
+    size_t tileBindingCapacity;
+    uint8_t* tilePixels;
+    size_t tilePixelCapacity;
     struct BattleAnimationCommandState command;
     struct BattleAnimationRenderState render;
     struct BattleAnimationEffectScratchState effectScratch;
+    struct BattleAnimationSprite* renderSprites;
+    size_t renderSpriteCount;
+    size_t renderSpriteCapacity;
     struct BattleAnim objects[NUM_ANIM_OBJECTS];
     struct BattleBGEffect bgEffects[NUM_BG_EFFECTS];
     uint8_t lastObjectIndex;
@@ -29,8 +36,61 @@ struct BattleBGEffect* BattleAnimationBGEffects(void){
     return sBattleAnimationState.bgEffects;
 }
 
-uint8_t* BattleAnimationTileDictionary(void){
-    return sBattleAnimationState.tileDictionary;
+void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t tileOffset){
+    if(index >= sBattleAnimationState.tileBindingCapacity) {
+        size_t newCapacity = sBattleAnimationState.tileBindingCapacity == 0 ? 8 : sBattleAnimationState.tileBindingCapacity;
+        while(newCapacity <= index) {
+            if(newCapacity > SIZE_MAX / 2 / sizeof(*sBattleAnimationState.tileBindings))
+                abort();
+            newCapacity *= 2;
+        }
+        struct BattleAnimationTileBinding* bindings = realloc(sBattleAnimationState.tileBindings,
+            newCapacity * sizeof(*bindings));
+        if(bindings == NULL)
+            abort();
+        sBattleAnimationState.tileBindings = bindings;
+        sBattleAnimationState.tileBindingCapacity = newCapacity;
+    }
+    sBattleAnimationState.tileBindings[index].graphicsId = graphicsId;
+    sBattleAnimationState.tileBindings[index].tileOffset = tileOffset;
+    if(index >= sBattleAnimationState.tileBindingCount)
+        sBattleAnimationState.tileBindingCount = index + 1;
+}
+
+void AppendBattleAnimationTileBinding(uint8_t graphicsId, uint16_t tileOffset){
+    SetBattleAnimationTileBinding(sBattleAnimationState.tileBindingCount, graphicsId, tileOffset);
+}
+
+uint16_t BattleAnimationTileOffset(uint8_t graphicsId){
+    for(size_t i = 0; i < sBattleAnimationState.tileBindingCount; i++) {
+        if(sBattleAnimationState.tileBindings[i].graphicsId == graphicsId)
+            return sBattleAnimationState.tileBindings[i].tileOffset;
+    }
+    return 0;
+}
+
+uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount){
+    size_t requiredCapacity = (size_t)tileId + tileCount;
+    if(requiredCapacity == 0)
+        requiredCapacity = 1;
+    if(requiredCapacity > sBattleAnimationState.tilePixelCapacity) {
+        if(requiredCapacity > SIZE_MAX / LEN_2BPP_TILE)
+            abort();
+        uint8_t* pixels = realloc(sBattleAnimationState.tilePixels, requiredCapacity * LEN_2BPP_TILE);
+        if(pixels == NULL)
+            abort();
+        memset(pixels + sBattleAnimationState.tilePixelCapacity * LEN_2BPP_TILE, 0,
+            (requiredCapacity - sBattleAnimationState.tilePixelCapacity) * LEN_2BPP_TILE);
+        sBattleAnimationState.tilePixels = pixels;
+        sBattleAnimationState.tilePixelCapacity = requiredCapacity;
+    }
+    return sBattleAnimationState.tilePixels + (size_t)tileId * LEN_2BPP_TILE;
+}
+
+const uint8_t* BattleAnimationTilePixels(uint16_t tileId){
+    if(tileId >= sBattleAnimationState.tilePixelCapacity)
+        return NULL;
+    return sBattleAnimationState.tilePixels + (size_t)tileId * LEN_2BPP_TILE;
 }
 
 struct BattleAnimationCommandState* BattleAnimationCommandState(void){
@@ -45,14 +105,49 @@ struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void
     return &sBattleAnimationState.effectScratch;
 }
 
+const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count){
+    *count = sBattleAnimationState.renderSpriteCount;
+    return sBattleAnimationState.renderSprites;
+}
+
+void BeginBattleAnimationRenderFrame(void){
+    sBattleAnimationState.renderSpriteCount = 0;
+}
+
+void ClearBattleAnimationRenderSprites(void){
+    sBattleAnimationState.renderSpriteCount = 0;
+}
+
+void SetBattleAnimationRenderSpritePalette(uint8_t paletteMask){
+    for(size_t i = 0; i < sBattleAnimationState.renderSpriteCount; i++)
+        sBattleAnimationState.renderSprites[i].attributes &= paletteMask;
+}
+
+static struct BattleAnimationSprite* AppendBattleAnimationRenderSprite(void){
+    if(sBattleAnimationState.renderSpriteCount == sBattleAnimationState.renderSpriteCapacity) {
+        size_t newCapacity = sBattleAnimationState.renderSpriteCapacity == 0 ? 64 : sBattleAnimationState.renderSpriteCapacity * 2;
+        if(newCapacity < sBattleAnimationState.renderSpriteCapacity || newCapacity > SIZE_MAX / sizeof(*sBattleAnimationState.renderSprites))
+            abort();
+        struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.renderSprites, newCapacity * sizeof(*sprites));
+        if(sprites == NULL)
+            abort();
+        sBattleAnimationState.renderSprites = sprites;
+        sBattleAnimationState.renderSpriteCapacity = newCapacity;
+    }
+    return &sBattleAnimationState.renderSprites[sBattleAnimationState.renderSpriteCount++];
+}
+
 void ResetNativeBattleAnimationState(void){
+    free(sBattleAnimationState.renderSprites);
+    free(sBattleAnimationState.tileBindings);
+    free(sBattleAnimationState.tilePixels);
     memset(&sBattleAnimationState, 0, sizeof(sBattleAnimationState));
 }
 
-void ClearNativeBattleAnimationObjects(size_t byteCount){
-    if(byteCount > sizeof(sBattleAnimationState.objects))
-        byteCount = sizeof(sBattleAnimationState.objects);
-    memset(sBattleAnimationState.objects, 0, byteCount);
+void ClearNativeBattleAnimationObjects(size_t objectCount){
+    if(objectCount > NUM_ANIM_OBJECTS)
+        objectCount = NUM_ANIM_OBJECTS;
+    memset(sBattleAnimationState.objects, 0, objectCount * sizeof(sBattleAnimationState.objects[0]));
 }
 
 void IncrementBattleAnimationObjectIndex(void){
@@ -137,9 +232,9 @@ static void InitBattleAnimation(struct BattleAnim* bc){
     // LD_hli_A;  // BATTLEANIMSTRUCT_PALETTE
     bc->palette = de->palette;
     // LD_A_de;
-    // CALL(aGetBattleAnimTileOffset);
+    // Resolve the animation object's graphics key to its native tile offset.
     // LD_hli_A;  // BATTLEANIMSTRUCT_TILEID
-    bc->tileId = GetBattleAnimTileOffset(de->tileOffset);
+    bc->tileId = BattleAnimationTileOffset(de->tileOffset);
     // LD_A_addr(wBattleObjectTempXCoord);
     // LD_hli_A;  // BATTLEANIMSTRUCT_XCOORD
     bc->xCoord = BattleAnimationCommandState()->objectX;
@@ -173,7 +268,7 @@ static void InitBattleAnimation(struct BattleAnim* bc){
 // #define delanim_command 0xFC
 // #define dowait_command 0xFD
 
-bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
+void BattleAnimOAMUpdate(struct BattleAnim* bc){
     // CALL(aInitBattleAnimBuffer);
     InitBattleAnimBuffer(bc);
     // CALL(aGetBattleAnimFrame);
@@ -181,7 +276,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // CP_A(dowait_command);
     // JP_Z (mBattleAnimOAMUpdate_done);
     if(a == dowait_command)
-        return false;
+        return;
     // CP_A(delanim_command);
     // JP_Z (mBattleAnimOAMUpdate_delete);
     if(a == delanim_command) {
@@ -192,7 +287,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // done:
         // AND_A_A;
         // RET;
-        return false;
+        return;
     }
 
     // PUSH_AF;
@@ -210,7 +305,10 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // LD_A_addr(wBattleAnimTempTileID);
     // ADD_A_hl;  // tile offset
     // LD_addr_A(wBattleAnimTempTileID);
-    BattleAnimationRenderState()->tileId += (int8_t)oam->vtile_offset;
+    int32_t frameTileId = (int32_t)BattleAnimationRenderState()->tileId + (int8_t)oam->vtile_offset;
+    if(frameTileId < 0 || frameTileId > UINT16_MAX)
+        abort();
+    BattleAnimationRenderState()->tileId = (uint16_t)frameTileId;
     // INC_HL;
     // LD_A_hli;  // oam data length
     // LD_C_A;
@@ -219,11 +317,6 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
     // LD_H_hl;
     // LD_L_A;
     const uint8_t* hl = oam->ptr;
-    // LD_A_addr(wBattleAnimOAMPointerLo);
-    // LD_E_A;
-    // LD_D(HIGH(wVirtualOAM));
-    struct SpriteOAM* de = wram->wVirtualOAMSprite + *oamIndex;
-
     do {
     // loop:
     // Y Coord
@@ -250,7 +343,8 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // POP_HL;
         // ADD_A_B;
         // LD_de_A;
-        de->yCoord = y + b;
+        struct BattleAnimationSprite* sprite = AppendBattleAnimationRenderSprite();
+        sprite->yCoord = y + b;
 
     // X Coord
         // INC_HL;
@@ -278,7 +372,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // POP_HL;
         // ADD_A_B;
         // LD_de_A;
-        de->xCoord = x + b;
+        sprite->xCoord = x + b;
 
     // Tile ID
         // INC_HL;
@@ -288,7 +382,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // ADD_A(BATTLEANIM_BASE_TILE);
         // ADD_A_hl;
         // LD_de_A;
-        de->tileID = BattleAnimationRenderState()->tileId + BATTLEANIM_BASE_TILE + tileID;
+        sprite->tileId = BattleAnimationRenderState()->tileId + BATTLEANIM_BASE_TILE + tileID;
 
     // Attributes
         // INC_HL;
@@ -308,23 +402,11 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
         // AND_A(PALETTE_MASK | VRAM_BANK_1);
         // OR_A_B;
         // LD_de_A;
-        de->attributes = ((attr ^ BattleAnimationRenderState()->oamFlags) & (PRIORITY | Y_FLIP | X_FLIP)) | (attr & OBP_NUM) | (BattleAnimationRenderState()->palette & (PALETTE_MASK | VRAM_BANK_1));
+        sprite->attributes = ((attr ^ BattleAnimationRenderState()->oamFlags) & (PRIORITY | Y_FLIP | X_FLIP)) | (attr & OBP_NUM) | (BattleAnimationRenderState()->palette & (PALETTE_MASK | VRAM_BANK_1));
 
         // INC_HL;
         // INC_DE;
-        de++;
-        // LD_A_E;
-        // LD_addr_A(wBattleAnimOAMPointerLo);
-        (*oamIndex)++;
-        // CP_A(LOW(wVirtualOAMEnd));
-        // IF_NC goto exit_set_carry;
-        if(*oamIndex >= NUM_SPRITE_OAM_STRUCTS) {
-        // exit_set_carry:
-            // POP_BC;
-            // SCF;
-            // RET;
-            return true;
-        }
+        // Native render storage grows as required; no OAM-capacity exit.
         // DEC_C;
         // IF_NZ goto loop;
     } while(--c != 0);
@@ -337,7 +419,7 @@ bool BattleAnimOAMUpdate(struct BattleAnim* bc, uint8_t* oamIndex){
 // done:
     // AND_A_A;
     // RET;
-    return false;
+    return;
 }
 
 static void InitBattleAnimBuffer(struct BattleAnim* bc){
@@ -453,39 +535,6 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
     // RET;
 }
 
-static uint8_t GetBattleAnimTileOffset(uint8_t a){
-    // PUSH_HL;
-    // PUSH_BC;
-    // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = BattleAnimationTileDictionary();
-    // LD_B_A;
-    // LD_C(NUM_BATTLEANIMTILEDICT_ENTRIES);
-    uint8_t c = NUM_BATTLEANIMTILEDICT_ENTRIES;
-
-    do {
-    // loop:
-        // LD_A_hli;
-        // CP_A_B;
-        // IF_Z goto load;
-        if(hl[0] == a) {
-        // load:
-            // LD_A_hl;
-            return hl[1];
-        }
-        // INC_HL;
-        hl += 2;
-        // DEC_C;
-        // IF_NZ goto loop;
-    } while(--c != 0);
-    // XOR_A_A;
-    // goto done;
-
-// done:
-    // POP_BC;
-    // POP_HL;
-    // RET;
-    return 0;
-}
 
 void v_ExecuteBGEffects(void){
     // CALLFAR(aExecuteBGEffects);

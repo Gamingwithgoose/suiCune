@@ -19,6 +19,7 @@
 #include "../../home/tilemap.h"
 #include "../../home/pokemon.h"
 #include "../../data/moves/animations.h"
+#include "../../data/battle_anims/object_gfx.h"
 #include "../../gfx/sprites.h"
 #include "../../audio/engine.h"
 #include <stdarg.h>
@@ -409,6 +410,7 @@ void BattleAnim_ClearOAM(void){
             // DEC_C;
             // IF_NZ goto loop;
         } while(--c != 0);
+        SetBattleAnimationRenderSpritePalette(~(PALETTE_MASK | VRAM_BANK_1));
         // RET;
         return;
     }
@@ -423,6 +425,7 @@ void BattleAnim_ClearOAM(void){
         // DEC_C;
         // IF_NZ goto loop2;
         ByteFill(wram->wVirtualOAMSprite, sizeof(wram->wVirtualOAMSprite), 0);
+        ClearBattleAnimationRenderSprites();
         // RET;
         return;
     }
@@ -1034,22 +1037,14 @@ void BattleAnimCmd_ResetObp0(void){
 }
 
 void BattleAnimCmd_ClearObjs(void){
-//  BUG: This function only clears the first 6⅔ objects
-    // LD_HL(wActiveAnimObjects);
+    // The native pool has no byte-addressed object layout. Clear semantic
+    // object records rather than reproducing the historical partial-byte bug.
 #if BUGFIX_ANIMCMDCLEAROBJ
-    uint8_t a = NUM_ANIM_OBJECTS * BATTLEANIMSTRUCT_LENGTH;
+    size_t objectCount = NUM_ANIM_OBJECTS;
 #else
-    // LD_A(0xa0);  // should be NUM_ANIM_OBJECTS * BATTLEANIMSTRUCT_LENGTH
-    uint8_t a = 0xa0;
+    size_t objectCount = NUM_ANIM_OBJECTS;
 #endif
-
-// loop:
-    // LD_hl(0);
-    // INC_HL;
-    // DEC_A;
-    // IF_NZ goto loop;
-    ClearNativeBattleAnimationObjects(a);
-    // RET;
+    ClearNativeBattleAnimationObjects(objectCount);
 }
 
 void BattleAnimCmd_1GFX(void){
@@ -1110,33 +1105,30 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
     // LD_A_addr(wBattleAnimByte);
     // AND_A(0xf);
     // LD_C_A;
-    // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = BattleAnimationTileDictionary();
     // XOR_A_A;
     // LD_addr_A(wBattleAnimGFXTempTileID);
     BattleAnimationEffectScratchState()->gfxTileId = 0;
+    size_t bindingIndex = 0;
     log_debug("NGFX %d - ", c);
     va_list v;
     va_start(v, c);
 
     do {
     // loop:
-        // LD_A_addr(wBattleAnimGFXTempTileID);
-        // CP_A((vTiles1 - vTiles0) / LEN_2BPP_TILE - BATTLEANIM_BASE_TILE);
-        // RET_NC ;
-        if(BattleAnimationEffectScratchState()->gfxTileId >= (vTiles1 - vTiles0) / LEN_2BPP_TILE - BATTLEANIM_BASE_TILE) {
+        // Read the native graphics resource identity before allocating its
+        // tile range; a native resource may exceed the former VRAM span.
+        uint8_t byte = (uint8_t)va_arg(v, int);
+        if(BattleAnimationEffectScratchState()->gfxTileId >
+            UINT16_MAX - BATTLEANIM_BASE_TILE - (AnimObjGFX[byte].tiles - 1)) {
             va_end(v);
             log_debug("\n");
             return;
         }
-        // CALL(aGetBattleAnimByte);
-        uint8_t byte = (uint8_t)va_arg(v, int);
         log_debug("%d, ", (int)byte);
         // LD_hli_A;
-        *(hl++) = byte;
         // LD_A_addr(wBattleAnimGFXTempTileID);
         // LD_hli_A;
-        *(hl++) = BattleAnimationEffectScratchState()->gfxTileId;
+        SetBattleAnimationTileBinding(bindingIndex++, byte, BattleAnimationEffectScratchState()->gfxTileId);
         // PUSH_BC;
         // PUSH_HL;
         // LD_L_A;
@@ -1144,9 +1136,9 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
         // for(int rept = 0; rept < 4; rept++){
         // ADD_HL_HL;
         // }
-        // LD_DE(vTiles0 + LEN_2BPP_TILE * BATTLEANIM_BASE_TILE);
-        // ADD_HL_DE;
-        uint8_t* de = (vram->vTiles0 + LEN_2BPP_TILE * BATTLEANIM_BASE_TILE) + (BattleAnimationEffectScratchState()->gfxTileId << 4);
+        // Native tile storage replaces the fixed battle-animation VRAM range.
+        const struct BattleAnimGFX* gfx = AnimObjGFX + byte;
+        uint8_t* de = BattleAnimationTileWritePointer(BATTLEANIM_BASE_TILE + BattleAnimationEffectScratchState()->gfxTileId, gfx->tiles);
         // LD_A_addr(wBattleAnimByte);
         // CALL(aLoadBattleAnimGFX);
         // LD_A_addr(wBattleAnimGFXTempTileID);
@@ -1300,34 +1292,16 @@ static uint8_t* BattleAnimCmd_BattlerGFX_1Row_LoadFeet(uint8_t* hl, const uint8_
 
 void BattleAnimCmd_BattlerGFX_1Row(void){
     log_debug("BattlerGFX_1Row::\n");
-    // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = BattleAnimationTileDictionary();
-
-    while(*hl != 0) {
-    // loop:
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto okay;
-        // INC_HL;
-        // INC_HL;
-        hl += 2;
-        // goto loop;
-    }
-
-
-// okay:
     // LD_A(ANIM_GFX_PLAYERHEAD);
     // LD_hli_A;
-    *(hl++) = ANIM_GFX_PLAYERHEAD;
     // LD_A((0x80 - 6 - 7) - BATTLEANIM_BASE_TILE);
     // LD_hli_A;
-    *(hl++) = (0x80 - 6 - 7) - BATTLEANIM_BASE_TILE;
     // LD_A(ANIM_GFX_ENEMYFEET);
     // LD_hli_A;
-    *(hl++) = ANIM_GFX_ENEMYFEET;
     // LD_A((0x80 - 6) - BATTLEANIM_BASE_TILE);
     // LD_hl_A;
-    *hl = (0x80 - 6) - BATTLEANIM_BASE_TILE;
+    AppendBattleAnimationTileBinding(ANIM_GFX_PLAYERHEAD, (0x80 - 6 - 7) - BATTLEANIM_BASE_TILE);
+    AppendBattleAnimationTileBinding(ANIM_GFX_ENEMYFEET, (0x80 - 6) - BATTLEANIM_BASE_TILE);
 
     // LD_HL(vTiles0 + LEN_2BPP_TILE * (0x80 - 6 - 7));
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x06);  // Enemy feet start tile
@@ -1336,7 +1310,7 @@ void BattleAnimCmd_BattlerGFX_1Row(void){
     BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x1 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_1Row_LoadFeet);
-    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(vram->vTiles0 + LEN_2BPP_TILE * (0x80 - 6 - 7), vram->vTiles2 + LEN_2BPP_TILE * (6 * 7), 7);
+    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(BattleAnimationTileWritePointer(0x80 - 6 - 7, 7), vram->vTiles2 + LEN_2BPP_TILE * (6 * 7), 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
@@ -1378,34 +1352,16 @@ static uint8_t* BattleAnimCmd_BattlerGFX_2Row_LoadHead(uint8_t* hl, const uint8_
 
 void BattleAnimCmd_BattlerGFX_2Row(void){
     log_debug("BattlerGFX_2Row::\n");
-    // LD_HL(wBattleAnimTileDict);
-    uint8_t* hl = BattleAnimationTileDictionary();
-
-    while(*hl != 0) {
-    // loop:
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto okay;
-        // INC_HL;
-        // INC_HL;
-        hl += 2;
-        // goto loop;
-    }
-
-
-// okay:
     // LD_A(ANIM_GFX_PLAYERHEAD);
     // LD_hli_A;
-    *(hl++) = ANIM_GFX_PLAYERHEAD;
     // LD_A((0x80 - 6 * 2 - 7 * 2) - BATTLEANIM_BASE_TILE);
     // LD_hli_A;
-    *(hl++) = (0x80 - 6 * 2 - 7 * 2) - BATTLEANIM_BASE_TILE;
     // LD_A(ANIM_GFX_ENEMYFEET);
     // LD_hli_A;
-    *(hl++) = ANIM_GFX_ENEMYFEET;
     // LD_A((0x80 - 6 * 2) - BATTLEANIM_BASE_TILE);
     // LD_hl_A;
-    *hl = (0x80 - 6 * 2) - BATTLEANIM_BASE_TILE;
+    AppendBattleAnimationTileBinding(ANIM_GFX_PLAYERHEAD, (0x80 - 6 * 2 - 7 * 2) - BATTLEANIM_BASE_TILE);
+    AppendBattleAnimationTileBinding(ANIM_GFX_ENEMYFEET, (0x80 - 6 * 2) - BATTLEANIM_BASE_TILE);
 
     // LD_HL(vTiles0 + LEN_2BPP_TILE * (0x80 - 6 * 2 - 7 * 2));
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x05);  // Enemy feet start tile
@@ -1414,7 +1370,7 @@ void BattleAnimCmd_BattlerGFX_2Row(void){
     BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x2 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_2Row_LoadHead);
-    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(vram->vTiles0 + LEN_2BPP_TILE * (0x80 - 6 * 2 - 7 * 2), vram->vTiles2 + LEN_2BPP_TILE * 7 * 5, 7);
+    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(BattleAnimationTileWritePointer(0x80 - 6 * 2 - 7 * 2, 14), vram->vTiles2 + LEN_2BPP_TILE * 7 * 5, 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
@@ -2182,9 +2138,11 @@ void BattleAnim_SetOBPals(uint8_t obp0){
 }
 
 void BattleAnim_UpdateOAM_All(void){
-    // LD_A(0);
-    // LD_addr_A(wBattleAnimOAMPointerLo);
-    uint8_t oamIndex = 0;
+    // Battle animation sprites submit directly to the native render queue.
+    // The legacy OAM span is still cleared here because the original command
+    // owns the complete battle sprite layer for the duration of an animation.
+    BeginBattleAnimationRenderFrame();
+    ByteFill(wram->wVirtualOAMSprite, sizeof(wram->wVirtualOAMSprite), 0);
     // LD_HL(wActiveAnimObjects);
     struct BattleAnim* hl = BattleAnimationObjects();
     // LD_E(NUM_ANIM_OBJECTS);
@@ -2204,12 +2162,9 @@ void BattleAnim_UpdateOAM_All(void){
         // CALL(aDoBattleAnimFrame);
         DoBattleAnimFrame(hl);
         // CALL(aBattleAnimOAMUpdate);
-        bool error = BattleAnimOAMUpdate(hl, &oamIndex);
+        BattleAnimOAMUpdate(hl);
         // POP_DE;
         // POP_HL;
-        // IF_C goto done;
-        if(error)
-            return;
 
     // next:
         // LD_BC(BATTLEANIMSTRUCT_LENGTH);
@@ -2217,25 +2172,6 @@ void BattleAnim_UpdateOAM_All(void){
         // DEC_E;
         // IF_NZ goto loop;
     } while(hl++, --e != 0);
-    // LD_A_addr(wBattleAnimOAMPointerLo);
-    // LD_L_A;
-    // LD_H(HIGH(wVirtualOAM));
-
-    while(oamIndex < NUM_SPRITE_OAM_STRUCTS) {
-    // loop2:
-        // LD_A_L;
-        // CP_A(LOW(wVirtualOAMEnd));
-        // IF_NC goto done;
-        // XOR_A_A;
-        // LD_hli_A;
-        wram->wVirtualOAMSprite[oamIndex].yCoord = 0;
-        wram->wVirtualOAMSprite[oamIndex].xCoord = 0;
-        wram->wVirtualOAMSprite[oamIndex].tileID = 0;
-        wram->wVirtualOAMSprite[oamIndex].attributes = 0;
-        // goto loop2;
-        oamIndex++;
-    }
-
 // done:
     // RET;
 }

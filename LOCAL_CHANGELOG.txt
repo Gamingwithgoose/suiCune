@@ -1,7 +1,7 @@
 LOCAL CHANGELOG
 ===============
 
-Date/session: 2026-08-28 - Phase 0 baseline and architecture audit
+2026-08-28 - Phase 0 baseline and architecture audit
 
 Task worked on
 --------------
@@ -342,7 +342,7 @@ Next recommended native-conversion task
    can be verified without relying only on manual playthroughs.
 
 
-Date/session: 2026-08-28 - Phase 1 16-bit content ID foundation
+2026-08-28 - Phase 1 16-bit content ID foundation
 ================================================================
 
 Task worked on
@@ -537,7 +537,7 @@ Next recommended native-conversion task
    instead of widening bytecode or retaining lowercase aliases indefinitely.
 
 
-Date/session: 2026-08-28 - Phase 1 continuation, native content records and API propagation
+2026-08-28 - Phase 1 native content records and API propagation
 ===========================================================================================
 
 Task worked on
@@ -788,7 +788,7 @@ Build/test results
 Build/runtime validation: NOT PERFORMED — source-only migration pass.
 
 
-Date/session: 2026-08-28 - Phase 1 native Pokemon ownership slice and application icon
+2026-08-28 - Phase 1 native Pokemon ownership slice and application icon
 ======================================================================================
 
 Task worked on
@@ -969,7 +969,7 @@ Next recommended native-conversion task
    the old save format further.
 
 
-Date/session: 2026-08-29 - Native Pokemon generation and stat-calculation boundary
+2026-08-29 - Native Pokemon generation and stat-calculation boundary
 ==================================================================================
 
 Task worked on
@@ -1315,7 +1315,7 @@ Build-feedback correction: 2026-08-30
 - The failed user build removed tracked `Release/` output assets before
   stopping. Those deletions are user/build-owned state and were preserved;
   this session did not restore, remove, or otherwise alter them.
-- Build/runtime validation after this correction: NOT PERFORMED by Codex.
+- Build/runtime validation after this correction: NOT PERFORMED.
 
 
 Session: 2026-08-30 — Native logical input-frame ownership
@@ -1863,7 +1863,7 @@ Exact recommended next task
    then remove `partySpecies` once repository-wide references reach zero.
 
 
-Date/session: 2026-08-29 - Native decoded PC-box migration
+2026-08-29 - Native decoded PC-box migration
 ===========================================================
 
 Task worked on
@@ -2101,7 +2101,7 @@ Exact stopping point and next recommended task
   introduce a mirrored party sidecar.
 
 
-Date/session: 2026-08-28 - Phase 1 continuation, native Day-Care and egg ownership
+2026-08-28 - Phase 1 native Day-Care and egg ownership
 ================================================================================
 
 Task worked on
@@ -2327,7 +2327,7 @@ Build/runtime validation
 - User-reported build: FAILED before this repair in `engine/battle/core.c` on
   packed-member address warnings promoted to errors, and in Beat Up on obsolete
   `BaseData.atk`/`BaseData.def` member names.
-- Agent build/run/test: NOT PERFORMED — per user instruction.
+- Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks and stopping point
 -----------------------------------------------
@@ -2383,7 +2383,7 @@ Build/runtime validation
 - User-reported build: FAILED before this repair on obsolete `BaseData.hp`, a
   missing `abort` declaration, and an address-of-packed-member warning promoted
   to an error.
-- Agent build/run/test: NOT PERFORMED — per user instruction.
+- Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks and stopping point
 -----------------------------------------------
@@ -2436,7 +2436,7 @@ Build/runtime validation
 ------------------------
 - User-reported build: FAILED before this repair because the serializer registry
   still evaluated `sizeof(struct Box)` after that runtime type was removed.
-- Agent build/run/test: NOT PERFORMED — per user instruction.
+- Build/runtime validation: NOT PERFORMED.
 
 Regression review and stopping point
 ------------------------------------
@@ -2510,7 +2510,7 @@ Build/runtime validation
 - User-reported build: SUCCEEDED before this packaging correction.
 - User-reported runtime: window opened and immediately closed from the
   executable-only Release directory.
-- Agent build/run/test: NOT PERFORMED — per user instruction.
+- Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks and stopping point
 -----------------------------------------------
@@ -4043,3 +4043,339 @@ Exact stopping point and next recommended task
   queue, including explicit layer/priority semantics and a migration plan for
   direct VRAM tile writes. No ASM source was deleted because its continued
   reference role cannot be proven unnecessary from the current build graph.
+
+Session addendum: 2026-08-30 — battle animation native sprite submission
+==========================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.h` and `.c`: added a dynamically growing native
+  battle-animation sprite list with widened position/tile fields. The list is
+  reset per animation frame and no longer has the Game Boy 40-sprite capacity.
+- `engine/battle_anims/core.c`: converted `BattleAnimOAMUpdate` from a
+  fixed-OAM writer with an overflow return path into a native sprite submitter.
+  It no longer reads or writes `wVirtualOAMSprite` and no longer stops an
+  animation after forty submitted sprites.
+- `engine/battle_anims/anim_commands.c`: made battle-animation frame updates
+  begin a native sprite frame instead of filling virtual OAM; retained only
+  the existing legacy-layer clear where the original command owns that layer.
+  Keep/delete palette behavior now also affects native submitted sprites.
+- `tools/emu/peanut_sdl.c`: factored object pixel drawing into a shared C
+  routine and consumes the native battle-animation list directly in the
+  renderer's ordinary sprite pass. Native battle sprites are not a post-render
+  overlay and preserve their former ordering relative to legacy OAM sprites.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Battle animation object rendering is no longer constrained by, staged in,
+  or transferred through the 160-byte virtual OAM array. The fixed OAM limit
+  is no longer authoritative for that subsystem.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- The current shared pixel routine still resolves native battle sprite tile
+  identifiers through the existing GB tile buffer and palette rules. This is a
+  transitional renderer bridge, not a second render pass. Remove that bridge
+  when the native renderer owns sprite texture/atlas resources and palette
+  resolution; at that point `DrawObjectSprite` must consume native resources
+  directly and the legacy OAM branch can be migrated separately.
+- The remaining `wVirtualOAMSprite` clears in battle animation commands exist
+  only to preserve current ownership of the legacy battle sprite layer. Remove
+  them when battle HUDs and every remaining battle sprite producer submit to
+  the native renderer.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save representation or serialized gameplay data changed. Battle sprite
+  ordering remains reverse submission order, matching the old low-OAM-slot
+  precedence.
+
+Partially completed work
+------------------------
+- Battle animation source state and sprite submission are native, but its
+  tile/palette source still uses legacy VRAM data. The generic renderer, battle
+  HUDs, overworld objects, and all other OAM users still depend on the
+  Game Boy-era rendering model.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; versioned saves;
+  packed WRAM retirement; native renderer/entity/map/script/audio and content
+  database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- The native list is heap-backed and aborts on allocation failure rather than
+  silently truncating sprites. Runtime animation coverage is required before
+  declaring visual equivalence, particularly for animation commands that keep
+  sprites across frames.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after moving battle-animation sprite generation and primary renderer
+  consumption off the fixed OAM buffer. The current native list can grow past
+  forty sprites, but its tile data still comes from the legacy VRAM resource
+  path.
+- Next: introduce native sprite-resource/atlas ownership for battle animation
+  tiles and palettes, then migrate battle HUD producers to the same renderer
+  before retiring their OAM-layer operations. No ASM source was deleted because
+  its continued reference role cannot be proven unnecessary from the current
+  build graph.
+
+Session addendum: 2026-08-30 — native battle-animation tile resources
+=======================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.h` and `.c`: added a dynamically growing native
+  2bpp tile-resource store owned by `NativeBattleAnimationState`. It is keyed
+  by the animation's logical tile identifiers and released at the established
+  animation reset boundary.
+- `engine/battle_anims/anim_commands.c`: migrated the live `NGFX` command
+  path from the fixed `vTiles0 + BATTLEANIM_BASE_TILE` VRAM range to native tile
+  storage. Asset conversion now writes into ordinary native memory rather than
+  Game Boy VRAM for this command path.
+- `tools/emu/peanut_sdl.c`: extended the ordinary sprite-pixel path to read a
+  native battle tile when present. The battle-animation queue now consumes its
+  own native tile resources directly; legacy VRAM is only used as a fallback
+  for animation producers not yet migrated.
+
+Architectural change and dependency removed
+-------------------------------------------
+- Standard battle-animation GFX commands no longer depend on the hardware tile
+  range reserved by `BATTLEANIM_BASE_TILE`. Their lifetime, capacity, and tile
+  bytes are owned by native battle-animation state.
+
+Temporary migration state and exact removal condition
+------------------------------------------------------
+- The renderer's legacy-VRAM fallback remains for battler-picture animation
+  commands and other pre-existing sprite producers that have not yet been
+  migrated to native tile resources. Remove that fallback for battle sprites
+  once those producers submit resource-backed native sprites as well.
+- The fixed native tile dictionary still preserves original one-byte script
+  tile offsets. Replace it with an expandable native mapping only after the
+  battle animation object/frame data representation is widened together, so no
+  caller truncates a new tile identity.
+
+Compatibility and save-format implications
+------------------------------------------
+- No persistent data or save serialization changed. The native store keeps the
+  existing 2bpp asset conversion output and tile ordering for current content.
+
+Partially completed work
+------------------------
+- `NGFX` resources and animation sprite submission are native. Battler GFX,
+  HUD sprites, palette ownership, animation object/frame IDs, and the wider
+  renderer remain partially tied to legacy tile/OAM representations.
+
+Untouched remaining work
+------------------------
+- Native player-party ownership/mutation/save projection; versioned saves;
+  packed WRAM retirement; native renderer/entity/map/script/audio and content
+  database work; expanded data models and later roadmap phases.
+
+Suspected source-level risks
+----------------------------
+- This path intentionally preserves Crystal's 2bpp pixel encoding while
+  removing its VRAM placement requirement. Runtime coverage is needed for all
+  special-case animation GFX packs (including skipped-empty-tile layouts) and
+  for battler-picture animation commands that still use the fallback.
+
+Regressions discovered
+----------------------
+- None through source inspection.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after the normal animation GFX command path became native-resource
+  backed and renderer-visible without VRAM staging.
+- Next: migrate battler-picture GFX and the fixed tile dictionary to widened
+  native resource identities, then move battle HUD sprite producers to the
+  same render state before removing remaining battle OAM operations. No ASM
+  source was deleted because its continued reference role cannot be proven
+  unnecessary from the current build graph.
+
+Session addendum: 2026-08-30 — dynamic animation bindings and battler GFX
+=========================================================================
+
+Task worked on
+--------------
+- Continued the native battle-animation rendering conversion without starting
+  a separate subsystem. Removed the active fixed-size animation tile dictionary
+  and moved both battler-picture animation copy commands to native tile
+  resources.
+
+Completed work
+--------------
+- `engine/battle_anims/core.h` and `.c`: replaced the active five-entry
+  `wBattleAnimTileDict`-shaped array with an owned, dynamically growing list of
+  graphics-ID-to-tile-offset bindings. Lookup and reset now operate on this
+  native representation; the old WRAM field is no longer used by this runtime
+  path.
+- `engine/battle_anims/anim_commands.c`: migrated `NGFX` binding writes and
+  both one-row/two-row battler GFX binding writers to that dynamic API.
+- `engine/battle_anims/anim_commands.c`: moved `BattleAnimCmd_BattlerGFX_1Row`
+  and `BattleAnimCmd_BattlerGFX_2Row` destination copies from `vTiles0` into
+  the native battle-animation tile store. The renderer can now consume the
+  staged player-head/enemy-feet animation tiles without a destination VRAM
+  dependency.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `LOCAL_CHANGELOG.txt`
+
+Files created/deleted
+---------------------
+- None. No ASM source was deleted.
+
+Architectural changes and obsolete dependency removed
+-----------------------------------------------------
+- The runtime no longer uses the fixed `NUM_BATTLEANIMTILEDICT_ENTRIES` tile
+  dictionary for battle-animation resource binding. The legacy WRAM reservation
+  remains solely to preserve the still-active wider WRAM map while other users
+  are converted.
+- Both battler GFX animation commands now write their generated animation tile
+  bytes to native allocation-managed memory, rather than using Game Boy VRAM as
+  their destination buffer.
+
+Partially completed work and transitional state
+------------------------------------------------
+- Binding values and `struct BattleAnim::tileId` remain one byte because the
+  native object/frame representation has not yet been separated from its
+  Crystal byte layout. This is an explicit remaining content-width boundary,
+  not a claim that arbitrary battle animation tile identities already work.
+- Battler GFX source pixels still originate from the existing battle-picture
+  staging area. That source dependency remains until battle pictures themselves
+  are native resources.
+- The renderer retains a legacy VRAM fallback for unconverted battle sprite
+  producers. Remove it only when every battle sprite producer supplies native
+  tile resources and runtime validation confirms all battle scenes and effects.
+- The legacy `wBattleAnimTileDict` WRAM reservation can be removed only after
+  a complete WRAM-layout migration removes its address-map compatibility role;
+  it is not accessed by the converted C runtime.
+
+Compatibility and save-format implications
+------------------------------------------
+- No save data or serialization changed. Existing animation ordering and
+  current one-byte script offsets are retained.
+
+Suspected source-level risks
+----------------------------
+- The one-byte tile offset boundary still limits expanded animation data even
+  though the binding collection itself is unbounded. Widening it requires a
+  semantic native animation-object representation and a deliberately migrated
+  clear/reset policy, not an in-place field-size edit.
+- Runtime coverage is still required for commands that combine NGFX bindings
+  with battler GFX commands, plus battle scenes using both row layouts.
+
+Untouched remaining work
+------------------------
+- Native battle HUD sprites and picture sources; widened animation objects and
+  frame/resource IDs; full renderer, entity, map, script, audio, save, and
+  content-database roadmap phases.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after the active animation binding table and both battler GFX copy
+  destinations became native-owned. The source tree is internally coherent by
+  inspection, but deliberately unbuilt at the user's direction.
+- Next: introduce a native semantic battle-animation object/frame type with a
+  widened tile resource identity, migrate its clear/reset semantics explicitly,
+  then move persistent trainer HUD sprites into the native battle renderer.
+
+Session addendum: 2026-08-30 — native renderer header build fix
+=================================================================
+
+Completed work
+--------------
+- `engine/battle_anims/core.h`: added an include guard for the native battle
+  animation interface. This fixes the reported duplicate type/prototype errors
+  when the renderer includes the interface directly and the project's central
+  include path reaches it again through `main.h`.
+
+Build-error prevention
+----------------------
+- The native battle-render interface is now safe to include from both its
+  direct renderer consumer and aggregate project headers. New standalone native
+  interfaces must use an include guard before they are consumed outside their
+  implementation unit; this avoids dependency-order-sensitive duplicate C
+  declarations without adding an ASM compatibility layer.
+
+Native/ASM boundary
+-------------------
+- The corrected interface is a C-owned data and rendering API. It has no ASM
+  function-address dependency. Existing Crystal-origin labels in nearby source
+  comments are explanatory provenance only and are not runtime calls.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `LOCAL_CHANGELOG.txt`
+
+Files created/deleted
+---------------------
+- None.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after correcting the build-blocking public interface issue by source
+  inspection. Continue with the planned semantic native battle-animation object
+  representation before removing any ASM reference material.
+
+2026-08-30 — Native battle-animation object ownership
+======================================================
+
+Battle-animation runtime objects now have a native, unpacked definition in
+`engine/battle_anims/core.h`. The former packed `constants/types.h` record was
+removed from runtime ownership. Tile resource identities, render scratch tile
+state, and dynamic graphics bindings are now 16-bit values. Animation object
+clearing now operates on semantic pool entries instead of Crystal byte spans;
+the enabled clear-object behavior clears the complete native pool.
+
+`engine/battle_anims/anim_commands.c`, `core.c`, and `core.h` now reject tile
+resource ranges that cannot be represented by the native 16-bit identity rather
+than wrapping them. Frame tile offsets are checked before conversion to the
+render resource identity. The dynamic resource store remains the authoritative
+destination for converted animation graphics and battler-animation staging.
+
+`AGENTS.md` establishes the persistent native-runtime migration constraints:
+semantic ownership, explicit compatibility boundaries, checked conversions,
+and prohibition of new emulator-dispatch or hardware-memory dependencies.
+
+The script bytecode, frame tables, palette/scanline effects, battle-picture
+source staging, and non-animation battle HUD producers remain legacy-adjacent
+boundaries. They require separate resource and renderer ownership migration
+before legacy VRAM/OAM fallbacks can be removed. No ASM reference source was
+deleted.
+
+Static validation confirmed that the active object pool no longer uses packed
+layout length or fixed tile-dictionary capacity, and that the widened tile
+identity has no remaining narrowing caller in the battle-animation object path.
+Build and runtime validation were not performed.
+
+Next dependency closure: migrate battle-picture source staging and persistent
+trainer HUD sprite ownership into the native battle renderer, then retire the
+remaining battle-animation OAM clear and VRAM fallback.

@@ -27,6 +27,7 @@
 #include "peanut_gb.h"
 #include "../../home/lcd.h"
 #include "../../home/init.h"
+#include "../../engine/battle_anims/core.h"
 #include "rom_patches.h"
 #include "../../util/record.h"
 #include "../../util/network.h"
@@ -863,6 +864,69 @@ void finish_gb_cycle(void) {
     }
 }
 
+static void DrawObjectSprite(uint8_t pixels[LCD_WIDTH], const uint8_t pixelsPrio[LCD_WIDTH], int16_t yCoord, int16_t xCoord, uint16_t tileId, uint8_t attributes, const uint8_t* nativeTilePixels) {
+    if(nativeTilePixels == NULL && tileId > UINT8_MAX)
+        return;
+
+    if(gb.gb_reg.LY + (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0 : 8) >= yCoord || gb.gb_reg.LY + 16 < yCoord)
+        return;
+    if(xCoord <= 0 || xCoord >= LCD_WIDTH + 8)
+        return;
+
+    int py = gb.gb_reg.LY - yCoord + 16;
+    if(attributes & OBJ_FLIP_Y)
+        py = (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 15 : 7) - py;
+
+    uint8_t tileLow = (uint8_t)tileId & (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFE : 0xFF);
+    uint8_t tileByte1;
+    uint8_t tileByte2;
+    if(nativeTilePixels != NULL) {
+        tileByte1 = nativeTilePixels[2 * py];
+        tileByte2 = nativeTilePixels[2 * py + 1];
+    }
+    else if(gb.cgb.cgbMode) {
+        tileByte1 = gb.vram[((attributes & OBJ_BANK) << 10) + VRAM_TILES_1 + tileLow * 0x10 + 2 * py];
+        tileByte2 = gb.vram[((attributes & OBJ_BANK) << 10) + VRAM_TILES_1 + tileLow * 0x10 + 2 * py + 1];
+    }
+    else {
+        tileByte1 = gb.vram[VRAM_TILES_1 + tileLow * 0x10 + 2 * py];
+        tileByte2 = gb.vram[VRAM_TILES_1 + tileLow * 0x10 + 2 * py + 1];
+    }
+
+    int direction;
+    int start;
+    int end;
+    int shift;
+    if(attributes & OBJ_FLIP_X) {
+        direction = 1;
+        start = xCoord < 8 ? 0 : xCoord - 8;
+        end = MIN(xCoord, LCD_WIDTH);
+        shift = 8 - xCoord + start;
+    }
+    else {
+        direction = -1;
+        start = MIN(xCoord, LCD_WIDTH) - 1;
+        end = (xCoord < 8 ? 0 : xCoord - 8) - 1;
+        shift = xCoord - (start + 1);
+    }
+
+    tileByte1 >>= shift;
+    tileByte2 >>= shift;
+    for(int displayX = start; displayX != end; displayX += direction) {
+        uint8_t color = (tileByte1 & 0x1) | ((tileByte2 & 0x1) << 1);
+        if(gb.cgb.cgbMode && color && !(pixelsPrio[displayX] && (pixels[displayX] & 0x3)) && !((attributes & OBJ_PRIORITY) && (pixels[displayX] & 0x3))) {
+            pixels[displayX] = ((attributes & OBJ_CGB_PALETTE) << 2) + color + 0x20;
+        }
+        else if(!gb.cgb.cgbMode && color && !((attributes & OBJ_PRIORITY) && (pixels[displayX] & 0x3))) {
+            pixels[displayX] = (attributes & OBJ_PALETTE) ? gb.display.sp_palette[color + 4] : gb.display.sp_palette[color];
+            pixels[displayX] |= attributes & OBJ_PALETTE;
+            pixels[displayX] &= ~LCD_PALETTE_BG;
+        }
+        tileByte1 >>= 1;
+        tileByte2 >>= 1;
+    }
+}
+
 void gb_draw_line(void) {
     for(int i = 0; i < 32; ++i) {
         finish_gb_cycle();
@@ -1068,86 +1132,21 @@ void gb_draw_line(void) {
     if (gb.gb_reg.LCDC & LCDC_OBJ_ENABLE) {
         // uint8_t count = 0;
 
-        for (uint8_t s = NUM_SPRITES - 1;
-             s != 0xFF /* && count < MAX_SPRITES_LINE */;
-             s--) {
-            /* Sprite Y position. */
-            uint8_t OY = gb.oam[4 * s + 0];
-            /* Sprite X position. */
-            uint8_t OX = gb.oam[4 * s + 1];
-            /* Sprite Tile/Pattern Number. */
-            uint8_t OT = gb.oam[4 * s + 2] & (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFE : 0xFF);
-            /* Additional attributes. */
-            uint8_t OF = gb.oam[4 * s + 3];
+        for(uint8_t spriteIndex = NUM_SPRITES - 1; spriteIndex != 0xFF; spriteIndex--) {
+            DrawObjectSprite(pixels, pixelsPrio,
+                gb.oam[4 * spriteIndex], gb.oam[4 * spriteIndex + 1],
+                gb.oam[4 * spriteIndex + 2], gb.oam[4 * spriteIndex + 3], NULL);
+        }
 
-            /* If sprite isn't on this line, continue. */
-            if (gb.gb_reg.LY +
-                        (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0 : 8) >=
-                    OY ||
-                gb.gb_reg.LY + 16 < OY)
-                continue;
-
-            // count++;
-
-            /* Continue if sprite not visible. */
-            if (OX == 0 || OX >= 168)
-                continue;
-
-            // y flip
-            uint8_t py = gb.gb_reg.LY - OY + 16;
-
-            if (OF & OBJ_FLIP_Y)
-                py = (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 15 : 7) - py;
-
-            // fetch the tile
-            uint8_t t1, t2;
-            if (gb.cgb.cgbMode) {
-                t1 = gb.vram[((OF & OBJ_BANK) << 10) + VRAM_TILES_1 + OT * 0x10 + 2 * py];
-                t2 = gb.vram[((OF & OBJ_BANK) << 10) + VRAM_TILES_1 + OT * 0x10 + 2 * py + 1];
-            } else {
-                t1 = gb.vram[VRAM_TILES_1 + OT * 0x10 + 2 * py];
-                t2 = gb.vram[VRAM_TILES_1 + OT * 0x10 + 2 * py + 1];
-            }
-
-            // handle x flip
-            uint8_t dir, start, end, shift;
-
-            if (OF & OBJ_FLIP_X) {
-                dir = 1;
-                start = (OX < 8 ? 0 : OX - 8);
-                end = MIN(OX, LCD_WIDTH);
-                shift = 8 - OX + start;
-            } else {
-                dir = -1;
-                start = MIN(OX, LCD_WIDTH) - 1;
-                end = (OX < 8 ? 0 : OX - 8) - 1;
-                shift = OX - (start + 1);
-            }
-
-            // copy tile
-            t1 >>= shift;
-            t2 >>= shift;
-
-            for (uint8_t disp_x = start; disp_x != end; disp_x += dir) {
-                uint8_t c = (t1 & 0x1) | ((t2 & 0x1) << 1);
-                // check transparency / sprite overlap / background overlap
-                if (gb.cgb.cgbMode && (c && !(pixelsPrio[disp_x] && (pixels[disp_x] & 0x3)) && !((OF & OBJ_PRIORITY) && (pixels[disp_x] & 0x3)))) {
-                    /* Set pixel colour. */
-                    pixels[disp_x] = ((OF & OBJ_CGB_PALETTE) << 2) + c + 0x20;  // add 0x20 to differentiate from BG
-                } else if (!gb.cgb.cgbMode && c && !((OF & OBJ_PRIORITY) && (pixels[disp_x] & 0x3))) {
-                    /* Set pixel colour. */
-                    pixels[disp_x] = (OF & OBJ_PALETTE)
-                                         ? gb.display.sp_palette[c + 4]
-                                         : gb.display.sp_palette[c];
-                    /* Set pixel palette (OBJ0 or OBJ1). */
-                    pixels[disp_x] |= (OF & OBJ_PALETTE);
-                    /* Deselect BG palette. */
-                    pixels[disp_x] &= ~LCD_PALETTE_BG;
-                }
-
-                t1 = t1 >> 1;
-                t2 = t2 >> 1;
-            }
+        // Battle animation sprites now bypass the fixed 40-entry OAM buffer
+        // and enter this primary pixel renderer directly. Render them after
+        // the legacy list so their order matches their former low OAM slots.
+        size_t battleSpriteCount;
+        const struct BattleAnimationSprite* battleSprites = BattleAnimationRenderSprites(&battleSpriteCount);
+        for(size_t spriteIndex = battleSpriteCount; spriteIndex != 0; spriteIndex--) {
+            const struct BattleAnimationSprite* sprite = &battleSprites[spriteIndex - 1];
+            uint16_t tileId = sprite->tileId & (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFFFE : 0xFFFF);
+            DrawObjectSprite(pixels, pixelsPrio, sprite->yCoord, sprite->xCoord, sprite->tileId, sprite->attributes, BattleAnimationTilePixels(tileId));
         }
     }
 
