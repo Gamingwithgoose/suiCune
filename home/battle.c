@@ -6,6 +6,7 @@
 #include "map_objects.h"
 #include "delay.h"
 #include "../engine/battle/core.h"
+#include "../engine/battle_anims/core.h"
 
 //  //  unreferenced
 //  Probably used in gen 1 to convert index number to dex number
@@ -239,6 +240,10 @@ void PushLYOverrides(void){
 
     // LD_A((wLYOverridesEnd - wLYOverrides) / LEN_2BPP_TILE);
     // LD_addr_A(wRequested2bppSize);
+    if(BattleAnimationPresentationActive()) {
+        CopyBytes(BattleAnimationScanlineOverrides(), BattleAnimationScanlineScratch(), SCREEN_HEIGHT_PX);
+        return;
+    }
     CopyBytes(wram->wLYOverrides, wram->wLYOverridesBackup, wLYOverridesEnd - wLYOverrides);
     // RET;
 }

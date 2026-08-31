@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include "lcd.h"
+#include "../engine/battle_anims/core.h"
 
 //  LCD handling
 
@@ -13,13 +14,17 @@ void Function547(void) {
     // LD_C_A;
     // LD_A_addr(wLYOverrides);
     // LDH_c_A;
-    gb_write(0xFF00 | LOW(rSCX), wram->wLYOverrides[gb.gb_reg.LY]);
+    const uint8_t* overrides = BattleAnimationPresentationActive()
+        ? BattleAnimationScanlineOverrides() : wram->wLYOverrides;
+    gb_write(0xFF00 | LOW(rSCX), overrides[gb.gb_reg.LY]);
     // RET;
 }
 
 void LCD(void) {  // called from the rendering function, once per line
     if (hram.hLCDCPointer) {
-        gb_write(0xFF00 | hram.hLCDCPointer, wram->wLYOverrides[gb.gb_reg.LY]);
+        const uint8_t* overrides = BattleAnimationPresentationActive()
+            ? BattleAnimationScanlineOverrides() : wram->wLYOverrides;
+        gb_write(0xFF00 | hram.hLCDCPointer, overrides[gb.gb_reg.LY]);
     }
 }
 

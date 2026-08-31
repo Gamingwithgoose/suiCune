@@ -36,7 +36,21 @@ struct NativeBattleAnimationState {
     uint8_t lastObjectIndex;
 };
 
+struct BattleAnimationPresentationState {
+    bool active;
+    uint8_t dmgBGPalette;
+    uint8_t dmgObjectPalette0;
+    uint8_t dmgObjectPalette1;
+    uint8_t bgPaletteSource[8 * PALETTE_SIZE];
+    uint8_t objectPaletteSource[8 * PALETTE_SIZE];
+    uint8_t bgPaletteOutput[8 * PALETTE_SIZE];
+    uint8_t objectPaletteOutput[8 * PALETTE_SIZE];
+    uint8_t scanlineOverrides[BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE];
+    uint8_t scanlineScratch[BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE];
+};
+
 static struct NativeBattleAnimationState sBattleAnimationState;
+static struct BattleAnimationPresentationState sBattleAnimationPresentation;
 // The parameter is supplied by battle logic before an animation begins and
 // may be consumed by its script. It intentionally survives per-animation
 // renderer resets just as the former shared battle-state byte did.
@@ -196,6 +210,69 @@ void BattleAnimationIdClearHighByte(void){
 
 void BattleAnimationIdSetLowByte(uint8_t id){
     sBattleAnimationId = (sBattleAnimationId & 0xff00) | id;
+}
+
+void BeginBattleAnimationPresentation(void){
+    struct BattleAnimationPresentationState* presentation = &sBattleAnimationPresentation;
+    memset(presentation, 0, sizeof(*presentation));
+    presentation->active = true;
+    presentation->dmgBGPalette = wram->wBGP;
+    presentation->dmgObjectPalette0 = wram->wOBP0;
+    presentation->dmgObjectPalette1 = wram->wOBP1;
+    memcpy(presentation->bgPaletteSource, wram->wBGPals1, sizeof(presentation->bgPaletteSource));
+    memcpy(presentation->objectPaletteSource, wram->wOBPals1, sizeof(presentation->objectPaletteSource));
+    memcpy(presentation->bgPaletteOutput, wram->wBGPals2, sizeof(presentation->bgPaletteOutput));
+    memcpy(presentation->objectPaletteOutput, wram->wOBPals2, sizeof(presentation->objectPaletteOutput));
+}
+
+void EndBattleAnimationPresentation(void){
+    sBattleAnimationPresentation.active = false;
+}
+
+bool BattleAnimationPresentationActive(void){
+    return sBattleAnimationPresentation.active;
+}
+
+uint8_t* BattleAnimationScanlineOverrides(void){
+    return sBattleAnimationPresentation.scanlineOverrides;
+}
+
+uint8_t* BattleAnimationScanlineScratch(void){
+    return sBattleAnimationPresentation.scanlineScratch;
+}
+
+uint8_t* BattleAnimationPaletteOutput(bool objectPalette){
+    return objectPalette ? sBattleAnimationPresentation.objectPaletteOutput
+                         : sBattleAnimationPresentation.bgPaletteOutput;
+}
+
+uint8_t* BattleAnimationPaletteSource(bool objectPalette){
+    return objectPalette ? sBattleAnimationPresentation.objectPaletteSource
+                         : sBattleAnimationPresentation.bgPaletteSource;
+}
+
+uint8_t BattleAnimationDMGBGPalette(void){
+    return sBattleAnimationPresentation.dmgBGPalette;
+}
+
+uint8_t BattleAnimationDMGObjectPalette0(void){
+    return sBattleAnimationPresentation.dmgObjectPalette0;
+}
+
+uint8_t BattleAnimationDMGObjectPalette1(void){
+    return sBattleAnimationPresentation.dmgObjectPalette1;
+}
+
+void BattleAnimationDMGBGPaletteSet(uint8_t palette){
+    sBattleAnimationPresentation.dmgBGPalette = palette;
+}
+
+void BattleAnimationDMGObjectPalette0Set(uint8_t palette){
+    sBattleAnimationPresentation.dmgObjectPalette0 = palette;
+}
+
+void BattleAnimationDMGObjectPalette1Set(uint8_t palette){
+    sBattleAnimationPresentation.dmgObjectPalette1 = palette;
 }
 
 struct BattleAnimationRenderState* BattleAnimationRenderState(void){

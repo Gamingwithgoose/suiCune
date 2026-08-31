@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include "vblank.h"
+#include "../engine/battle_anims/core.h"
 #include "game_time.h"
 #include "joypad.h"
 #include "palettes.h"
@@ -312,9 +313,16 @@ bool UpdatePals(void) {
         return UpdateCGBPals();
 
     // update gb pals
-    gb_write(rBGP, wram->wBGP);
-    gb_write(rOBP0, wram->wOBP0);
-    gb_write(rOBP1, wram->wOBP1);
+    if(BattleAnimationPresentationActive()) {
+        gb_write(rBGP, BattleAnimationDMGBGPalette());
+        gb_write(rOBP0, BattleAnimationDMGObjectPalette0());
+        gb_write(rOBP1, BattleAnimationDMGObjectPalette1());
+    }
+    else {
+        gb_write(rBGP, wram->wBGP);
+        gb_write(rOBP0, wram->wOBP0);
+        gb_write(rOBP1, wram->wOBP1);
+    }
 
     return false;
 }

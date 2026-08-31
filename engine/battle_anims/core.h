@@ -77,6 +77,10 @@ enum {
     // Surf's battle background effect is authored as one 64-sample cycle.
     // This is effect data, not a banked-WRAM allocation or renderer limit.
     BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT = 64,
+    // Effects may prepare off-screen scanline values before the LCD consumes
+    // the visible range. Keep that authored workspace separate from a Game
+    // Boy bank or address-aligned allocation.
+    BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE = 0x100,
 };
 
 enum BattleRenderResourceKind {
@@ -110,6 +114,19 @@ BattleAnimationId BattleAnimationIdGet(void);
 void BattleAnimationIdSet(BattleAnimationId id);
 void BattleAnimationIdClearHighByte(void);
 void BattleAnimationIdSetLowByte(uint8_t id);
+void BeginBattleAnimationPresentation(void);
+void EndBattleAnimationPresentation(void);
+bool BattleAnimationPresentationActive(void);
+uint8_t* BattleAnimationScanlineOverrides(void);
+uint8_t* BattleAnimationScanlineScratch(void);
+uint8_t* BattleAnimationPaletteOutput(bool objectPalette);
+uint8_t* BattleAnimationPaletteSource(bool objectPalette);
+uint8_t BattleAnimationDMGBGPalette(void);
+uint8_t BattleAnimationDMGObjectPalette0(void);
+uint8_t BattleAnimationDMGObjectPalette1(void);
+void BattleAnimationDMGBGPaletteSet(uint8_t palette);
+void BattleAnimationDMGObjectPalette0Set(uint8_t palette);
+void BattleAnimationDMGObjectPalette1Set(uint8_t palette);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
 uint8_t* BattleAnimationSurfWaveSamples(void);

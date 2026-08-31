@@ -4773,7 +4773,7 @@ static void BattleAnimFunction_SkyAttack_SkyAttack_CyclePalette(struct BattleAni
     // ADD_HL_BC;
     // AND_A_hl;
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = bc->var1 & hl[de];
+    BattleAnimationDMGObjectPalette0Set(bc->var1 & hl[de]);
     // RET;
 }
 

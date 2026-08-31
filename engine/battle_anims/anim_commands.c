@@ -30,17 +30,14 @@ static battleanim_s sBattleAnim;
 static void GetSubstitutePic(void);
 static size_t BuildMinimizePic(uint8_t pixels[7 * 7 * LEN_2BPP_TILE]);
 static void CopyMinimizePic(uint8_t* de);
+static void BattleAnimApplyFullCGBPals(void);
 
 //  Battle animation command interpreter.
 
 void PlayBattleAnim(void){
-    // The object/effect pools are native, but the remaining animation
-    // presentation path still accesses bank-5 tilemap, palette, and LCD
-    // compatibility state. Keep that narrow bank transition until those
-    // consumers are migrated to native scene state.
-    wbank_push(MBANK(awActiveAnimObjects));
+    BeginBattleAnimationPresentation();
     v_PlayBattleAnim();
-    wbank_pop;
+    EndBattleAnimationPresentation();
 }
 
 void v_PlayBattleAnim(void){
@@ -282,16 +279,16 @@ void BattleAnimRequestPals(void){
     // LD_A_addr(wBGP);
     // CP_A_B;
     // CALL_NZ (aBattleAnim_SetBGPals);
-    if(gb_read(rBGP) != wram->wBGP)
-        BattleAnim_SetBGPals(wram->wBGP);
+    if(gb_read(rBGP) != BattleAnimationDMGBGPalette())
+        BattleAnim_SetBGPals(BattleAnimationDMGBGPalette());
 
     // LDH_A_addr(rOBP0);
     // LD_B_A;
     // LD_A_addr(wOBP0);
     // CP_A_B;
     // CALL_NZ (aBattleAnim_SetOBPals);
-    if(gb_read(rOBP0) != wram->wOBP0)
-        BattleAnim_SetOBPals(wram->wOBP0);
+    if(gb_read(rOBP0) != BattleAnimationDMGObjectPalette0())
+        BattleAnim_SetOBPals(BattleAnimationDMGObjectPalette0());
     // RET;
 }
 
@@ -980,21 +977,21 @@ void BattleAnimCmd_BGEffect(uint8_t index, uint8_t jt, uint8_t turn, uint8_t par
 void BattleAnimCmd_BGP(uint8_t bgp){
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wBGP);
-    wram->wBGP = bgp;
+    BattleAnimationDMGBGPaletteSet(bgp);
     // RET;
 }
 
 void BattleAnimCmd_OBP0(uint8_t obp0){
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = obp0;
+    BattleAnimationDMGObjectPalette0Set(obp0);
     // RET;
 }
 
 void BattleAnimCmd_OBP1(uint8_t obp1){
     // CALL(aGetBattleAnimByte);
     // LD_addr_A(wOBP1);
-    wram->wOBP1 = obp1;
+    BattleAnimationDMGObjectPalette1Set(obp1);
     // RET;
 }
 
@@ -1007,7 +1004,7 @@ void BattleAnimCmd_ResetObp0(void){
 
 // not_sgb:
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = (hram.hSGB == 0)? 0xe0: 0xf0;
+    BattleAnimationDMGObjectPalette0Set((hram.hSGB == 0)? 0xe0: 0xf0);
     // RET;
 }
 
@@ -1821,16 +1818,12 @@ void BattleAnimAssignPals(void){
     // cgb:
         // LD_A(0b11100100);
         // LD_addr_A(wBGP);
-        wram->wBGP = 0b11100100;
+        BattleAnimationDMGBGPaletteSet(0b11100100);
         // LD_addr_A(wOBP0);
-        wram->wOBP0 = 0b11100100;
+        BattleAnimationDMGObjectPalette0Set(0b11100100);
         // LD_addr_A(wOBP1);
-        wram->wOBP1 = 0b11100100;
-        // CALL(aDmgToCgbBGPals);
-        DmgToCgbBGPals(0b11100100);
-        // LD_DE((0b11100100 << 8) | 0b11100100);
-        // CALL(aDmgToCgbObjPals);
-        DmgToCgbObjPals(0b11100100, 0b11100100);
+        BattleAnimationDMGObjectPalette1Set(0b11100100);
+        BattleAnimApplyFullCGBPals();
         // RET;
         return;
     }
@@ -1842,32 +1835,36 @@ void BattleAnimAssignPals(void){
 
 // sgb:
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = (hram.hSGB != 0)? 0b11110000: 0b11100000;
+    BattleAnimationDMGObjectPalette0Set((hram.hSGB != 0)? 0b11110000: 0b11100000);
     // LD_A(0b11100100);
     // LD_addr_A(wBGP);
-    wram->wBGP = 0b11100100;
+    BattleAnimationDMGBGPaletteSet(0b11100100);
     // LD_addr_A(wOBP1);
-    wram->wOBP1 = 0b11100100;
+    BattleAnimationDMGObjectPalette1Set(0b11100100);
     // RET;
+}
+
+static void BattleAnimApplyFullCGBPals(void){
+    const uint8_t bgp = BattleAnimationDMGBGPalette();
+    const uint8_t obp0 = BattleAnimationDMGObjectPalette0();
+    const uint8_t obp1 = BattleAnimationDMGObjectPalette1();
+
+    gb_write(rBGP, bgp);
+    gb_write(rOBP0, obp0);
+    gb_write(rOBP1, obp1);
+    if(hram.hCGB == 0)
+        return;
+
+    CopyPals(BattleAnimationPaletteOutput(false), BattleAnimationPaletteSource(false), bgp, 8);
+    CopyPals(BattleAnimationPaletteOutput(true), BattleAnimationPaletteSource(true), obp0, 8);
+    hram.hCGBPalUpdate = TRUE;
 }
 
 void ClearBattleAnims(void){
 //  Clear animation block
     // LD_HL(wLYOverrides);
-    uint8_t* hl = wram->wLYOverrides;
-    // LD_BC(wBattleAnimEnd - wLYOverrides);
-    uint16_t bc = wBattleAnimEnd - wLYOverrides;
-
-    do {
-    // loop:
-        // LD_hl(0);
-        *(hl++) = 0;
-        // INC_HL;
-        // DEC_BC;
-        // LD_A_C;
-        // OR_A_B;
-        // IF_NZ goto loop;
-    } while(--bc != 0);
+    memset(BattleAnimationScanlineOverrides(), 0, BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE);
+    memset(BattleAnimationScanlineScratch(), 0, BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE);
 
     ResetNativeBattleAnimationState();
 
@@ -1899,15 +1896,12 @@ void BattleAnim_RevertPals(void){
     WaitTop();
     // LD_A(0b11100100);
     // LD_addr_A(wBGP);
-    wram->wBGP = 0b11100100;
+    BattleAnimationDMGBGPaletteSet(0b11100100);
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = 0b11100100;
+    BattleAnimationDMGObjectPalette0Set(0b11100100);
     // LD_addr_A(wOBP1);
-    wram->wOBP1 = 0b11100100;
-    // CALL(aDmgToCgbBGPals);
-    // LD_DE((0b11100100 << 8) | 0b11100100);
-    // CALL(aDmgToCgbObjPals);
-    DmgToCgbObjPals(0b11100100, 0b11100100);
+    BattleAnimationDMGObjectPalette1Set(0b11100100);
+    BattleAnimApplyFullCGBPals();
     // XOR_A_A;
     // LDH_addr_A(hSCX);
     hram.hSCX = 0;
@@ -1939,14 +1933,14 @@ void BattleAnim_SetBGPals(uint8_t bgp){
     // LD_B_A;
     // LD_C(7);
     // CALL(aCopyPals);
-    CopyPals(wram->wBGPals2, wram->wBGPals1, gb_read(rBGP), 7);
+    CopyPals(BattleAnimationPaletteOutput(false), BattleAnimationPaletteSource(false), gb_read(rBGP), 7);
     // LD_HL(wOBPals2);
     // LD_DE(wOBPals1);
     // LDH_A_addr(rBGP);
     // LD_B_A;
     // LD_C(2);
     // CALL(aCopyPals);
-    CopyPals(wram->wOBPals2, wram->wOBPals1, gb_read(rBGP), 2);
+    CopyPals(BattleAnimationPaletteOutput(true), BattleAnimationPaletteSource(true), gb_read(rBGP), 2);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // LD_A(TRUE);
@@ -1973,7 +1967,8 @@ void BattleAnim_SetOBPals(uint8_t obp0){
     // LD_B_A;
     // LD_C(2);
     // CALL(aCopyPals);
-    CopyPals(wram->wOBPals2 + PALETTE_SIZE * PAL_BATTLE_OB_GRAY, wram->wOBPals1 + PALETTE_SIZE * PAL_BATTLE_OB_GRAY, gb_read(rOBP0), 2);
+    CopyPals(BattleAnimationPaletteOutput(true) + PALETTE_SIZE * PAL_BATTLE_OB_GRAY,
+        BattleAnimationPaletteSource(true) + PALETTE_SIZE * PAL_BATTLE_OB_GRAY, gb_read(rOBP0), 2);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // LD_A(TRUE);

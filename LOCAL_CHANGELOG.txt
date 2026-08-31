@@ -5205,3 +5205,76 @@ Exact stopping point and next recommended task
   battle-animation-only portions of tilemap, palette, virtual-OAM, and
   scanline state into it before removing the temporary `PlayBattleAnim` bank
   transition.
+
+2026-08-30 — Remove battle-animation WRAM-bank presentation boundary
+======================================================================
+
+Completed work
+--------------
+- Removed the `wbank_push`/`wbank_pop` transition from `PlayBattleAnim`.
+- Added native battle-animation presentation ownership for DMG palette state,
+  CGB palette source/output buffers, visible scanline overrides, and scanline
+  scratch workspace. The workspace is safely sized for off-screen effect
+  preparation rather than depending on a bank-aligned WRAM region.
+- Migrated every active C battle-animation producer of palette and scanline
+  state from `wBGP`, `wOBP*`, `wBGPals*`, `wOBPals*`, and
+  `wLYOverrides*` to the native presentation state.
+- Updated the LCD scanline writer, scanline push operation, CGB palette
+  upload, and DMG palette update to consume native animation presentation
+  state while an animation is active. These renderer-facing paths no longer
+  select bank 5 during an active battle animation.
+- Retained a one-time explicit import of the currently displayed legacy
+  palette values at animation entry. It is a read-only migration boundary for
+  the existing global renderer; animation mutations are not mirrored back to
+  legacy WRAM.
+
+Architectural effect
+--------------------
+- The active battle-animation path no longer depends on `rSVBK`, an outer
+  WRAM bank selection, bank-5 palette storage, or bank-5 scanline storage.
+- Native animation presentation state is authoritative for the animation
+  lifetime. The renderer selects it directly rather than relying on a
+  synchronized legacy sidecar.
+- Existing bank-5 palette/scanline fields remain for non-battle-animation
+  screens and legacy layout compatibility. No ASM or layout declaration was
+  deleted because whole-project source/build/runtime obsolescence has not yet
+  been proven.
+- No save-format change: all migrated fields are transient render state.
+
+Remaining native-conversion work
+--------------------------------
+- Battle-animation object submission is native, but the battle scene still
+  clears legacy virtual OAM to suppress pre-animation sprites, and battle
+  background effects still write the shared legacy tilemap. Those are renderer
+  ownership tasks, not remaining WRAM-bank boundaries.
+- The native presentation entry import must disappear when the broader
+  renderer and palette ownership are converted to native scene state.
+- Legacy script bytecode/content tables, tilemap ownership, HRAM timing
+  controls, and the broader renderer remain outside this completed boundary
+  removal.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/functions.c`
+- `home/battle.c`
+- `home/lcd.c`
+- `home/palettes.c`
+- `home/vblank.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after source inspection confirmed no active battle-animation code
+  performs a WRAM bank switch or accesses the former bank-5 presentation
+  buffers after presentation initialization.
+- Next: convert battle-scene tilemap and sprite-layer ownership to native
+  renderer resources, then remove the presentation-entry import and remaining
+  virtual-OAM suppression path.

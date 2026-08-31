@@ -402,7 +402,7 @@ static void BattleBGEffect_FlashContinue(struct BattleBGEffect* bc, const uint8_
     // ADD_HL_DE;
     // LD_A_hl;
     // LD_addr_A(wBGP);
-    wram->wBGP = de[bc->param & 1];
+    BattleAnimationDMGBGPaletteSet(de[bc->param & 1]);
     // RET;
 }
 
@@ -420,7 +420,7 @@ static void BattleBGEffect_WhiteHues(struct BattleBGEffect* bc) {
     // IF_C goto quit;
     if(!res.flag){
         // LD_addr_A(wBGP);
-        wram->wBGP = res.a;
+        BattleAnimationDMGBGPaletteSet(res.a);
         // RET;
         return;
     }
@@ -445,7 +445,7 @@ static void BattleBGEffect_BlackHues(struct BattleBGEffect* bc) {
     // IF_C goto quit;
     if(!res.flag){
         // LD_addr_A(wBGP);
-        wram->wBGP = res.a;
+        BattleAnimationDMGBGPaletteSet(res.a);
         // RET;
         return;
     }
@@ -475,9 +475,9 @@ static void BattleBGEffect_AlternateHues(struct BattleBGEffect* bc) {
     // IF_C goto quit;
     if(!res.flag){
         // LD_addr_A(wBGP);
-        wram->wBGP = res.a;
+        BattleAnimationDMGBGPaletteSet(res.a);
         // LD_addr_A(wOBP1);
-        wram->wOBP1 = res.a;
+        BattleAnimationDMGObjectPalette1Set(res.a);
         // RET;
         return;
     }
@@ -513,7 +513,7 @@ static void BattleBGEffect_CycleOBPalsGrayAndYellow(struct BattleBGEffect* bc) {
     // CALL(aBattleBGEffect_GetNthDMGPal);
     u8_flag_s res = BattleBGEffect_GetNthDMGPal(bc, de);
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = res.a;
+    BattleAnimationDMGObjectPalette0Set(res.a);
     // RET;
 }
 
@@ -542,7 +542,7 @@ static void BattleBGEffect_CycleMidOBPalsGrayAndYellow(struct BattleBGEffect* bc
     // CALL(aBattleBGEffect_GetNthDMGPal);
     u8_flag_s res = BattleBGEffect_GetNthDMGPal(bc, de);
     // LD_addr_A(wOBP0);
-    wram->wOBP0 = res.a;
+    BattleAnimationDMGObjectPalette0Set(res.a);
     // RET;
 }
 
@@ -558,7 +558,7 @@ static void BattleBGEffect_CycleBGPals_Inverted(struct BattleBGEffect* bc) {
     // CALL(aBattleBGEffect_GetNthDMGPal);
     u8_flag_s res = BattleBGEffect_GetNthDMGPal(bc, Pals);
     // LD_addr_A(wBGP);
-    wram->wBGP = res.a;
+    BattleAnimationDMGBGPaletteSet(res.a);
     // RET;
 }
 
@@ -1436,7 +1436,7 @@ static void BattleBGEffect_Surf_RotateWaveSamples(void){
     // LD_hl_A;
     *hl = temp;
     // LD_DE(wLYOverridesBackup);
-    de = wram->wLYOverridesBackup;
+    de = BattleAnimationScanlineScratch();
     hl = surfWave;
     // LD_BC(0x0);
     c = 0x0;
@@ -1790,10 +1790,10 @@ static void BattleBGEffect_DoubleTeam_UpdateLYOverrides(uint8_t a){
     // loop:
         // LD_hl_E;
         // INC_HL;
-        wram->wLYOverridesBackup[l++] = e;
+        BattleAnimationScanlineScratch()[l++] = e;
         // LD_hl_D;
         // INC_HL;
-        wram->wLYOverridesBackup[l++] = d;
+        BattleAnimationScanlineScratch()[l++] = d;
         // DEC_A;
         // IF_NZ goto loop;
     } while(--a2 != 0);
@@ -1801,7 +1801,7 @@ static void BattleBGEffect_DoubleTeam_UpdateLYOverrides(uint8_t a){
     // RET_NC;
     if(carry){
         // LD_hl_E;
-        wram->wLYOverridesBackup[l] = e;
+        BattleAnimationScanlineScratch()[l] = e;
         // RET;
     }
 }
@@ -1930,10 +1930,10 @@ static void BattleBGEffect_AcidArmor(struct BattleBGEffect* bc) {
             // LDH_A_addr(hLYOverrideEnd);
             // LD_L_A;
             // LD_hl(0x0);
-            wram->wLYOverridesBackup[hram.hLYOverrideEnd] = 0x0;
+            BattleAnimationScanlineScratch()[hram.hLYOverrideEnd] = 0x0;
             // DEC_L;
             // LD_hl(0x0);
-            wram->wLYOverridesBackup[hram.hLYOverrideEnd - 1] = 0x0;
+            BattleAnimationScanlineScratch()[hram.hLYOverrideEnd - 1] = 0x0;
             // RET;
             return;
         // if (index == 1) goto one;
@@ -1946,47 +1946,47 @@ static void BattleBGEffect_AcidArmor(struct BattleBGEffect* bc) {
             // LD_E_L;
             // LD_D_H;
             // DEC_DE;
-            uint8_t* de = wram->wLYOverridesBackup + (l - 1);
+            uint8_t* de = BattleAnimationScanlineScratch() + (l - 1);
 
             do {
             // loop:
                 // LD_A_de;
                 // DEC_DE;
                 // LD_hld_A;
-                wram->wLYOverridesBackup[l--] = *de;
+                BattleAnimationScanlineScratch()[l--] = *de;
                 --de;
                 // LDH_A_addr(hLYOverrideStart);
                 // CP_A_L;
                 // IF_NZ goto loop;
             } while(hram.hLYOverrideStart != l);
             // LD_hl(0x90);
-            wram->wLYOverridesBackup[l] = 0x90;
+            BattleAnimationScanlineScratch()[l] = 0x90;
             // LDH_A_addr(hLYOverrideEnd);
             // LD_L_A;
             l = hram.hLYOverrideEnd;
             // LD_A_hl;
-            uint8_t a = wram->wLYOverridesBackup[l];
+            uint8_t a = BattleAnimationScanlineScratch()[l];
             // CP_A(0x1);
             // IF_C goto okay;
             // CP_A(0x90);
             // IF_Z goto okay;
             if(a >= 0x1 && a != 0x90){
                 // LD_hl(0x0);
-                wram->wLYOverridesBackup[l] = 0x0;
+                BattleAnimationScanlineScratch()[l] = 0x0;
             }
 
         // okay:
             // DEC_L;
             --l;
             // LD_A_hl;
-            a = wram->wLYOverridesBackup[l];
+            a = BattleAnimationScanlineScratch()[l];
             // CP_A(0x2);
             // RET_C;
             // CP_A(0x90);
             // RET_Z;
             if(a >= 0x1 && a != 0x90){
                 // LD_hl(0x0);
-                wram->wLYOverridesBackup[l] = 0x0;
+                BattleAnimationScanlineScratch()[l] = 0x0;
                 // RET;
             }
         } return;
@@ -2373,7 +2373,7 @@ static void Rollout_FillLYOverridesBackup(uint8_t a) {
         // LDH_A_addr(hLYOverrideEnd);
         // DEC_A;
         // LD_L_A;
-        hl = wram->wLYOverridesBackup + (hram.hLYOverrideEnd - 1);
+        hl = BattleAnimationScanlineScratch() + (hram.hLYOverrideEnd - 1);
         // LD_hl(0x0);
         *hl = 0x0;
     }
@@ -2383,7 +2383,7 @@ static void Rollout_FillLYOverridesBackup(uint8_t a) {
     else if(hram.hLYOverrideStart != 0) {
         // DEC_A;
         // LD_L_A;
-        hl = wram->wLYOverridesBackup + (hram.hLYOverrideStart - 1);
+        hl = BattleAnimationScanlineScratch() + (hram.hLYOverrideStart - 1);
         // LD_hl(0x0);
         *hl = 0x0;
         // goto skip2;
@@ -2397,12 +2397,12 @@ static void Rollout_FillLYOverridesBackup(uint8_t a) {
     // IF_NC goto skip3;
     if(hram.hLYOverrideStart < hram.hSCY){
         // XOR_A_A;
-        hl = wram->wLYOverridesBackup;
+        hl = BattleAnimationScanlineScratch();
         // DEC_D;
         --d;
     }
     else {
-        hl = wram->wLYOverridesBackup + (hram.hLYOverrideStart - hram.hSCY);
+        hl = BattleAnimationScanlineScratch() + (hram.hLYOverrideStart - hram.hSCY);
     }
 
 // skip3:
@@ -3762,14 +3762,15 @@ static void BGEffects_LoadBGPal0_OBPal1(uint8_t a) {
     // LD_B_A;
     // LD_C(0x1);
     // CALL(aCopyPals);
-    CopyPals(wram->wBGPals2, wram->wBGPals1, a, 0x1);
+    CopyPals(BattleAnimationPaletteOutput(false), BattleAnimationPaletteSource(false), a, 0x1);
     // LD_HL(wOBPals2 + PALETTE_SIZE * 1);
     // LD_DE(wOBPals1 + PALETTE_SIZE * 1);
     // POP_AF;
     // LD_B_A;
     // LD_C(0x1);
     // CALL(aCopyPals);
-    CopyPals(wram->wOBPals2 + PALETTE_SIZE * 1, wram->wOBPals1 + PALETTE_SIZE * 1, a, 0x1);
+    CopyPals(BattleAnimationPaletteOutput(true) + PALETTE_SIZE * 1,
+        BattleAnimationPaletteSource(true) + PALETTE_SIZE * 1, a, 0x1);
     // POP_BC;
     // POP_AF;
     // LDH_addr_A(rSVBK);
@@ -3794,14 +3795,15 @@ static void BGEffects_LoadBGPal1_OBPal0(uint8_t a) {
     // LD_B_A;
     // LD_C(0x1);
     // CALL(aCopyPals);
-    CopyPals(wram->wBGPals2 + PALETTE_SIZE * 1, wram->wBGPals1 + PALETTE_SIZE * 1, a, 0x1);
+    CopyPals(BattleAnimationPaletteOutput(false) + PALETTE_SIZE * 1,
+        BattleAnimationPaletteSource(false) + PALETTE_SIZE * 1, a, 0x1);
     // LD_HL(wOBPals2);
     // LD_DE(wOBPals1);
     // POP_AF;
     // LD_B_A;
     // LD_C(0x1);
     // CALL(aCopyPals);
-    CopyPals(wram->wOBPals2, wram->wOBPals1, a, 0x1);
+    CopyPals(BattleAnimationPaletteOutput(true), BattleAnimationPaletteSource(true), a, 0x1);
     // POP_BC;
     // POP_AF;
     // LDH_addr_A(rSVBK);
@@ -3862,7 +3864,7 @@ static void BattleBGEffects_ClearLYOverrides(void) {
 static void BattleBGEffects_SetLYOverrides(uint8_t a) {
     // SET_PC(aBattleBGEffects_SetLYOverrides);
     // LD_HL(wLYOverrides);
-    uint8_t* hl = wram->wLYOverrides;
+    uint8_t* hl = BattleAnimationScanlineOverrides();
     // LD_E(0x99);
     uint8_t e = 0x99;
 
@@ -3874,7 +3876,7 @@ static void BattleBGEffects_SetLYOverrides(uint8_t a) {
         // IF_NZ goto loop1;
     } while(--e != 0);
     // LD_HL(wLYOverridesBackup);
-    hl = wram->wLYOverridesBackup;
+    hl = BattleAnimationScanlineScratch();
     // LD_E(0x91);
     e = 0x91;
 
@@ -3960,9 +3962,9 @@ void BattleBGEffects_ResetVideoHRAM(void) {
     // LDH_addr_A(rBGP);
     gb_write(rBGP, 0b11100100);
     // LD_addr_A(wBGP);
-    wram->wBGP = 0b11100100;
+    BattleAnimationDMGBGPaletteSet(0b11100100);
     // LD_addr_A(wOBP1);
-    wram->wOBP1 = 0b11100100;
+    BattleAnimationDMGObjectPalette1Set(0b11100100);
     // LDH_addr_A(hLYOverrideStart);
     hram.hLYOverrideStart = 0b11100100; // Is this correct?
     // LDH_addr_A(hLYOverrideEnd);
@@ -3988,7 +3990,7 @@ static void DeformScreen(uint8_t d, uint8_t e) {
     // LD_addr_A(wBattleSineWaveTempTimer);
     BattleAnimationEffectScratchState()->sineTimer = 0x80;
     // LD_BC(wLYOverridesBackup);
-    uint8_t* hl = wram->wLYOverridesBackup;
+    uint8_t* hl = BattleAnimationScanlineScratch();
     uint8_t c = 0;
 
     do {
@@ -4090,7 +4092,7 @@ static void DeformWater(uint8_t d, uint8_t e, uint8_t a) {
     uint8_t c2 = c;
     // LD_C_L;
     // LD_B_H;
-    uint8_t* hl = wram->wLYOverridesBackup;
+    uint8_t* hl = BattleAnimationScanlineScratch();
 
     while(BattleAnimationEffectScratchState()->sineTimer != 0){
     // loop:
@@ -4167,20 +4169,20 @@ static void BattleBGEffect_WavyScreenFX(void) {
     uint8_t c = hram.hLYOverrideEnd - l;
     // LD_A_hl;
     // PUSH_AF;
-    uint8_t a = wram->wLYOverridesBackup[l];
+    uint8_t a = BattleAnimationScanlineScratch()[l];
 
     do {
     // loop:
         // LD_A_de;
         // INC_DE;
         // LD_hli_A;
-        wram->wLYOverridesBackup[l++] = wram->wLYOverridesBackup[e++];
+        BattleAnimationScanlineScratch()[l++] = BattleAnimationScanlineScratch()[e++];
         // DEC_C;
         // IF_NZ goto loop;
     } while(--c != 0);
     // POP_AF;
     // LD_hl_A;
-    wram->wLYOverridesBackup[l] = a;
+    BattleAnimationScanlineScratch()[l] = a;
 
 // done:
     // POP_BC;
@@ -4198,7 +4200,7 @@ static void BGEffect_FillLYOverridesBackup(uint8_t a) {
     // LD_D_A;
     // POP_AF;
     uint8_t d = hram.hLYOverrideEnd - hram.hLYOverrideStart;
-    uint8_t* hl = wram->wLYOverridesBackup + hram.hLYOverrideStart;
+    uint8_t* hl = BattleAnimationScanlineScratch() + hram.hLYOverrideStart;
 
     do {
     // loop:
@@ -4233,7 +4235,7 @@ static void BGEffect_DisplaceLYOverridesBackup(uint8_t a) {
     do {
     // loop:
         // LD_hli_A;
-        wram->wLYOverridesBackup[l++] = 0x90;
+        BattleAnimationScanlineScratch()[l++] = 0x90;
         // DEC_E;
         // IF_NZ goto loop;
     } while(--e != 0);
@@ -4243,7 +4245,7 @@ static void BGEffect_DisplaceLYOverridesBackup(uint8_t a) {
     do {
     // loop2:
         // LD_hli_A;
-        wram->wLYOverridesBackup[l++] = a ^ 0xff;
+        BattleAnimationScanlineScratch()[l++] = a ^ 0xff;
         // DEC_D;
         // IF_NZ goto loop2;
     } while(--d != 0);

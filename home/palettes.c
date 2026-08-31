@@ -3,6 +3,7 @@
 #include "copy.h"
 #include "delay.h"
 #include "../engine/tilesets/map_palettes.h"
+#include "../engine/battle_anims/core.h"
 
 //  Functions dealing with palettes.
 
@@ -34,16 +35,16 @@ bool UpdateCGBPals(void){
 }
 
 bool ForceUpdateCGBPals(void){
-    // LDH_A_addr(rSVBK);
-    // PUSH_AF;
-    uint8_t svbk = gb_read(rSVBK);
-
-    // LD_A(MBANK(awBGPals2));
-    // LDH_addr_A(rSVBK);
-    gb_write(rSVBK, MBANK(awBGPals2));
+    const bool nativePresentation = BattleAnimationPresentationActive();
+    uint8_t svbk = 0;
+    if(!nativePresentation) {
+        svbk = gb_read(rSVBK);
+        gb_write(rSVBK, MBANK(awBGPals2));
+    }
 
     // LD_HL(wBGPals2);
-    uint8_t* hl = wram->wBGPals2;
+    uint8_t* hl = BattleAnimationPresentationActive()
+        ? BattleAnimationPaletteOutput(false) : wram->wBGPals2;
 
 //  copy 8 pals to bgpd
     // LD_A(1 << rBGPI_AUTO_INCREMENT);
@@ -66,7 +67,8 @@ bool ForceUpdateCGBPals(void){
     } while(--b != 0);
 
 //  hl is now wOBPals2
-    hl = wram->wOBPals2;
+    hl = BattleAnimationPresentationActive()
+        ? BattleAnimationPaletteOutput(true) : wram->wOBPals2;
 
 //  copy 8 pals to obpd
     // LD_A(1 << rOBPI_AUTO_INCREMENT);
@@ -87,9 +89,8 @@ bool ForceUpdateCGBPals(void){
     // IF_NZ goto obp;
     } while(--b != 0);
 
-    // POP_AF;
-    // LDH_addr_A(rSVBK);
-    gb_write(rSVBK, svbk);
+    if(!nativePresentation)
+        gb_write(rSVBK, svbk);
 
 //  clear pal update queue
     // XOR_A_A;
