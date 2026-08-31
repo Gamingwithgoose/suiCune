@@ -9,6 +9,7 @@
 #include "trainer_huds.h"
 #include "start_battle.h"
 #include "sliding_intro.h"
+#include "../battle_anims/core.h"
 #include "menu.h"
 #include "link_result.h"
 #include "ai/items.h"
@@ -12729,6 +12730,7 @@ static void ExitBattle_HandleEndOfBattle(void){
 }
 
 void ExitBattle(void){
+    ClearBattleAnimationHudSprites();
     // CALL(aExitBattle_HandleEndOfBattle);
     ExitBattle_HandleEndOfBattle();
     // CALL(aCleanUpBattleRAM);

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "../../constants.h"
 
 struct BattleBGEffect;
 
@@ -67,6 +68,12 @@ struct BattleAnimationSprite {
     int16_t xCoord;
     uint16_t tileId;
     uint8_t attributes;
+    uint8_t resourceKind;
+};
+
+enum BattleRenderResourceKind {
+    BATTLE_RENDER_RESOURCE_ANIMATION,
+    BATTLE_RENDER_RESOURCE_HUD,
 };
 
 struct BattleAnimationTileBinding {
@@ -82,11 +89,16 @@ void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t ti
 void AppendBattleAnimationTileBinding(uint8_t graphicsId, uint16_t tileOffset);
 uint16_t BattleAnimationTileOffset(uint8_t graphicsId);
 uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount);
-const uint8_t* BattleAnimationTilePixels(uint16_t tileId);
+uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount);
+const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
 const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);
+const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count);
+void ClearBattleAnimationHudSprites(void);
+void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
+    const uint8_t tileIds[PARTY_LENGTH]);
 void BeginBattleAnimationRenderFrame(void);
 void ClearBattleAnimationRenderSprites(void);
 void SetBattleAnimationRenderSpritePalette(uint8_t paletteMask);

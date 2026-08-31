@@ -4379,3 +4379,75 @@ Build and runtime validation were not performed.
 Next dependency closure: migrate battle-picture source staging and persistent
 trainer HUD sprite ownership into the native battle renderer, then retire the
 remaining battle-animation OAM clear and VRAM fallback.
+
+2026-08-30 — Native trainer HUD sprite ownership
+=================================================
+
+Completed work
+--------------
+- `engine/battle/trainer_huds.c` now stages party-ball states in local native
+  arrays and publishes player, opponent, and link HUD sprites through the
+  native battle renderer. It no longer writes HUD sprite entries to the fixed
+  virtual OAM buffer or uses `wBattleHUDTiles` as its data source.
+- `engine/battle_anims/core.[ch]` now owns a distinct persistent HUD sprite
+  list and decoded HUD tile resource store. Animation-frame sprite resources
+  and HUD resources are explicitly tagged, so the renderer selects the native
+  source without a tile-number or VRAM-address convention.
+- `tools/emu/peanut_sdl.c` renders native HUD sprites through the existing
+  primary object-pixel path after legacy OAM and before transient animation
+  sprites. HUD rendering is therefore not constrained by legacy OAM slots.
+- `engine/battle/core.c` clears and releases native HUD state on battle exit.
+  Battle and link HUD initialization also clear it before publishing their
+  current view, preventing stale trainer entries from reaching another battle
+  or overworld.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Trainer HUD ball sprites and their four decoded tile resources are now
+  native battle-view state. The fixed twelve-entry HUD array represents the
+  deliberate six-Pokémon-per-side game rule, not a renderer capacity limit.
+- Animation reset preserves HUD resources because an animation clear can occur
+  while the battle HUD remains visible. Battle exit owns logical HUD removal.
+- HUD border tiles, palette writes, tilemap composition, and all unconverted
+  sprite producers remain legacy renderer boundaries. The renderer retains its
+  VRAM fallback only for those unconverted producers.
+- No temporary synchronization bridge was introduced: HUD state has one native
+  owner. No ASM source was deleted because wider source/build/runtime proof of
+  obsolescence is still absent.
+
+Source-level validation and risks
+---------------------------------
+- Inspected all trainer HUD publishers, native animation reset, battle exit,
+  and the renderer call sites. The reset lifecycle now preserves active HUD
+  data while battle entry and exit establish explicit view lifetime.
+- Preserved the existing 8x16 animation-sprite tile alignment at the native
+  resource lookup boundary; this keeps the former hardware sprite-size visual
+  rule without making native HUD ownership depend on virtual OAM.
+- The native resource allocator rejects arithmetic overflow before growing a
+  tile store. The public header now includes the constants required for its
+  standalone `PARTY_LENGTH` declaration.
+- Runtime visual validation remains needed for wild, trainer, link, switch,
+  and animation-over-HUD scenes. The retained tilemap and palette paths still
+  carry Game Boy presentation constraints outside this migrated sprite path.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `engine/battle/trainer_huds.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after moving persistent trainer HUD ball sprites and tile ownership
+  off virtual OAM/WRAM into the native battle renderer and closing their reset
+  and battle-exit lifetime.
+- Next: move battle-picture staging into a native image resource and migrate
+  its renderer consumers; then audit remaining battle sprite producers before
+  removing the legacy VRAM fallback.

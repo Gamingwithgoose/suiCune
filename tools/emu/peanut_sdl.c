@@ -1138,6 +1138,14 @@ void gb_draw_line(void) {
                 gb.oam[4 * spriteIndex + 2], gb.oam[4 * spriteIndex + 3], NULL);
         }
 
+        size_t battleHudSpriteCount;
+        const struct BattleAnimationSprite* battleHudSprites = BattleAnimationHudSprites(&battleHudSpriteCount);
+        for(size_t spriteIndex = battleHudSpriteCount; spriteIndex != 0; spriteIndex--) {
+            const struct BattleAnimationSprite* sprite = &battleHudSprites[spriteIndex - 1];
+            DrawObjectSprite(pixels, pixelsPrio, sprite->yCoord, sprite->xCoord, sprite->tileId,
+                sprite->attributes, BattleAnimationSpritePixels(sprite));
+        }
+
         // Battle animation sprites now bypass the fixed 40-entry OAM buffer
         // and enter this primary pixel renderer directly. Render them after
         // the legacy list so their order matches their former low OAM slots.
@@ -1145,8 +1153,10 @@ void gb_draw_line(void) {
         const struct BattleAnimationSprite* battleSprites = BattleAnimationRenderSprites(&battleSpriteCount);
         for(size_t spriteIndex = battleSpriteCount; spriteIndex != 0; spriteIndex--) {
             const struct BattleAnimationSprite* sprite = &battleSprites[spriteIndex - 1];
-            uint16_t tileId = sprite->tileId & (gb.gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFFFE : 0xFFFF);
-            DrawObjectSprite(pixels, pixelsPrio, sprite->yCoord, sprite->xCoord, sprite->tileId, sprite->attributes, BattleAnimationTilePixels(tileId));
+            struct BattleAnimationSprite pixelSource = *sprite;
+            pixelSource.tileId &= (gb.gb_reg.LCDC & LCDC_OBJ_SIZE) ? 0xFFFE : 0xFFFF;
+            DrawObjectSprite(pixels, pixelsPrio, sprite->yCoord, sprite->xCoord, sprite->tileId,
+                sprite->attributes, BattleAnimationSpritePixels(&pixelSource));
         }
     }
 
