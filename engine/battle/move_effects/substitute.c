@@ -109,7 +109,7 @@ void BattleCommand_Substitute(void){
         // LD_addr_A(wNumHits);
         wram->wNumHits = 0;
         // LD_addr_A(wFXAnimID + 1);
-        wram->wFXAnimID &= 0xff;
+        BattleAnimationIdClearHighByte();
         // LD_addr_A(wBattleAnimParam);
         BattleAnimationParameterSet(0);
         // LD_A(SUBSTITUTE);

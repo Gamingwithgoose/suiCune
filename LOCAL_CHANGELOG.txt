@@ -5074,3 +5074,134 @@ Exact stopping point and next recommended task
 - Next: migrate the remaining `hVBlank`, `hOAMUpdate`, virtual-OAM, and
   tilemap presentation control used by battle animation to explicit native
   frame and scene-layer state.
+
+2026-08-30 — Battle-animation bank-transition regression repair
+=================================================================
+
+Regression discovered and fixed
+------------------------------
+- User runtime testing found normal move animations were corrupted and a Growl
+  stat-lowering sequence crashed after the previous removal of the
+  `PlayBattleAnim` bank transition.
+- Source review established that, although animation object and background
+  effect pools are now native allocations, `v_PlayBattleAnim` still reaches
+  bank-5 legacy presentation state for tilemap, palette, LCD, and related
+  transition work. Removing the bank selection therefore changed the active
+  data backing during a live animation.
+- Restored the narrow `wbank_push`/`wbank_pop` boundary around
+  `v_PlayBattleAnim`. This repairs the required legacy presentation boundary;
+  it does not restore fixed animation pools, OAM ownership, or any removed
+  native runtime state.
+
+Temporary migration boundary
+----------------------------
+- The `PlayBattleAnim` bank transition is temporary migration code.
+- Removal condition: migrate every `v_PlayBattleAnim`-reachable tilemap,
+  palette, LCD, and other bank-5 presentation consumer to native scene/frame
+  state, then verify the animation path has no live banked WRAM access.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Native dynamic animation object/background-effect ownership and native
+  animation parameter ownership remain in place.
+- The previous changelog entry claiming the public entry no longer required a
+  bank transition is superseded by this runtime finding; it was based on an
+  incomplete dependency audit and must not be treated as a completed
+  conversion.
+
+Files modified
+--------------
+- `engine/battle_anims/anim_commands.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after restoring the necessary temporary presentation-bank boundary.
+- Next: audit and migrate the bank-5 presentation consumers as a coherent
+  native battle-scene task before attempting this removal again.
+
+2026-08-30 — Native battle-animation selection and Surf-wave state
+===================================================================
+
+Completed work
+--------------
+- Moved the live battle-animation selection value from `wFXAnimID` into the
+  semantic native `BattleAnimationId` API. All active C producers and
+  consumers now use that API, including battle commands, item ball throws,
+  the animation debug menu, script startup, Rollout checks, and object-frame
+  positioning.
+- Preserved the currently documented 16-bit animation-table behavior through
+  explicit native APIs for full-ID replacement, low-byte replacement, and the
+  historical high-byte clear operation. The compatibility encoding is now
+  local to the native animation API rather than an implicit dependency on a
+  WRAM address.
+- Moved Surf's 64-sample background-effect waveform from
+  `wSurfWaveBGEffect` into `NativeBattleAnimationState`. The generator and
+  rotation code now operate only on native animation-owned samples.
+- Renamed the static Surf rotation helper to remove its former WRAM-address
+  identity.
+
+Architectural effect
+--------------------
+- `wFXAnimID` is no longer authoritative for active C battle-animation
+  selection. It remains in the legacy WRAM map only because that map and
+  associated layout assertions have not yet been proven unused by every
+  remaining compatibility/ASM path.
+- `wSurfWaveBGEffect` is no longer an active C battle-animation scratch
+  allocation. Its legacy map slot remains for the same layout-compatibility
+  reason; no bridge mirrors the native waveform back to that slot.
+- No save-format change: both values are transient battle/presentation state.
+
+Temporary migration code and remaining dependencies
+---------------------------------------------------
+- The narrow `PlayBattleAnim` bank transition remains temporary migration code.
+  Its removal condition is unchanged: migrate every reachable tilemap,
+  palette, LCD, virtual-OAM, and scanline presentation consumer to native
+  battle-scene/frame state, then verify the path has no live banked WRAM use.
+- The native `BattleAnimationId` API preserves the historical high-byte
+  encoding while the table/script content remains Crystal-compatible. It is
+  not a bank or pointer shim. Replace that encoding with an explicit native
+  animation request model when animation content tables and hit/miss variants
+  are migrated from their current legacy table representation.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle/core.c`
+- `engine/battle/effect_commands.c`
+- `engine/battle/move_effects/substitute.c`
+- `engine/items/item_effects.c`
+- `engine/menus/debugmenu.c`
+- `LOCAL_CHANGELOG.txt`
+
+Partially completed / untouched work
+------------------------------------
+- Partially completed: battle animation object pools, effect pools, selection,
+  parameter, and Surf waveform are native, but tilemap, palette, LCD,
+  virtual-OAM, and scanline presentation state still uses the legacy renderer
+  path and requires the temporary bank boundary.
+- Untouched: conversion of the shared scanline/tilemap/palette renderer,
+  native animation-content tables and scripts, broader save/memory/banking
+  conversion, and deletion of legacy ASM or WRAM layout declarations. No ASM
+  file was deleted because source/build/runtime proof of obsolescence is not
+  yet available.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after the complete active-C migration of `wFXAnimID` and
+  `wSurfWaveBGEffect` ownership.
+- Next: define a native battle-scene presentation state and migrate the
+  battle-animation-only portions of tilemap, palette, virtual-OAM, and
+  scanline state into it before removing the temporary `PlayBattleAnim` bank
+  transition.

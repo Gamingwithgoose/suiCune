@@ -8,6 +8,8 @@
 
 struct BattleBGEffect;
 
+typedef uint16_t BattleAnimationId;
+
 // Native runtime object. Script content remains byte-coded at the loader
 // boundary, but animation instances are not a packed Crystal memory format.
 struct BattleAnim {
@@ -71,6 +73,12 @@ struct BattleAnimationSprite {
     uint8_t resourceKind;
 };
 
+enum {
+    // Surf's battle background effect is authored as one 64-sample cycle.
+    // This is effect data, not a banked-WRAM allocation or renderer limit.
+    BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT = 64,
+};
+
 enum BattleRenderResourceKind {
     BATTLE_RENDER_RESOURCE_ANIMATION,
     BATTLE_RENDER_RESOURCE_HUD,
@@ -98,8 +106,13 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 uint8_t BattleAnimationParameterGet(void);
 void BattleAnimationParameterSet(uint8_t parameter);
+BattleAnimationId BattleAnimationIdGet(void);
+void BattleAnimationIdSet(BattleAnimationId id);
+void BattleAnimationIdClearHighByte(void);
+void BattleAnimationIdSetLowByte(uint8_t id);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
+uint8_t* BattleAnimationSurfWaveSamples(void);
 const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);
 const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count);
 void ClearBattleAnimationHudSprites(void);

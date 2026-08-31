@@ -20,6 +20,7 @@ struct NativeBattleAnimationState {
     struct BattleAnimationCommandState command;
     struct BattleAnimationRenderState render;
     struct BattleAnimationEffectScratchState effectScratch;
+    uint8_t surfWaveSamples[BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT];
     struct BattleAnimationSprite* renderSprites;
     size_t renderSpriteCount;
     size_t renderSpriteCapacity;
@@ -40,6 +41,9 @@ static struct NativeBattleAnimationState sBattleAnimationState;
 // may be consumed by its script. It intentionally survives per-animation
 // renderer resets just as the former shared battle-state byte did.
 static uint8_t sBattleAnimationParameter;
+// Battle animation selection is transient native battle state. It is kept
+// separate from the legacy WRAM layout so content IDs can outlive that layout.
+static BattleAnimationId sBattleAnimationId;
 
 struct BattleAnim* BattleAnimationObjects(void){
     return sBattleAnimationState.objects;
@@ -178,12 +182,32 @@ void BattleAnimationParameterSet(uint8_t parameter){
     sBattleAnimationParameter = parameter;
 }
 
+BattleAnimationId BattleAnimationIdGet(void){
+    return sBattleAnimationId;
+}
+
+void BattleAnimationIdSet(BattleAnimationId id){
+    sBattleAnimationId = id;
+}
+
+void BattleAnimationIdClearHighByte(void){
+    sBattleAnimationId &= 0xff;
+}
+
+void BattleAnimationIdSetLowByte(uint8_t id){
+    sBattleAnimationId = (sBattleAnimationId & 0xff00) | id;
+}
+
 struct BattleAnimationRenderState* BattleAnimationRenderState(void){
     return &sBattleAnimationState.render;
 }
 
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void){
     return &sBattleAnimationState.effectScratch;
+}
+
+uint8_t* BattleAnimationSurfWaveSamples(void){
+    return sBattleAnimationState.surfWaveSamples;
 }
 
 const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count){
@@ -647,7 +671,7 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
         // IF_Z goto do_sub;
         // CP_A(MILK_DRINK);
         // IF_NZ goto no_sub;
-        if(wram->wFXAnimID == KINESIS || wram->wFXAnimID == SOFTBOILED || wram->wFXAnimID == MILK_DRINK) {
+        if(BattleAnimationIdGet() == KINESIS || BattleAnimationIdGet() == SOFTBOILED || BattleAnimationIdGet() == MILK_DRINK) {
         // do_sub:
             // POP_AF;
             // SUB_A(1 * 8);

@@ -2792,7 +2792,7 @@ void BattleCommand_LowerSub(void){
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID &= 0xff; // Clear high byte
+    BattleAnimationIdClearHighByte();
     // INC_A;
     // LD_addr_A(wBattleAnimParam);
     BattleAnimationParameterSet(1);
@@ -3007,7 +3007,7 @@ void BattleCommand_RaiseSub(void){
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID &= 0xff;
+    BattleAnimationIdClearHighByte();
     // LD_A(0x2);
     // LD_addr_A(wBattleAnimParam);
     BattleAnimationParameterSet(0x2);
@@ -3532,7 +3532,7 @@ void BattleCommand_CheckFaint(void){
         // LD_addr_A(wNumHits);
         wram->wNumHits = 0;
         // LD_addr_A(wFXAnimID + 1);
-        wram->wFXAnimID &= 0xff;
+        BattleAnimationIdClearHighByte();
         // INC_A;
         // LD_addr_A(wBattleAnimParam);
         BattleAnimationParameterSet(1);
@@ -4900,7 +4900,7 @@ void PlayFXAnimID(uint16_t de){
     // LD_addr_A(wFXAnimID);
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID = de;
+    BattleAnimationIdSet(de);
 
     // LD_C(3);
     // CALL(aDelayFrames);
@@ -9931,7 +9931,7 @@ void PlayDamageAnim(void){
         return;
 
     // LD_addr_A(wFXAnimID);
-    wram->wFXAnimID = anim;
+    BattleAnimationIdSet(anim);
 
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -9953,7 +9953,7 @@ void LoadMoveAnim(void){
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID &= 0xff;
+    BattleAnimationIdClearHighByte();
 
     // LD_A(BATTLE_VARS_MOVE_ANIM);
     // CALL(aGetBattleVar);
@@ -9970,7 +9970,7 @@ void LoadMoveAnim(void){
 
 void LoadAnim(uint8_t a){
     // LD_addr_A(wFXAnimID);
-    wram->wFXAnimID = (wram->wFXAnimID & 0xff00) | a;
+    BattleAnimationIdSetLowByte(a);
 
 // fallthrough
 
@@ -9994,7 +9994,7 @@ void PlayOpponentBattleAnim(uint16_t de){
     // LD_addr_A(wFXAnimID);
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID = de;
+    BattleAnimationIdSet(de);
     // XOR_A_A;
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;

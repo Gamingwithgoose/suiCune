@@ -1182,7 +1182,7 @@ not_encored:
     wram->wMoveSelectionMenuType = 0;
     // INC_A;  // POUND
     // LD_addr_A(wFXAnimID);
-    wram->wFXAnimID = POUND;
+    BattleAnimationIdSet(POUND);
 
     // CALL(aMoveSelectionScreen);
     bool selected = MoveSelectionScreen();
@@ -2124,7 +2124,7 @@ static void HandleWrap_do_it(void){
     // LD_A_de;
     // LD_addr_A(wNamedObjectIndex);
     // LD_addr_A(wFXAnimID);
-    wram->wFXAnimID = *trappingMove;
+    BattleAnimationIdSet(*trappingMove);
     // CALL(aGetMoveName);
     GetMoveName(*trappingMove);
     // DEC_hl;
@@ -2141,7 +2141,7 @@ static void HandleWrap_do_it(void){
             // LD_addr_A(wNumHits);
             wram->wNumHits = 0;
             // LD_addr_A(wFXAnimID + 1);
-            wram->wFXAnimID &= 0xff;
+            BattleAnimationIdClearHighByte();
             // PREDEF(pPlayBattleAnim);
             PlayBattleAnim();
             // CALL(aSwitchTurnCore);
@@ -6863,14 +6863,14 @@ void ItemRecoveryAnim(void){
     EmptyBattleTextbox();
     // LD_A(RECOVER);
     // LD_addr_A(wFXAnimID);
-    wram->wFXAnimID = RECOVER;
+    BattleAnimationIdSet(RECOVER);
     // CALL(aSwitchTurnCore);
     SwitchTurnCore();
     // XOR_A_A;
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID &= 0xff;
+    BattleAnimationIdClearHighByte();
     // PREDEF(pPlayBattleAnim);
     PlayBattleAnim();
     // CALL(aSwitchTurnCore);
@@ -10870,7 +10870,7 @@ static void Call_PlayBattleAnim(uint16_t de){
     // LD_addr_A(wFXAnimID);
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID = de;
+    BattleAnimationIdSet(de);
     // CALL(aWaitBGMap);
     WaitBGMap();
     // PREDEF_JUMP(pPlayBattleAnim);

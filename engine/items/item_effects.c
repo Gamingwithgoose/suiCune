@@ -760,7 +760,7 @@ void PokeBallEffect(void){
     // LD_addr_A(wFXAnimID);
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID = ANIM_THROW_POKE_BALL;
+    BattleAnimationIdSet(ANIM_THROW_POKE_BALL);
     // XOR_A_A;
     // LDH_addr_A(hBattleTurn);
     hram.hBattleTurn = TURN_PLAYER;
@@ -3939,7 +3939,7 @@ void UseBallInTrainerBattle(void){
     // LD_addr_A(wFXAnimID);
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
-    wram->wFXAnimID = ANIM_THROW_POKE_BALL;
+    BattleAnimationIdSet(ANIM_THROW_POKE_BALL);
     // XOR_A_A;
     // LD_addr_A(wBattleAnimParam);
     BattleAnimationParameterSet(0);

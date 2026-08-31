@@ -1414,13 +1414,11 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
     }
 }
 
-static void BattleBGEffect_Surf_RotatewSurfWaveBGEffect(void){
-    // LD_HL(wSurfWaveBGEffect);
-    uint8_t* hl = wram->wSurfWaveBGEffect;
-    // LD_DE(wSurfWaveBGEffect + 1);
-    uint8_t* de = wram->wSurfWaveBGEffect + 1;
-    // LD_C(wSurfWaveBGEffectEnd - wSurfWaveBGEffect - 1);
-    uint8_t c = sizeof(wram->wSurfWaveBGEffect) - 1;
+static void BattleBGEffect_Surf_RotateWaveSamples(void){
+    uint8_t* surfWave = BattleAnimationSurfWaveSamples();
+    uint8_t* hl = surfWave;
+    uint8_t* de = surfWave + 1;
+    uint8_t c = BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT - 1;
     // LD_A_hl;
     // PUSH_AF;
     uint8_t temp = *hl;
@@ -1439,8 +1437,7 @@ static void BattleBGEffect_Surf_RotatewSurfWaveBGEffect(void){
     *hl = temp;
     // LD_DE(wLYOverridesBackup);
     de = wram->wLYOverridesBackup;
-    // LD_HL(wSurfWaveBGEffect);
-    hl = wram->wSurfWaveBGEffect;
+    hl = surfWave;
     // LD_BC(0x0);
     c = 0x0;
 
@@ -1468,9 +1465,9 @@ static void BattleBGEffect_Surf_RotatewSurfWaveBGEffect(void){
         // LD_de_A;
         // LD_A_C;
         // INC_A;
-        // AND_A(0x3f);
+        // AND_A(BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT - 1);
         // LD_C_A;
-        c = (c + 1) & 0x3f;
+        c = (c + 1) & (BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT - 1);
         // INC_DE;
         // LD_A_E;
         // CP_A(0x5f);
@@ -1504,8 +1501,7 @@ static void BattleBGEffect_Surf(struct BattleBGEffect* bc) {
             if(hram.hLCDCPointer == 0)
                 return;
             // PUSH_BC;
-            // CALL(aBattleBGEffect_Surf_RotatewSurfWaveBGEffect);
-            BattleBGEffect_Surf_RotatewSurfWaveBGEffect();
+            BattleBGEffect_Surf_RotateWaveSamples();
             // POP_BC;
             // RET;
             return;
@@ -2353,7 +2349,7 @@ static void Rollout_FillLYOverridesBackup(uint8_t a) {
     // LD_A_addr(wFXAnimID);
     // CP_A(ROLLOUT);
     // IF_Z goto rollout;
-    if(wram->wFXAnimID != ROLLOUT){
+    if(BattleAnimationIdGet() != ROLLOUT){
     // not_rollout:
         // POP_AF;
         // JP(mBGEffect_FillLYOverridesBackup);
@@ -4040,11 +4036,8 @@ static void InitSurfWaves(uint8_t d, uint8_t e) {
     // LD_A_D;
     // LD_addr_A(wBattleSineWaveTempAmplitude);
     BattleAnimationEffectScratchState()->sineAmplitude = d;
-    // LD_A(0x40);
-    // LD_addr_A(wBattleSineWaveTempTimer);
-    BattleAnimationEffectScratchState()->sineTimer = 0x40;
-    // LD_BC(wSurfWaveBGEffect);
-    uint8_t* bc = wram->wSurfWaveBGEffect;
+    BattleAnimationEffectScratchState()->sineTimer = BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT;
+    uint8_t* bc = BattleAnimationSurfWaveSamples();
 
     do {
     // loop:

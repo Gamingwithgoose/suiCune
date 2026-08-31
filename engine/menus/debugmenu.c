@@ -1019,15 +1019,15 @@ void DebugMenu_BattleAnim(void) {
 
         if(NativeInputLogicalPressed() & (A_BUTTON)) {
             if(anim == NUM_BATTLE_ANIMS + 1) {
-                wram->wFXAnimID = ANIM_THROW_POKE_BALL;
+                BattleAnimationIdSet(ANIM_THROW_POKE_BALL);
                 BattleAnimationParameterSet(POKE_BALL);
             }
             else if(anim == GROWL || anim == ROAR) {
-                wram->wFXAnimID = anim;
+                BattleAnimationIdSet(anim);
                 BattleAnimationParameterSet((hram.hBattleTurn == TURN_PLAYER)? wram->wBattleMon.species: wram->wEnemyMon.species);
             }
             else {
-                wram->wFXAnimID = anim;
+                BattleAnimationIdSet(anim);
                 BattleAnimationParameterSet(0);
             }
             wram->wNumHits = 1;

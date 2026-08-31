@@ -34,9 +34,13 @@ static void CopyMinimizePic(uint8_t* de);
 //  Battle animation command interpreter.
 
 void PlayBattleAnim(void){
-    // Battle-animation objects and effect state are native allocations. The
-    // entry point no longer selects the former WRAM bank that held them.
+    // The object/effect pools are native, but the remaining animation
+    // presentation path still accesses bank-5 tilemap, palette, and LCD
+    // compatibility state. Keep that narrow bank transition until those
+    // consumers are migrated to native scene state.
+    wbank_push(MBANK(awActiveAnimObjects));
     v_PlayBattleAnim();
+    wbank_pop;
 }
 
 void v_PlayBattleAnim(void){
@@ -99,7 +103,7 @@ void BattleAnimRunScript(void){
     // LD_A_addr(wFXAnimID + 1);
     // AND_A_A;
     // IF_NZ goto hi_byte;
-    if(HIGH(wram->wFXAnimID) == 0) {
+    if(HIGH(BattleAnimationIdGet()) == 0) {
         // FARCALL(aCheckBattleScene);
         // IF_C goto disabled;
         if(CheckBattleScene()) {
@@ -137,7 +141,7 @@ void BattleAnimRunScript(void){
             // LD_addr_A(wFXAnimID);
             // LD_A_H;
             // LD_addr_A(wFXAnimID + 1);
-            wram->wFXAnimID = wram->wNumHits + ANIM_MISS;
+            BattleAnimationIdSet(wram->wNumHits + ANIM_MISS);
         }
         else {
         // done:
@@ -187,7 +191,7 @@ void RunBattleAnimScript(void){
         // LD_A_addr(wFXAnimID);
         // CP_A(ROLLOUT);
         // IF_NZ goto not_rollout;
-        if(wram->wFXAnimID == ROLLOUT) {
+        if(BattleAnimationIdGet() == ROLLOUT) {
             const struct BattleBGEffect* effects = BattleAnimationBGEffects();
             for(size_t i = 0; i < BattleAnimationBGEffectCount(); i++) {
                 if(effects[i].function == 0)
@@ -1875,7 +1879,7 @@ void ClearBattleAnims(void){
     // ADD_HL_DE;
     // ADD_HL_DE;
     // CALL(aGetBattleAnimPointer);
-    sBattleAnim.script = BattleAnimations[wram->wFXAnimID];
+    sBattleAnim.script = BattleAnimations[BattleAnimationIdGet()];
     sBattleAnim.pos = 0;
     sBattleAnim.parent = NULL;
     sBattleAnim.parent_pos = 0;
