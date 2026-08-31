@@ -20,3 +20,26 @@ WRAM/HRAM/VRAM/OAM ownership, emulator dispatch, or hardware limits.
   ownership changes, retained boundaries, static validation, and unperformed
   build/runtime validation.
 - Do not build, launch, or runtime-test unless explicitly requested.
+
+## Project history and documentation
+
+Project history and durable technical documentation describe the software, not
+the development conversation or authorship process. `LOCAL_CHANGELOG.txt`,
+commit recommendations, migration documentation, and durable source comments
+must never identify AI, artificial intelligence, Codex, an agent, assistant,
+model, prompt, conversation, chat, session, user, user request, user
+instruction, or similar development-process/authorship wording as the reason
+work was performed.
+
+Record runtime observations as software facts. For example, write “Runtime
+regression: opponent Tackle crashes during its battle-animation sequence,” not
+an account of who observed it; write “Build/runtime validation: not performed,”
+not why it was omitted; and write “Migrated battle-animation state to native
+runtime ownership,” not who performed the migration.
+
+Documentation cleanup must preserve legitimate engineering history: technical
+changes, affected files, subsystem names, regressions, fixes, failed technical
+experiments, reversions, architectural decisions, compatibility boundaries,
+validation status, known limitations, and remaining technical work. Remove or
+rewrite only conversational/authorship/process framing. These rules apply to
+all future work.

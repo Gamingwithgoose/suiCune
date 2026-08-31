@@ -12,8 +12,8 @@ converted during this audit.
 
 Pre-existing working-tree state
 -------------------------------
-- `lib/libmobile` was already dirty when this session began. It remains
-  a pre-existing local modification and was not modified by this session.
+- `lib/libmobile` was already dirty when this work began. It remains
+  a pre-existing local modification and was not modified by this work.
 - Initial branch/commit: `main` at `2d9149c5` ("Fixed long-standing bugs
   related to TMs/HMs...").
 - `git submodule status` could not run in the available devkitPro shell because
@@ -61,7 +61,7 @@ Startup and main loop
   cartridge/CPU/memory model with hardcoded Crystal cartridge metadata.
 - Reset paths use `setjmp`/`longjmp`, set emulated CPU PC/SP values, and call
   translated initialization functions.
-- The outer application loop is native C: while SDL has not requested quit, it
+- The outer application loop is native C: while SDL has not signaled quit, it
   calls `Intro_Jumptable()`. `gb_run_frame()` is present but commented out in
   this path. Frame progress ultimately reaches `gb_finish_frame()` and
   `sdl_loop()` through translated game functions such as `DelayFrame()`.
@@ -254,7 +254,7 @@ Compatibility implications
 
 Save-format implications
 ------------------------
-- None from this session. The audit confirms the current authoritative format is
+- None from this work. The audit confirms the current authoritative format is
   still two raw 0x8000-byte Crystal-compatible cartridge-RAM images, with
   explicit serializers targeting the legacy byte layout.
 
@@ -304,7 +304,7 @@ Build/test results
 - Ten-second startup/intro smoke test: PASS.
 - Automated test suite: NOT AVAILABLE (zero CTest tests).
 - Interactive menu/visual/gameplay verification: NOT PERFORMED in this Phase 0
-  command-line session.
+  command-line work period.
 
 Regressions discovered or outstanding
 -------------------------------------
@@ -355,7 +355,7 @@ the newly native bag terminator correctly.
 
 Pre-existing working-tree state
 -------------------------------
-- `lib/libmobile` was dirty before this session and remains a pre-existing local change. It was
+- `lib/libmobile` was dirty before this work and remains a pre-existing local change. It was
   not modified.
 - `LOCAL_CHANGELOG.txt` already existed from Phase 0 and was maintained as the
   sole project handoff document.
@@ -518,12 +518,12 @@ Unresolved blockers and risks
   arrays still use byte aliases. The final audit found 442 `species_t`, 476
   `move_t`, 226 `item_t`, and one `dex_t` occurrence; these are an explicit
   migration inventory, not a completion claim.
-- Remaining `uint8_t species/move/item` declarations audited in this session are
+- Remaining `uint8_t species/move/item` declarations audited in this work are
   legacy WRAM values, menu option indices, or boolean results rather than native
   content storage. Broad `0xff`, `255`, and `(uint8_t)` results include hardware,
   masks, flags, counters, and legacy formats and require subsystem-level review,
   not blind replacement.
-- No compiler or runtime validation was performed during this source-only session. A later
+- No compiler or runtime validation was performed during this source-only work period. A later
   should review and build this working tree before additional dependent changes.
 
 Next recommended native-conversion task
@@ -558,7 +558,7 @@ Starting repository state
 
 Files modified
 --------------
-- `LOCAL_CHANGELOG.txt`: appended this complete session handoff; it remains the
+- `LOCAL_CHANGELOG.txt`: appended this complete technical handoff; it remains the
   only report file.
 - `constants/types.h`: centralized checked semantic-to-legacy ID conversions;
   made `BaseData` a native, unpacked content record with `DexId`, `TypeId`, and
@@ -950,7 +950,7 @@ Known source-level risks / validation notes
   `PokemonData` is a serialized native C owner rather than an exact WRAM overlay.
   The unchanged serializer output width is intended to preserve the temporary
   old save path until `save.dat` replaces it.
-- The new CMake Windows resource wiring has not been compiled in this session.
+- The new CMake Windows resource wiring has not been compiled in this work.
 - The native Pokemon conversion helpers and serializer field descriptors have
   been source-audited but not compiler- or runtime-validated.
 
@@ -982,7 +982,7 @@ wrapper for the still-unmigrated player/opponent party arrays.
 Starting repository state
 -------------------------
 - HEAD was `f9bff3dce441f1a2ce26c71e64c764d33a46d5e6` on `main`.
-- The user's committed `bindings.json` change was present and was not modified.
+- The committed `bindings.json` change was present and was not modified.
 - `lib/libmobile` was already dirty and remains an untouched pre-existing local
   change.
 - No commit, push, branch, reset, restore, clean, or history operation was
@@ -1062,7 +1062,7 @@ Temporary migration bridges and exact removal conditions
 
 Compatibility and save implications
 -----------------------------------
-- No save format or serialized width changed in this session.
+- No save format or serialized width changed in this work.
 - Existing player/opponent party generation still receives the same packed
   structure through an explicit checked conversion. Expanded IDs that cannot
   enter that destination fail rather than truncate.
@@ -1094,7 +1094,7 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Latest handoff marker: 2026-08-30 — native logical input ownership
@@ -1104,10 +1104,10 @@ logical HRAM joypad mirrors were removed, and shared menu/text paths consume
 the native API. The current stopping point is the remaining read-only mirror
 consumers outside those shared paths.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-30 — Complete logical-input consumer migration
+2026-08-30 — Complete logical-input consumer migration
 =================================================================
 
 Task worked on
@@ -1203,7 +1203,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -1219,10 +1219,10 @@ The logical input runtime no longer depends on the four named logical HRAM
 bytes. `NativeInputState` is authoritative; the former HRAM positions are a
 reserved packed-layout span only.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-30 — Native logical input consumers: overworld and UI group
+2026-08-30 — Native logical input consumers: overworld and UI group
 ===============================================================================
 
 Task worked on
@@ -1294,11 +1294,11 @@ Compatibility and save-format implications
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Suspected risks and exact stopping point
 ----------------------------------------
-- This source slice has not been compiled after the changes. The next user
+- This source slice has not been compiled after the changes. The next
   build remains necessary to detect strict-warning integration issues.
 - Stopped after completing the overworld/UI and Pokédex consumer groups. Next:
   migrate the PC/party, RTC, and link consumer groups before starting the
@@ -1307,18 +1307,18 @@ Suspected risks and exact stopping point
 
 Build-feedback correction: 2026-08-30
 --------------------------------------
-- User-provided `build_windows_release.log` showed a `-Werror=parentheses`
+- Provided `build_windows_release.log` showed a `-Werror=parentheses`
   failure in `home/menu.c` caused by macro expressions used as bit masks after
   the native input migration.
 - Corrected the required mask parentheses in `home/menu.c` and the matching
   shared scrolling-menu expression in `engine/menus/scrolling_menu.c`.
-- The failed user build removed tracked `Release/` output assets before
-  stopping. Those deletions are user/build-owned state and were preserved;
-  this session did not restore, remove, or otherwise alter them.
+- The failed build removed tracked `Release/` output assets before
+  stopping. Those deletions are pre-existing build state and were preserved;
+  this work did not restore, remove, or otherwise alter them.
 - Build/runtime validation after this correction: NOT PERFORMED.
 
 
-Session: 2026-08-30 — Native logical input-frame ownership
+2026-08-30 — Native logical input-frame ownership
 ============================================================
 
 Task worked on
@@ -1357,7 +1357,7 @@ Completed architectural changes
 Temporary migration state and exact removal condition
 ------------------------------------------------------
 - The four logical HRAM joypad bytes remain output mirrors for unconverted C
-  consumers and any non-C legacy-layout user. Remove them only after every
+  consumers and any non-C legacy-layout consumer. Remove them only after every
   remaining reader is migrated and the packed HRAM layout has no compatibility
   obligation for these offsets.
 
@@ -1380,7 +1380,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -1391,7 +1391,7 @@ Exact stopping point and next recommended task
   then continue with bounded menu/battle groups.
 
 
-Session: 2026-08-30 — Native input-frame ownership
+2026-08-30 — Native input-frame ownership
 ====================================================
 
 Task worked on
@@ -1442,7 +1442,7 @@ Compatibility and save-format implications
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -1453,7 +1453,7 @@ Exact stopping point and next recommended task
   their HRAM authority.
 
 
-Session: 2026-08-30 — Native SDL input source
+2026-08-30 — Native SDL input source
 ================================================
 
 Task worked on
@@ -1517,7 +1517,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -1566,7 +1566,7 @@ Investigated but not implemented
   remove `legacyPartySpecies`. Inferring egg state from the current packed
   species field is incorrect.
 - The preceding attempted cache-derivation edit was fully removed in this
-  session before handoff; it must not be treated as completed work.
+  work period before handoff; it must not be treated as completed work.
 
 Compatibility and save-format implications
 ------------------------------------------
@@ -1579,7 +1579,7 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -1597,15 +1597,15 @@ Latest handoff marker: 2026-08-30
 The latest source inspection preserved the legacy egg marker and corrected the
 party-cache handoff record. Native player-party ownership remains unfinished.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-29 — Windows Release build script
+2026-08-29 — Windows Release build script
 ===================================================
 
 Task worked on
 --------------
-- Added a user-invoked Windows-only Release build script.
+- Added a Windows-only Release build script.
 
 Files modified
 --------------
@@ -1642,11 +1642,11 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction. The batch file
-was source-inspected only and is intended for the user to execute.
+Build/runtime validation: NOT PERFORMED. The batch file
+was source-inspected only and is available for execution.
 
 
-Session: 2026-08-29 — Player-party species authority consolidation
+2026-08-29 — Player-party species authority consolidation
 ==================================================================
 
 Task worked on
@@ -1663,10 +1663,10 @@ Task worked on
 Starting repository state
 -------------------------
 - Continued with all uncommitted native PC-box changes from the preceding
-  session intact.
+  work period intact.
 - `lib/libmobile` was already dirty and remains an untouched pre-existing
-  user-owned change.
-- No user-owned changes were reset, restored, cleaned, committed, or pushed.
+  pre-existing change.
+- No pre-existing changes were reset, restored, cleaned, committed, or pushed.
 
 Files modified in this continuation
 -----------------------------------
@@ -1750,7 +1750,7 @@ Partially completed work
   removal, swapping, Day-Care, contest, debug/initialization, evolution/hatch
   synchronization, and link/time-capsule paths still maintain or consume it.
 - Native decoded PC boxes still project through legacy buffers for unmigrated
-  PC UI/party-transfer operations, as documented in the preceding session.
+  PC UI/party-transfer operations, as documented in the preceding record.
 
 Untouched remaining work
 ------------------------
@@ -1818,7 +1818,7 @@ Investigated but not implemented
 Suspected source-level risks
 ----------------------------
 - The source has not been compiled; declaration/type integration remains to be
-  compiler-validated by the user.
+  compiler validation remains required.
 - `GetFirstPokemonHappiness` retains the existing gameplay invariant that a
   caller has at least one non-egg party member. This slice bounds its egg scan
   by `partyCount`, but did not invent behavior for an all-egg party.
@@ -1840,7 +1840,7 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 Exact current stopping point
 ----------------------------
@@ -1872,14 +1872,14 @@ Task worked on
 - Migrated decoded PC-box records and their normal C consumers from packed
   `BoxMon`/byte species storage to native semantic Pokemon records.
 - This is a substantial continuation of Phase A, not completion of the full
-  Phase 1 prompt. Player-party and battle ownership remain unfinished.
+  Phase 1 scope. Player-party and battle ownership remain unfinished.
 
 Starting repository state
 -------------------------
 - Started at `5bad31c2` (`more changes`). The preceding generation/stat work was
-  already committed by the user and was treated as the new baseline.
+  already committed and was treated as the new baseline.
 - `lib/libmobile` was the sole pre-existing dirty path and remained untouched.
-- No other pre-existing user modification was present when this pass began.
+- No other pre-existing local modification was present when this pass began.
 
 Files modified
 --------------
@@ -2014,7 +2014,7 @@ Partially completed work
   and decoded boxes; it does not yet cover the authoritative player party or
   battle records.
 
-Untouched remaining work from the original large prompt
+Untouched remaining work from the original Phase 1 scope
 -------------------------------------------------------
 - Native player-party ownership, native opponent party, and native battle-mon
   staging/synchronization.
@@ -2050,12 +2050,12 @@ Test commands executed
 
 Build/test results
 ------------------
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks / unresolved validation
 ----------------------------------------------------
 - This pass intentionally changes decoded structure names, offsets, alignment,
-  and record stride. Compiler validation is still required by the user before
+  and record stride. Compiler validation remains required before
   treating the pass as build-confirmed.
 - The existing serializer self-test was inspected but not executed. Its exact
   SRAM round-trip behavior remains runtime-unverified.
@@ -2075,8 +2075,8 @@ Exact stopping point and next recommended task
 
 Overall Phase 1 status
 ----------------------
-- PARTIALLY COMPLETED. This session completed the decoded PC-box slice, but the
-  original large Phase 1 prompt remains unfinished as itemized above.
+- PARTIALLY COMPLETED. This work completed the decoded PC-box slice, but the
+  original large Phase 1 scope remains unfinished as itemized above.
 
 Known source-level risks / validation notes
 -------------------------------------------
@@ -2086,14 +2086,14 @@ Known source-level risks / validation notes
   `NUM_ATTACKS` content databases. Wider IDs are preserved by the model, but
   actual expanded records require the later native content-database expansion.
 - Player party and opponent party remain packed authoritative owners, so this
-  session removes the generation bridge for native owners but does not complete
+  work removes the generation bridge for native owners but does not complete
   the full player-party migration.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
 - Native Contest Pokemon generation is complete and no longer round-trips
   through `PartyMon`. The Day-Care and pending egg remain native from the prior
-  session. Player/opponent party ownership remains legacy.
+  work period. Player/opponent party ownership remains legacy.
 - Next migrate `PokemonData.partySpecies` and `PokemonData.partyMon` together to
   `SpeciesId`/`NativePartyMon`. Begin with party creation, switching/removal,
   search/menu/field-item consumers, then stage checked packed copies only at the
@@ -2281,12 +2281,12 @@ Next recommended native-conversion task
    directly into the versioned PC-only `save.dat` persistence phase.
 
 
-Session: 2026-08-29 — Reported Windows compile-error repair
+2026-08-29 — Reported Windows compile-error repair
 ===========================================================
 
 Task worked on
 --------------
-- Repaired the two source failures reported by the user's first Windows Release
+- Repaired the two source failures reported by the first Windows Release
   build attempt.
 
 Files modified
@@ -2324,14 +2324,14 @@ Architectural and compatibility implications
 
 Build/runtime validation
 ------------------------
-- User-reported build: FAILED before this repair in `engine/battle/core.c` on
+- Reported build: FAILED before this repair in `engine/battle/core.c` on
   packed-member address warnings promoted to errors, and in Beat Up on obsolete
   `BaseData.atk`/`BaseData.def` member names.
 - Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks and stopping point
 -----------------------------------------------
-- The reported errors are source-resolved, but the user's build must continue
+- The reported errors are source-resolved, but the build must continue
   to reveal whether later translation units contain additional integration
   errors that were previously hidden by Make's parallel early failure.
 - The native-conversion stopping point otherwise remains unchanged.
@@ -2343,12 +2343,12 @@ Next recommended action
   units will be rebuilt.
 
 
-Session: 2026-08-29 — Second reported Windows compile-error repair
+2026-08-29 — Second reported Windows compile-error repair
 ==================================================================
 
 Task worked on
 --------------
-- Repaired the three `engine/pokemon/move_mon.c` failures exposed by the user's
+- Repaired the three `engine/pokemon/move_mon.c` failures exposed by the
   next clean Windows Release build attempt.
 
 Files modified
@@ -2380,7 +2380,7 @@ Architectural and compatibility implications
 
 Build/runtime validation
 ------------------------
-- User-reported build: FAILED before this repair on obsolete `BaseData.hp`, a
+- Reported build: FAILED before this repair on obsolete `BaseData.hp`, a
   missing `abort` declaration, and an address-of-packed-member warning promoted
   to an error.
 - Build/runtime validation: NOT PERFORMED.
@@ -2388,7 +2388,7 @@ Build/runtime validation
 Suspected source-level risks and stopping point
 -----------------------------------------------
 - These reported errors are source-resolved, but later translation units or the
-  final link may expose additional failures when the user's clean build proceeds.
+  final link may expose additional failures when the clean build proceeds.
 - The native-conversion stopping point otherwise remains unchanged.
 
 Next recommended action
@@ -2397,12 +2397,12 @@ Next recommended action
   output, if any.
 
 
-Session: 2026-08-29 — NativeBox serializer-registry repair
+2026-08-29 — NativeBox serializer-registry repair
 ==========================================================
 
 Task worked on
 --------------
-- Repaired the serializer metadata failure exposed by the user's next Windows
+- Repaired the serializer metadata failure exposed by the next Windows
   Release build without reverting native decoded PC-box ownership.
 
 Files modified
@@ -2434,7 +2434,7 @@ Architectural and compatibility implications
 
 Build/runtime validation
 ------------------------
-- User-reported build: FAILED before this repair because the serializer registry
+- Reported build: FAILED before this repair because the serializer registry
   still evaluated `sizeof(struct Box)` after that runtime type was removed.
 - Build/runtime validation: NOT PERFORMED.
 
@@ -2446,7 +2446,7 @@ Regression review and stopping point
 - This fix advances the intended native ownership migration and does not undo
   earlier PC-box work.
 - Later translation units or final linking may expose additional build failures
-  when the user's clean build proceeds.
+  when the clean build proceeds.
 
 Next recommended action
 -----------------------
@@ -2454,12 +2454,12 @@ Next recommended action
   output, if any.
 
 
-Session: 2026-08-29 — Windows Release runtime packaging
+2026-08-29 — Windows Release runtime packaging
 =======================================================
 
 Task worked on
 --------------
-- Diagnosed the user's successful executable immediately exiting when launched
+- Diagnosed the successful executable immediately exiting when launched
   from the generated `Release` directory and corrected the release packaging.
 
 Files modified
@@ -2491,9 +2491,9 @@ Diagnosis and exact purpose
   `maps`, and `mobile`, preserving their relative directory layout. It does not
   copy C sources, headers, object files, or repository metadata.
 - Default `bindings.json` and `server.json` are copied only when absent, so a
-  user's Release-local settings are not overwritten by later rebuilds.
+  existing Release-local settings are not overwritten by later rebuilds.
 - Asset copies update changed packaged assets but do not delete saves or other
-  user-created files already present in `Release`.
+  pre-existing files already present in `Release`.
 
 Architectural and regression implications
 ------------------------------------------
@@ -2507,15 +2507,15 @@ Architectural and regression implications
 
 Build/runtime validation
 ------------------------
-- User-reported build: SUCCEEDED before this packaging correction.
-- User-reported runtime: window opened and immediately closed from the
+- Reported build: SUCCEEDED before this packaging correction.
+- Reported runtime: window opened and immediately closed from the
   executable-only Release directory.
 - Build/runtime validation: NOT PERFORMED.
 
 Suspected source-level risks and stopping point
 -----------------------------------------------
 - The missing startup assets are source-confirmed from the Release contents and
-  loader paths. Runtime confirmation still requires the user to rebuild so the
+  loader paths. Runtime confirmation still requires a rebuild so the
   packaging step runs.
 - If a packaged build still exits, the next step is to capture its runtime
   stderr/log output rather than infer another cause.
@@ -2528,7 +2528,7 @@ Next recommended action
   `Release/suiCune.exe`.
 
 
-Session: 2026-08-29 — Native bag scrolling and reordering repair
+2026-08-29 — Native bag scrolling and reordering repair
 ================================================================
 
 Task worked on
@@ -2538,12 +2538,12 @@ Task worked on
 - Kept the repair within the active Phase 1 widened-item migration. No unrelated
   subsystem or previous-project behavior was imported.
 
-User-reported validation before this repair
+Runtime observations before this repair
 -------------------------------------------
 - Intro, mobile boy/girl/address/age setup, character naming, saving, Mom's
   introduction, time/day selection, and receiving Elm's starter all worked.
-- Opening bag pockets displayed random/corrupted item names. Receiving the
-  assistant's Potion made the displayed corruption worse.
+- Opening bag pockets displayed random/corrupted item names. Potion acquisition
+  made the displayed corruption worse.
 - The console repeatedly reported empty item names being truncated by
   `Utf8ToCrystalBuffer`. Source inspection established that these warnings were
   downstream symptoms of invalid item IDs read by the menu, not the text
@@ -2665,7 +2665,7 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -2679,16 +2679,16 @@ Exact stopping point and next recommended task
   the bag UI, and expanded item content databases/effects remain untouched.
 
 
-Session: 2026-08-29 — PC dispatch, mart cancel, and native mart ItemId list
+2026-08-29 — PC dispatch, mart cancel, and native mart ItemId list
 ============================================================================
 
 Task worked on
 --------------
-- Repaired the two menu defects found during the user's extended runtime test.
+- Repaired the two menu defects found during the extended runtime test.
 - Continued the Phase 1 ItemId conversion by removing the mart's remaining
   byte-only item-list projection and widening common item wrapper/name APIs.
 
-User-reported validation before this session
+Reported validation before this work
 --------------------------------------------
 - The prior bag repair worked sufficiently to continue through Mr. Pokemon's
   Mystery Egg, Professor Oak's Pokedex, the Pokedex UI, the Cherrygrove Map Card,
@@ -2697,9 +2697,8 @@ User-reported validation before this session
   cancel/exit entry.
 - Mart item descriptions worked for purchasable rows, but the Cancel row showed
   a single question mark.
-- The user corrected the previous session's `log_error` spelling to the
-  repository's actual `log_err` macro. That correction was present at session
-  start and was preserved.
+- The previous `log_error` spelling was corrected to the repository's actual
+  `log_err` macro before this work. The correction was preserved.
 
 Files modified
 --------------
@@ -2767,7 +2766,7 @@ Partially completed and transitional work
   database remains byte-range and is not claimed as a Phase 14 conversion.
 - The move-without-mail workflow still uses temporary legacy Pokemon UI records
   at documented conversion boundaries even though persistent PC box ownership
-  is native. This session restored dispatch only; it did not claim that full UI
+  is native. This work restored dispatch only; it did not claim that full UI
   workflow is natively represented.
 
 Untouched remaining work
@@ -2775,20 +2774,20 @@ Untouched remaining work
 - The repository-wide `wCurItem` dependency graph, native item-effect dispatch,
   expanded item content tables, and native TM/HM action state remain untouched.
 - Full native party ownership and remaining species/move legacy runtime fields
-  from the broader Phase 1 prompt remain unfinished.
+  from the broader Phase 1 scope remain unfinished.
 - Later roadmap phases remain untouched.
 
 Compatibility and save-format implications
 ------------------------------------------
 - No save structure, serializer descriptor, or on-disk format changed.
-- Original mart order, prices, quantities, cancel behavior, and PC save prompt
+- Original mart order, prices, quantities, cancel behavior, and PC save-confirmation dialog
   behavior are intended to remain unchanged.
 - No duplicated mart mirror or fallback path was introduced.
 
 Suspected source-level risks
 ----------------------------
 - The restored move-without-mail entry now exposes a complex workflow that was
-  unreachable from this menu; the user should exercise selecting a Pokemon,
+  unreachable from this menu; runtime validation should exercise selecting a Pokemon,
   viewing Stats, moving between boxes, cancelling, and saving.
 - Mart buy-menu Cancel and purchases require runtime confirmation. Expanded
   ItemIds still cannot complete purchases until native item-action state is
@@ -2800,7 +2799,7 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -2815,7 +2814,7 @@ Exact stopping point and next recommended task
   complete.
 
 
-Session: 2026-08-30 — Native current-item action state
+2026-08-30 — Native current-item action state
 =======================================================
 
 Task worked on
@@ -2878,7 +2877,7 @@ Files deleted
 Completed architectural changes
 -------------------------------
 - `gNativeUI.currentItem` is now the authoritative current item for all live C
-  runtime paths audited in this session. It is naturally aligned, ItemId-sized,
+  runtime paths audited in this work. It is naturally aligned, ItemId-sized,
   native-only transient state rather than an address in emulated WRAM.
 - Native scrolling menus pass the selected ItemId directly into bag, mart, PC,
   registered-item, script, battle, and item-effect logic. The old menu action
@@ -2922,7 +2921,7 @@ Compatibility and save-format implications
 Investigated but not implemented
 --------------------------------
 - Mobile ASM source still names the emulated `wCurItem` address. It was not
-  altered because this session targeted the live C runtime dependency graph and
+  altered because this work targeted the live C runtime dependency graph and
   its behavior/assembly build role was not established from source inspection.
 - Native Pokemon held-item/mail ownership, native expanded content databases,
   and the remaining native memory-model conversion were not started.
@@ -2941,7 +2940,7 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -2957,13 +2956,13 @@ Exact stopping point and next recommended task
 Latest handoff marker: 2026-08-30
 ---------------------------------
 The full 2026-08-30 "Native current-item action state" section above is the
-latest session record. Current item selection is native ItemId state in live C
+latest record. Current item selection is native ItemId state in live C
 runtime paths; legacy byte record boundaries remain explicitly checked.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-30 — UTF-8 conversion diagnostic correction
+2026-08-30 — UTF-8 conversion diagnostic correction
 ==============================================================
 
 Task worked on
@@ -3025,12 +3024,12 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Suspected source-level risks / unresolved validation
 ----------------------------------------------------
 - The reported battle warnings should be gone when their source text fits the
-  destination, but runtime validation remains user-owned.
+  destination, but runtime validation remains required.
 - Actual truncations still emit warnings intentionally.
 
 Exact stopping point and next recommended task
@@ -3047,14 +3046,14 @@ Exact stopping point and next recommended task
 
 Latest handoff marker: 2026-08-30
 ---------------------------------
-The latest session corrected the false UTF-8 truncation diagnostics and left
+The latest record corrected the false UTF-8 truncation diagnostics and left
 the native player-party migration intentionally unstarted pending an
 ownership-complete implementation plan.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-30 — Party-species compatibility-cache demotion
+2026-08-30 — Party-species compatibility-cache demotion
 ==================================================================
 
 Task worked on
@@ -3129,7 +3128,7 @@ Temporary migration code and exact removal condition
 - The Bug Contest uses the cache temporarily to mask player-party membership.
   It remains unchanged because its exact compatibility behavior has not yet
   been replaced by a native contest-party state model.
-- Packed `PartyMon` remains authoritative. This session did not add a native
+- Packed `PartyMon` remains authoritative. This work did not add a native
   sidecar, duplicate owner, or fallback path.
 
 Compatibility and save-format implications
@@ -3166,7 +3165,7 @@ Build and test commands executed
 
 Build/runtime validation
 ------------------------
-- NOT PERFORMED — per user instruction.
+- NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3186,7 +3185,7 @@ The preceding party-species cache-demotion record was superseded by the final
 egg-state inspection below; it is retained only as an audit trail of a reverted
 edit, not as completed conversion work.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Final correction: 2026-08-30 — Legacy party-species semantics preserved
@@ -3217,7 +3216,7 @@ Current stopping point and next recommended task
   legacy link/mobile projections together. Do not derive egg state from the
   existing packed species field.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Latest handoff marker: 2026-08-30
@@ -3227,10 +3226,10 @@ Assembly source files are not compiled into this executable; future progress
 will be measured by removal of live Game Boy runtime dependencies, beginning
 with the remaining HRAM input-mirror consumers.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
-Session: 2026-08-30 — Native scripted-input state
+2026-08-30 — Native scripted-input state
 ===================================================
 
 Task worked on
@@ -3293,7 +3292,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3308,7 +3307,7 @@ Native physical SDL input and scripted-input control now have separate native
 owners. Legacy HRAM mirrors remain only as compatibility state for their
 still-unmigrated consumers and writers.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Latest handoff marker: 2026-08-30 — native input-frame ownership
@@ -3322,7 +3321,7 @@ The remaining HRAM fields are output mirrors for legacy-layout compatibility.
 Remove them only after the packed HRAM representation itself is replaced and
 no serialized, offset-validated, or non-C consumer requires those offsets.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Latest handoff marker: 2026-08-30 — native logical input ownership
@@ -3332,7 +3331,7 @@ logical HRAM joypad mirrors were removed, and shared menu/text paths consume
 the native API. The current stopping point is the remaining read-only mirror
 consumers outside those shared paths.
 
-Build/runtime validation: NOT PERFORMED — per user instruction.
+Build/runtime validation: NOT PERFORMED.
 
 
 Final update: 2026-08-30 — logical HRAM input retired
@@ -3367,7 +3366,7 @@ Temporary migration state and exact removal condition
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3375,7 +3374,7 @@ Exact stopping point and next recommended task
   player-party owner with explicit egg/hatch state before migrating party
   creation, hatching, storage, and serialization.
 
-Session: 2026-08-30 — Player-party egg-state foundation
+2026-08-30 — Player-party egg-state foundation
 =========================================================
 
 Task worked on
@@ -3451,7 +3450,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3461,7 +3460,7 @@ Exact stopping point and next recommended task
   creation/removal/switching operations with explicit legacy projections at
   save/link/mobile boundaries.
 
-Session: 2026-08-30 — native RTC and obsolete address-route retirement
+2026-08-30 — native RTC and obsolete address-route retirement
 ==========================================================================
 
 Task worked on
@@ -3488,7 +3487,7 @@ Files modified
   unused banked queued-script setters and demoted their three packed WRAM
   bytes to reserved compatibility layout storage. Native script/callback
   pointers remain the sole live queue owner.
-- `LOCAL_CHANGELOG.txt`: recorded this session.
+- `LOCAL_CHANGELOG.txt`: recorded this work.
 
 Files created/deleted
 ---------------------
@@ -3516,7 +3515,7 @@ Temporary migration state and exact removal condition
   Crystal-format save path. Replace them only as part of the versioned native
   save-system conversion with an explicit legacy importer.
 - The packed player party remains legacy-owned; the earlier native egg
-  projection remains transitional as documented in the preceding session.
+  projection remains transitional as documented in the preceding record.
 
 Compatibility and save-format implications
 ------------------------------------------
@@ -3545,18 +3544,18 @@ Suspected source-level risks
 ----------------------------
 - The native day counter is deliberately rebased using local calendar dates to
   preserve the original 140-day behavior. Daylight-saving and system-clock
-  changes should be exercised during a later user-requested runtime test.
+  changes should be exercised during a later planned runtime test.
 - `FixTime` and the legacy `PlayerData` start offsets are retained unchanged;
   they remain responsible for Crystal-compatible initial time/day selection.
 
 Regressions discovered
 ----------------------
 - None through source inspection. Runtime validation was intentionally not
-  performed in this session.
+  performed in this work.
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3567,7 +3566,7 @@ Exact stopping point and next recommended task
   creation/removal/switching through explicit legacy save/link/mobile
   projections; do not widen legacy party structs in place.
 
-Session addendum: 2026-08-30 — RTC latch removal
+Addendum: 2026-08-30 — RTC latch removal
 ==================================================
 
 Completed work
@@ -3601,7 +3600,7 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3610,7 +3609,7 @@ Exact stopping point and next recommended task
   coherent slice, beginning with party creation/removal/switching and their
   save/link/mobile projections.
 
-Session addendum: 2026-08-30 — native battle-animation control state
+Addendum: 2026-08-30 — native battle-animation control state
 =======================================================================
 
 Task worked on
@@ -3684,7 +3683,7 @@ Suspected source-level risks
 - Battle animation scripts are host C functions but retain the original
   single-active-animation model. Future concurrent or expanded visual effects
   require a native animation manager rather than widening this one object.
-- No compiler was run in this session; the source-level caller search found no
+- No compiler was run in this work; the source-level caller search found no
   live C access to any renamed battle-animation WRAM field.
 
 Regressions discovered
@@ -3693,7 +3692,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3703,7 +3702,7 @@ Exact stopping point and next recommended task
   render submission, then remove their fixed WRAM slot assumptions without
   adding a post-render overlay or parallel authority.
 
-Session addendum: 2026-08-30 — native battle-animation pools
+Addendum: 2026-08-30 — native battle-animation pools
 ==============================================================
 
 Task worked on
@@ -3776,7 +3775,7 @@ Suspected source-level risks
 ----------------------------
 - Runtime behavior was not exercised. The migrated pool preserves the original
   allocation order, count limits, and clear timing, but battle effects should
-  be tested when the user requests runtime validation.
+  be tested during later runtime validation.
 - Legacy address-map symbols in `global.h`/`funcmap.h` remain intentionally for
   compatibility metadata and must not be mistaken for live native state.
 
@@ -3786,7 +3785,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3797,7 +3796,7 @@ Exact stopping point and next recommended task
   the SDL renderer directly, migrate temporary command staging into that owner,
   and only then retire the virtual-OAM dependency.
 
-Session addendum: 2026-08-30 — PC cancellation repair and animation tile state
+Addendum: 2026-08-30 — PC cancellation repair and animation tile state
 ==============================================================================
 
 Task worked on
@@ -3855,7 +3854,7 @@ Untouched remaining work
 Suspected source-level risks
 ----------------------------
 - The PC cancel repair was verified against the original assembly state table
-  and source flow, but runtime behavior was not executed in this session.
+  and source flow, but runtime behavior was not executed in this work.
 
 Regressions discovered
 ----------------------
@@ -3863,7 +3862,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3873,7 +3872,7 @@ Exact stopping point and next recommended task
 - Next: migrate battle-animation temporary command staging and then replace
   virtual-OAM submission with a capacity-aware native render queue.
 
-Session addendum: 2026-08-30 — native battle-animation command staging
+Addendum: 2026-08-30 — native battle-animation command staging
 =========================================================================
 
 Completed work
@@ -3906,7 +3905,7 @@ Partially completed work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3915,7 +3914,7 @@ Exact stopping point and next recommended task
   together with a native render queue; do not delete ASM sources while they
   remain repository reference material.
 
-Session addendum: 2026-08-30 — native battle-animation render scratch state
+Addendum: 2026-08-30 — native battle-animation render scratch state
 ===========================================================================
 
 Completed work
@@ -3967,7 +3966,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -3979,7 +3978,7 @@ Exact stopping point and next recommended task
   continued reference role cannot be proven unnecessary from the current build
   graph alone.
 
-Session addendum: 2026-08-30 — native battle-animation effect scratch state
+Addendum: 2026-08-30 — native battle-animation effect scratch state
 ===========================================================================
 
 Completed work
@@ -4032,19 +4031,19 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
 - Stopped after source inspection confirmed no live C WRAM access remains to
   the command, render, GFX, sine, or picture-resize battle-animation scratch
-  spans migrated in this session.
+  spans migrated in this work.
 - Next: replace virtual-OAM submission with a native capacity-aware render
   queue, including explicit layer/priority semantics and a migration plan for
   direct VRAM tile writes. No ASM source was deleted because its continued
   reference role cannot be proven unnecessary from the current build graph.
 
-Session addendum: 2026-08-30 — battle animation native sprite submission
+Addendum: 2026-08-30 — battle animation native sprite submission
 ==========================================================================
 
 Completed work
@@ -4116,7 +4115,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4130,7 +4129,7 @@ Exact stopping point and next recommended task
   its continued reference role cannot be proven unnecessary from the current
   build graph.
 
-Session addendum: 2026-08-30 — native battle-animation tile resources
+Addendum: 2026-08-30 — native battle-animation tile resources
 =======================================================================
 
 Completed work
@@ -4195,7 +4194,7 @@ Regressions discovered
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4207,7 +4206,7 @@ Exact stopping point and next recommended task
   source was deleted because its continued reference role cannot be proven
   unnecessary from the current build graph.
 
-Session addendum: 2026-08-30 — dynamic animation bindings and battler GFX
+Addendum: 2026-08-30 — dynamic animation bindings and battler GFX
 =========================================================================
 
 Task worked on
@@ -4291,18 +4290,18 @@ Untouched remaining work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
 - Stopped after the active animation binding table and both battler GFX copy
   destinations became native-owned. The source tree is internally coherent by
-  inspection, but deliberately unbuilt at the user's direction.
+  inspection, but deliberately unbuilt by design.
 - Next: introduce a native semantic battle-animation object/frame type with a
   widened tile resource identity, migrate its clear/reset semantics explicitly,
   then move persistent trainer HUD sprites into the native battle renderer.
 
-Session addendum: 2026-08-30 — native renderer header build fix
+Addendum: 2026-08-30 — native renderer header build fix
 =================================================================
 
 Completed work
@@ -4337,7 +4336,7 @@ Files created/deleted
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4441,7 +4440,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4493,7 +4492,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4550,7 +4549,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4629,7 +4628,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4675,7 +4674,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4695,12 +4694,12 @@ Completed work
   padded picture, then overlays exactly the source picture's 5×5, 6×6, or
   7×7 tile count with the required horizontal orientation.
 - Aligned `BuildAnimatedEnemyFrontpic`'s internal declaration with its
-  read-only source parameter after the user-reported `-Werror` type conflict;
+  read-only source parameter after the reported `-Werror` type conflict;
   this is a declaration-only correction and preserves the bounded native path.
 
 Regression investigated and fixed
 ---------------------------------
-- User-reported battle entry and Pokémon summary crashes share the animated
+- Reported battle entry and Pokémon summary crashes share the animated
   front-picture path. The old C conversion treated a tile count as a packed
   register value, repeatedly invoked a byte loop with a zero byte count, and
   wrote far beyond its 7×7 local buffer. This explains a process exit without
@@ -4729,7 +4728,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4760,7 +4759,7 @@ Source-level validation and risks
 - Confirmed `core.h` defines `BattleAnim` and its required semantic ID types,
   and does not include `functions.h`, so this dependency does not create a
   header cycle.
-- Build/runtime validation was not run locally per user instruction; the
+- Build/runtime validation was not performed; the
   reported compiler command should now see one shared structure declaration.
 
 Files modified
@@ -4770,7 +4769,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4816,7 +4815,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4871,7 +4870,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4942,7 +4941,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -4987,7 +4986,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5065,7 +5064,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5080,7 +5079,7 @@ Exact stopping point and next recommended task
 
 Regression discovered and fixed
 ------------------------------
-- User runtime testing found normal move animations were corrupted and a Growl
+- Runtime regression: normal move animations were corrupted and a Growl
   stat-lowering sequence crashed after the previous removal of the
   `PlayBattleAnim` bank transition.
 - Source review established that, although animation object and background
@@ -5116,7 +5115,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5195,7 +5194,7 @@ Partially completed / untouched work
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5268,7 +5267,7 @@ Files modified
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5338,14 +5337,14 @@ Static validation and risks
   no active battle-animation command or effect writes the shared tilemap.
 - Source inspection confirms both full and incremental tilemap upload paths
   select the native presentation tilemap while active.
-- Suspected runtime risk requiring user validation: effects that hide, reveal,
+- Suspected runtime risk requiring runtime validation: effects that hide, reveal,
   resize, or clear battler/HUD areas must be checked through a complete
   animation, including restoration at animation exit. No fallback to shared
   WRAM was added.
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5414,14 +5413,14 @@ Static validation and risks
   of `wVirtualOAMSprite` after this change.
 - Source inspection confirms the legacy sprite source is suppressed only in
   the output transfer path and is released from `ExitBattle`.
-- Suspected runtime risk requiring user validation: trainer send-out, capture,
+- Suspected runtime risk requiring runtime validation: trainer send-out, capture,
   transform, substitute, and battle exit must be checked for correct sprite
   disappearance and overworld-sprite restoration. No build or runtime test
   was performed.
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5482,14 +5481,14 @@ Static validation and risks
   writes `hLCDCPointer`, `hLYOverrideStart`, or `hLYOverrideEnd`.
 - Source inspection confirms the two LCD renderer consumers select the native
   state while presentation is active.
-- Suspected runtime risk requiring user validation: all effects that pan,
+- Suspected runtime risk requiring runtime validation: all effects that pan,
   wobble, wave, or resize scanline regions must be checked, particularly at
   animation start/end and when an effect changes SCX versus SCY. No build or
   runtime test was performed.
 
 Build/test commands and results
 -------------------------------
-- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- None. Build/runtime validation: NOT PERFORMED locally.
 
 Exact stopping point and next recommended task
 ----------------------------------------------
@@ -5505,9 +5504,9 @@ Exact stopping point and next recommended task
 
 Regression correction
 ---------------------
-- User runtime testing reported that the virtual-OAM suppression conversion
-  made a battle Pokémon disappear, truncated Leer, and was followed by a
-  tackle-path crash. The suppression layer and its renderer transport bridge
+- Runtime regression: the virtual-OAM suppression conversion made a battle
+  Pokémon disappear, truncated Leer, and was followed by a tackle-path crash.
+  The suppression layer and its renderer transport bridge
   were removed in full; battle animation again uses the known working virtual
   OAM behavior until the general sprite renderer can be replaced as a complete
   subsystem.
@@ -5537,7 +5536,7 @@ Current state and next task
 - Reverted: virtual-OAM suppression and native scanline-control ownership.
   They must not be considered completed native conversions.
 - Untouched: all other remaining battle-animation conversion work.
-- Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- Build/runtime validation: NOT PERFORMED locally.
 - Next recommended task: do not resume either reverted layer in isolation.
   First design and implement a complete native battle-scene sprite compositor
   with verified trainer/send-out/battler ownership, then migrate scanline
@@ -5548,9 +5547,9 @@ Current state and next task
 
 Regression correction
 ---------------------
-- After the virtual-OAM and scanline-control reversions, user testing still
-  reported disappearing battlers, truncated Leer, and a Tackle-path crash.
-  This isolated the unvalidated tilemap presentation copy as the remaining
+- After the virtual-OAM and scanline-control reversions, disappearing battlers,
+  truncated Leer, and a Tackle-path crash persisted. This isolated the
+  unvalidated tilemap presentation copy as the remaining
   candidate introduced by this conversion series.
 - Removed the animation-local tilemap copy, its public accessor, and the
   renderer selection in the full-tilemap and incremental background-update
@@ -5584,9 +5583,9 @@ Validation and next task
 ------------------------
 - Source inspection: no remaining `BattleAnimationTilemap` reference exists.
   The renderer and effects consistently use the shared tilemap again.
-- Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- Build/runtime validation: NOT PERFORMED locally.
 - Exact stopping point: source is at the pre-tilemap-copy presentation path;
-  user rebuild/runtime testing is needed to confirm the reported regression is
+  runtime rebuild/testing is needed to confirm the reported regression is
   gone.
 - Next recommended task: retain the shared tilemap until a complete native
   battle-scene compositor can own baseline tiles, attributes, sprites, and
