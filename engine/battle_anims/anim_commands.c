@@ -38,6 +38,8 @@ static void BattleAnimApplyFullCGBPals(void);
 
 void PlayBattleAnim(void){
     log_runtime_event("ANIMATION", "play begin id=%u", (unsigned)BattleAnimationIdGet());
+    if(BattleAnimationIdGet() == ANIM_SEND_OUT_MON)
+        log_runtime_event("ANIMATION", "named boundary=send-out-mon id=%u", (unsigned)BattleAnimationIdGet());
     BeginBattleAnimationPresentation();
     v_PlayBattleAnim();
     EndBattleAnimationPresentation();

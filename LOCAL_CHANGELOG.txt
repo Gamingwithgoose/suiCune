@@ -6143,3 +6143,248 @@ Validation and remaining boundaries
 - Next task: run the battle regression matrix with animations enabled and
   disabled, retain `logs/suiCune_runtime.log`, and use paired command markers
   plus any Windows crash marker to isolate any remaining crash boundary.
+
+2026-08-31 — Native battle graphics stabilization pass
+=======================================================
+
+Completed repairs
+-----------------
+- Made trainer slide-in chunks explicit native 8x16 resources. Each of the
+  eighteen baseline chunks now names its actual contiguous two-tile pair
+  (`0/1`, `2/3`, `4/5`, then the next source column) instead of incorrectly
+  using overlapping single-step IDs. The native sprite host now consumes the
+  declared tile span directly in framebuffer coordinates, including X/Y flips,
+  without applying OAM origin offsets or OAM low-bit pair masking.
+- Separated persistent battler lifetime visibility from temporary presentation
+  visibility. Fainting remains the only local caller that changes persistent
+  visibility; `HideMon` now changes presentation visibility and `ShowMon`
+  restores it. The compositor renders their conjunction.
+- Added presentation-depth ownership. Only the outermost presentation begin
+  captures palette state and establishes clean temporary state; only the
+  matching outermost end restores presentation visibility and removes masks.
+  Per-script native reset no longer clears masks owned by an active outer
+  presentation.
+- Expanded battle diagnostics with effective/persistent/presentation visibility,
+  mask count, battler origin, generation, base tile count, tile stride, and
+  one concise trainer resource record for every baseline chunk.
+
+Static pipeline findings
+------------------------
+- `LoadPNG2bppAssetToVRAM` emits source tiles left-to-right then top-to-bottom,
+  at 16 bytes per 8x8 tile. `FixBackpicAlignment` reverses bits inside each
+  tile only. The persistent battler image store copies those 16-byte tiles
+  unchanged, uses `row * width + column` placement, and the compositor reads
+  `pixels + imageTile * 16` before decoding the same bit order. The current
+  player backpic producer and native compositor therefore agree on row-major
+  tile and pixel order without a transpose or compensating mirror.
+- The historical tilemap-only `PlaceGraphicNative` routine has a distinct
+  column-first compatibility layout. It is not used as the native battler
+  placement contract; substituting it into the native compositor would add an
+  unproven transpose.
+- Trainer baseline coordinates are already converted exactly once: native
+  `(160 + column * 8, 48 + row * 16)` positions are consumed directly by the
+  native host. Trainer tile resources are held in the native battler tile pool,
+  and every declared 8x16 span is bounded by its 49-tile source allocation.
+
+Known runtime state and remaining boundary
+------------------------------------------
+- Previous battle crash no longer reproduced in the latest tested path.
+- Player Pokémon backpic remains corrupted from initial battle presentation.
+- Trainer slide-in sprite remains chopped.
+- Wild opponent frontpic can initially render correctly.
+- Wild opponent presentation can become corrupted during/after attack presentation.
+- The trainer resource pairing and transient-presentation ownership failures
+  have source-level corrections. Static tracing found no additional mismatch
+  in the native player backpic producer/store/placement/compositor chain; SDL
+  output still requires runtime verification to identify any remaining
+  host-layer interaction affecting that picture.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/render.c`
+- `engine/battle_anims/render.h`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and next closure
+---------------------------
+- Static validation traced the player backpic decoder, bit alignment, native
+  image store, placement map, and compositor byte/bit indexing; trainer source
+  allocation, explicit pair IDs, resource-span validation, native clipping,
+  and flip indexing; all persistent and temporary visibility callers; mask
+  ownership; reset behavior; and presentation nesting boundaries.
+- Build/runtime validation: not performed.
+- Next task: reproduce a wild battle with a six-by-six player backpic, trainer
+  slide-in, Scratch, Leer, and Tackle; retain `logs/suiCune_runtime.log` and
+  compare presentation begin/end snapshots with the visual result before
+  changing any further renderer path.
+
+2026-08-31 — Battle graphics handoff and content-integrity stabilization
+==========================================================================
+
+Runtime observations
+--------------------
+- The trainer sprite is correct during slide movement and becomes chopped after
+  the slide settles. The player Pokémon is initially correct and becomes
+  garbled immediately after its early send-out presentation. The wild opponent
+  frontpic is initially correct and becomes garbled after ordinary
+  damaging-hit presentation.
+- Scratch visibility restoration appears symmetric in diagnostic state. Tackle
+  masks are cleared by presentation end. The previously observed battle crash
+  is not reproduced in the latest tested run.
+
+Completed repairs
+-----------------
+- Kept the correctly rendered native trainer baseline alive after
+  `BattleIntroSlidingPics` settles. The prior handoff discarded all baseline
+  scene sprites, exposing the retained column-first tilemap compatibility
+  projection. The baseline now retires only after a native player backpic has
+  been installed. The retained trainer tilemap projection is logged as a
+  downstream compatibility layer and is no longer the settled owner.
+- Separated persistent battler placement from temporary picture-resize
+  presentation placement. `BattleBGEffect_RunPicResizeScript` formerly wrote
+  its authored BGSquare tile lists directly into persistent native placement;
+  those lists are column-oriented compatibility patterns and replaced the
+  correct row-major native placement during send-out and hit/show effects.
+  The script now owns only a temporary presentation placement which the native
+  compositor selects during the effect and discards at outer presentation
+  teardown, restoring the persistent native placement without copying or
+  modifying battler pixels.
+- Removed the remaining destructive persistent-tile clearing API from the
+  resize-script path. Clear commands now produce an empty temporary
+  presentation placement with the same outer-presentation lifetime.
+- Added stable FNV-1a content diagnostics for current battler pixels, immutable
+  base pixels, and persistent placement (`x`, `y`, `imageTile`). Logs occur at
+  image installation, current-image mutation, base restoration, persistent
+  placement mutation, and presentation boundaries.
+- Distinguished allocated and active records for animation objects and BG
+  effects in presentation snapshots. Tile bindings report all allocated
+  bindings as active because their native representation has no retired-state
+  field. Added concise named boundaries for `ANIM_SEND_OUT_MON` (ID 257), its
+  enter-mon effect, and shared hit/show presentation.
+
+Static findings and boundaries
+------------------------------
+- Animation ID 257 is `ANIM_SEND_OUT_MON`; its enter-mon background effect
+  invokes the resize script with two-, four-, and six-tile BGSquare patterns.
+  The path does not call a persistent pixel replacement or base-pixel writer.
+  Its former persistent placement write was the first source-level operation
+  capable of changing Totodile's correct visible image.
+- The shared `ShowMon` hit path invokes the same resize script and was the
+  first source-level operation capable of changing Pidgey's correct visible
+  image after Scratch. The same temporary-placement ownership repair covers
+  both paths without special-casing Scratch.
+- The current and base pixel hash values across animation 257 and Scratch
+  require the next runtime log for observed values. Source inspection confirms
+  neither identified resize-script path writes either pixel store; the new
+  boundary hashes will verify that invariant and prove whether any other path
+  changes content.
+- The native trainer scene sprites remain the single active owner from slide
+  movement through settlement. No transpose, mirror, resource padding, or
+  duplicate renderer was added. No save-format change was made.
+- The temporary presentation placement is a native effect-state view, not a
+  synchronized legacy/native copy. It is removed unconditionally when the
+  outer animation presentation ends. The retained trainer tilemap projection
+  remains a compatibility boundary pending a wider battle-background ownership
+  migration.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and next closure
+---------------------------
+- Static validation traced trainer slide setup, the settled transition,
+  `CopyBackpic` compatibility projection, animation 257, the shared hit/show
+  path, all current/base pixel store writers, persistent and temporary tile
+  placement writers, presentation teardown, and pool active-state predicates.
+- Build/runtime validation: not performed.
+- Next task: run a trainer battle through slide settlement and player send-out,
+  then a wild battle through Scratch and Tackle; inspect
+  `logs/suiCune_runtime.log` for named boundaries, before/after content hashes,
+  presentation-placement retirement, and active object/effect counts.
+
+2026-08-31 — Battle presentation ownership and compositor stabilization
+=========================================================================
+
+Runtime observations
+--------------------
+- Trainer slide-in and initial settlement render correctly, but the later
+  trainer exit shows a stationary trainer plus a boxed moving duplicate.
+- Player send-out and ordinary opponent hit presentations temporarily garble
+  otherwise stable battler content, then restore the correct persistent image.
+- Faint motion carries an opaque battler rectangle through battle UI, and
+  persistent battlers render above move-selection and battle-window content.
+- The previously observed battle crash is not reproduced in the latest tested
+  path.
+
+Completed repairs
+-----------------
+- Removed the visible trainer tilemap projection from `CopyBackpic`; retained
+  trainer tile bytes remain compatibility data only. Native baseline sprites
+  are now the sole visible trainer owner.
+- Connected native trainer baseline translation to the existing trainer
+  slide-out cadence. The baseline moves left with each slide frame and retires
+  only after that motion has completed and the player backpic is installed.
+- Normalized column-major legacy BGSquare identifiers at the temporary
+  presentation boundary. Temporary destinations now map each selected tile
+  through the persistent source width, height, and alignment rather than
+  treating the temporary grid width as the source stride.
+- Added presentation-placement hashing and per-row image-tile diagnostics.
+  Full-size, unmirrored temporary placement at the persistent origin now
+  verifies exact `x`, `y`, and `imageTile` equality with persistent placement
+  and fails explicitly if the identity invariant is violated.
+- Reordered the compositor to render persistent native battlers after the
+  battle background and before the legacy window plane. Window/menu/text
+  content now remains foreground content while native scene sprites and
+  animation effects retain sprite-layer composition.
+- Replaced persistent battler-tile translation with semantic transient
+  presentation offset. Fainting initializes a clip rectangle from the
+  battler's default field region, moves only the temporary offset, then hides
+  the battler and clears the temporary transform. Persistent placement and its
+  hash remain unchanged.
+
+Ownership and compatibility boundaries
+--------------------------------------
+- `PlaceGraphicNative` in the trainer backpic path was the only battle-picture
+  tilemap projection found in this closure. It was an obsolete visible
+  duplicate owner and is now suppressed. Trainer source tiles remain available
+  to retained compatibility consumers without being read back into native
+  state.
+- Temporary BGSquare placement remains an explicit compatibility-content
+  adapter, not an authoritative battler representation. Native pixels,
+  base pixels, persistent placement, palette, and default origin remain the
+  authoritative battler state.
+- Presentation offset, clipping, and temporary placement are cleared at their
+  owning terminal boundaries. No save-format change was made.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/render.c`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and next closure
+---------------------------
+- Static validation traced trainer creation, native slide-in, slide-out,
+  tilemap projection, player send-out, shared hit/show resize path, temporary
+  source-stride conversion, compositor order, persistent placement mutation,
+  and faint motion lifetime.
+- Build/runtime validation: not performed.
+- Next task: run a trainer battle through entrance, settlement, exit, and
+  player send-out; run a wild battle through Scratch, move selection, and
+  faint; inspect `logs/suiCune_runtime.log` for temporary-placement hashes,
+  identity checks, native trainer retirement, presentation offsets, and clips.

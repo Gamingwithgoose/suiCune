@@ -9,17 +9,24 @@ static void RenderBattler(const struct BattleSceneRenderLine* line,
         const struct BattleSceneBattlerTile* tile = &battler->tiles[tileIndex];
         if(tile->masked || tile->imageTile >= battler->pixelTileCount)
             continue;
-        int16_t y = tile->y - BattleSceneVerticalOffsetForLine(line->line);
-        int16_t x = tile->x - BattleSceneHorizontalOffsetForLine(line->line);
+        int16_t y = tile->y + battler->presentationOffsetY - BattleSceneVerticalOffsetForLine(line->line);
+        int16_t x = tile->x + battler->presentationOffsetX - BattleSceneHorizontalOffsetForLine(line->line);
         int py = line->line - y;
         if(py < 0 || py >= TILE_WIDTH)
+            continue;
+        if(battler->presentationClipEnabled &&
+            (line->line < battler->presentationClipY ||
+            line->line >= battler->presentationClipY + battler->presentationClipHeight))
             continue;
         const uint8_t* source = battler->pixels + (size_t)tile->imageTile * LEN_2BPP_TILE;
         uint8_t low = source[py * 2];
         uint8_t high = source[py * 2 + 1];
         for(uint8_t bit = 0; bit < TILE_WIDTH; bit++) {
             int displayX = x + (TILE_WIDTH - 1 - bit);
-            if(displayX >= 0 && displayX < SCREEN_WIDTH_PX) {
+            if(displayX >= 0 && displayX < SCREEN_WIDTH_PX &&
+                (!battler->presentationClipEnabled ||
+                (displayX >= battler->presentationClipX &&
+                displayX < battler->presentationClipX + battler->presentationClipWidth))) {
                 uint8_t color = (low & 1) | ((high & 1) << 1);
                 line->pixels[displayX] = line->colorMode
                     ? (battler->palette << 2) + color
@@ -60,7 +67,8 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
             pixelSource.tileId = sprite->resourceTileId;
             if(largeSprites && sprite->legacyOamTilePair)
                 pixelSource.tileId &= 0xfffe;
-            size_t tileSpan = largeSprites ? 2 : 1;
+            size_t tileSpan = sprite->tileSpan != 0 ? sprite->tileSpan
+                : (largeSprites ? 2 : 1);
             const uint8_t* tilePixels = BattleAnimationSpritePixels(&pixelSource, tileSpan);
             // Never let the legacy host fall back to VRAM after a failed
             // native lookup; the incomplete record is omitted for this frame.
@@ -68,7 +76,7 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
                 continue;
             drawSprite(context, line->pixels, line->priority, sprite->yCoord,
                 sprite->xCoord, sprite->tileId, sprite->attributes,
-                tilePixels);
+                tileSpan, tilePixels);
         }
     }
 }

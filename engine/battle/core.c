@@ -4792,23 +4792,27 @@ static void LostBattle(void){
 static void EnemyMonFaintedAnimation(void){
     uint8_t disable = wram->wJoypadDisable;
     bit_set(wram->wJoypadDisable, JOYPAD_DISABLE_MON_FAINT_F);
+    BeginBattleSceneBattlerFaintPresentation(BATTLE_SCENE_BATTLER_OPPONENT);
     for(uint8_t row = 0; row < 7; row++) {
         TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT, 0, TILE_WIDTH);
         DelayFrames(2);
     }
     wram->wJoypadDisable = disable;
-    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
+    SetBattleSceneBattlerPersistentVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
+    ClearBattleSceneBattlerPresentationTransforms();
 }
 
 static void PlayerMonFaintedAnimation(void){
     uint8_t disable = wram->wJoypadDisable;
     bit_set(wram->wJoypadDisable, JOYPAD_DISABLE_MON_FAINT_F);
+    BeginBattleSceneBattlerFaintPresentation(BATTLE_SCENE_BATTLER_PLAYER);
     for(uint8_t row = 0; row < 7; row++) {
         TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER, 0, TILE_WIDTH);
         DelayFrames(2);
     }
     wram->wJoypadDisable = disable;
-    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
+    SetBattleSceneBattlerPersistentVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
+    ClearBattleSceneBattlerPresentationTransforms();
 }
 
 static void SlideBattlePicOut_DoFrame(uint8_t* hl) {
@@ -4877,6 +4881,10 @@ static void SlideBattlePicOut(uint8_t* hl, uint8_t a){
         } while(--b != 0);
         // LD_C(2);
         // CALL(aDelayFrames);
+        // Native trainer baseline sprites are the sole visible trainer owner.
+        // Keep their exit motion synchronized with the retained compatibility
+        // tilemap shift, whose picture projection is intentionally suppressed.
+        TranslateBattleSceneBaselineSprites(-TILE_WIDTH, 0);
         DelayFrames(2);
         // POP_HL;
         hl = hl2;
@@ -12208,6 +12216,11 @@ void DropPlayerSub(void){
         SetBattleSceneBattlerImageAligned(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6,
             6, 6, 2 * TILE_WIDTH, 6 * TILE_WIDTH, PAL_BATTLE_BG_PLAYER,
             wram->wBoxAlignment != 0);
+        // The moving trainer remains the native baseline owner until this
+        // native player picture replaces it; do not expose the retained
+        // tilemap compatibility projection at the slide handoff.
+        ClearBattleSceneBaselineSprites();
+        log_runtime_event("BATTLE_SCENE", "trainer presentation retired reason=player-backpic-installed");
     }
     else {
         log_runtime_event("ERROR", "player backpic load rejected species=%u", (unsigned)wram->wCurPartySpecies);
@@ -13678,7 +13691,10 @@ static void InitBattleDisplay(void){
     WaitBGMap();
     // CALL(aHideSprites);
     HideSprites();
-    ClearBattleSceneBaselineSprites();
+    // The trainer remains owned by its native baseline sprites after the
+    // slide settles.  The legacy tilemap copy is downstream compatibility
+    // only and must not replace the correct moving representation here.
+    log_runtime_event("BATTLE_SCENE", "trainer slide settled nativeBaselineRetained=1");
     // LD_B(SCGB_BATTLE_COLORS);
     // CALL(aGetSGBLayout);
     GetSGBLayout(SCGB_BATTLE_COLORS);
@@ -13819,11 +13835,10 @@ static void CopyBackpic(void){
     // POP_AF;
     // LDH_addr_A(rSVBK);
     SetBattleScenePlayerTrainerBackpic();
-    // LD_A(0x31);
-    // hlcoord(2, 6, wTilemap);
-    // LD_BC((6 << 8) | 6);
-    // PREDEF(pPlaceGraphic);
-    PlaceGraphicNative(coord(2, 6, wram->wTilemap), 0x31, 6, 6);
+    // The retained tile data supports unmigrated compatibility consumers, but
+    // projecting it to the visible background would duplicate the native
+    // trainer baseline and create an opaque tilemap box during trainer exit.
+    log_runtime_event("BATTLE_SCENE", "legacy tilemap projection owner=trainer suppressed=1 nativeBaselineOwner=1");
     // RET;
 }
 

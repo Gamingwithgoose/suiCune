@@ -965,12 +965,42 @@ static void DrawObjectSprite(uint8_t pixels[LCD_WIDTH], const uint8_t pixelsPrio
 }
 
 static void DrawNativeBattleSceneSprite(void* context, uint8_t* pixels, uint8_t* priority,
-    int16_t y, int16_t x, uint16_t tile, uint8_t attributes, const uint8_t* tilePixels) {
+    int16_t y, int16_t x, uint16_t tile, uint8_t attributes, size_t tileSpan,
+    const uint8_t* tilePixels) {
     (void)context;
-    // The transitional object host still expects Game Boy OAM origins. Native
-    // scene sprites retain ordinary framebuffer coordinates and project here.
-    DrawObjectSprite(pixels, priority, y + 2 * TILE_WIDTH, x + TILE_WIDTH,
-        tile, attributes, tilePixels);
+    (void)tile;
+    if(tilePixels == NULL || tileSpan == 0 || tileSpan > SIZE_MAX / TILE_WIDTH)
+        return;
+    size_t height = tileSpan * TILE_WIDTH;
+    int line = gb.gb_reg.LY;
+    int top = y;
+    int bottom = top + (int)height;
+    if(height > INT16_MAX || line < top || line >= bottom)
+        return;
+    int py = line - top;
+    if(attributes & OBJ_FLIP_Y)
+        py = (int)height - 1 - py;
+    const uint8_t* row = tilePixels + (size_t)(py / TILE_WIDTH) * LEN_2BPP_TILE
+        + (size_t)(py % TILE_WIDTH) * 2;
+    uint8_t tileByte1 = row[0];
+    uint8_t tileByte2 = row[1];
+    for(int16_t column = 0; column < TILE_WIDTH; column++) {
+        int displayX = x + column;
+        if(displayX < 0 || displayX >= LCD_WIDTH)
+            continue;
+        uint8_t bit = (attributes & OBJ_FLIP_X) ? column : TILE_WIDTH - 1 - column;
+        uint8_t color = ((tileByte1 >> bit) & 1) | (((tileByte2 >> bit) & 1) << 1);
+        if(gb.cgb.cgbMode && color && !(priority[displayX] && (pixels[displayX] & 0x3)) &&
+            !((attributes & OBJ_PRIORITY) && (pixels[displayX] & 0x3))) {
+            pixels[displayX] = ((attributes & OBJ_CGB_PALETTE) << 2) + color + 0x20;
+        }
+        else if(!gb.cgb.cgbMode && color && !((attributes & OBJ_PRIORITY) && (pixels[displayX] & 0x3))) {
+            pixels[displayX] = (attributes & OBJ_PALETTE) ? gb.display.sp_palette[color + 4]
+                : gb.display.sp_palette[color];
+            pixels[displayX] |= attributes & OBJ_PALETTE;
+            pixels[displayX] &= ~LCD_PALETTE_BG;
+        }
+    }
 }
 
 void gb_draw_line(void) {
@@ -1092,6 +1122,19 @@ void gb_draw_line(void) {
         }
     }
 
+    // Persistent native battlers are background-scene content. Composite
+    // them after the battle background but before the legacy window plane so
+    // command, move, and text windows retain their intended foreground role.
+    struct BattleSceneRenderLine battleLine = {
+        .pixels = pixels,
+        .priority = pixelsPrio,
+        .line = gb.gb_reg.LY,
+        .colorMode = gb.cgb.cgbMode,
+        .monochromeBackgroundPalette = gb.display.bg_palette,
+        .monochromeBackgroundMask = LCD_PALETTE_BG,
+    };
+    RenderBattleSceneBattlers(&battleLine);
+
     /* draw window */
     if (gb.gb_reg.LCDC & LCDC_WINDOW_ENABLE && gb.gb_reg.LY >= gb.display.WY && gb.gb_reg.WX <= 166) {
         /* Calculate Window Map Address. */
@@ -1173,18 +1216,6 @@ void gb_draw_line(void) {
 
         gb.display.window_clear++;  // advance window line
     }
-
-    // Battle battlers are native background-scene resources, rendered before
-    // sprite layers. Their tile placement and palette are not read from VRAM.
-    struct BattleSceneRenderLine battleLine = {
-        .pixels = pixels,
-        .priority = pixelsPrio,
-        .line = gb.gb_reg.LY,
-        .colorMode = gb.cgb.cgbMode,
-        .monochromeBackgroundPalette = gb.display.bg_palette,
-        .monochromeBackgroundMask = LCD_PALETTE_BG,
-    };
-    RenderBattleSceneBattlers(&battleLine);
 
     // draw sprites
     if (gb.gb_reg.LCDC & LCDC_OBJ_ENABLE) {

@@ -2,6 +2,7 @@
 #define SUICUNE_ENGINE_BATTLE_ANIMS_RENDER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 struct BattleSceneRenderLine {
@@ -19,7 +20,7 @@ typedef void (*BattleSceneSpriteDrawFn)(void* context, uint8_t* pixels,
     // x/y are native scene sprite positions in framebuffer pixels. tile is
     // retained as content metadata for the transition host.
     uint8_t* priority, int16_t y, int16_t x, uint16_t tile, uint8_t attributes,
-    const uint8_t* tilePixels);
+    size_t tileSpan, const uint8_t* tilePixels);
 
 void RenderBattleSceneBattlers(const struct BattleSceneRenderLine* line);
 void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,

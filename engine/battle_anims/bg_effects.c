@@ -593,12 +593,12 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
             // CALL(aBGEffect_CheckBattleTurn);
             // IF_NZ goto player_side;
             if(BGEffect_CheckBattleTurn(bc) == 0) {
-                SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
+                SetBattleSceneBattlerPresentationVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
                 // goto got_pointer;
             }
             else {
             // player_side:
-                SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
+                SetBattleSceneBattlerPresentationVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
             }
 
         // Native visibility is consumed by the battle compositor directly.
@@ -654,7 +654,12 @@ static void BattleBGEffect_ShowMon(struct BattleBGEffect* bc) {
     // LD_addr_A(wBattlePicResizeTempPointer);
     // LD_A_D;
     // LD_addr_A(wBattlePicResizeTempPointer + 1);
-    const uint8_t* de = (BGEffect_CheckBattleTurn(bc) == 0)? EnemyData: PlayerData;
+    enum BattleSceneBattlerId battler = BGEffect_CheckBattleTurn(bc) == 0
+        ? BATTLE_SCENE_BATTLER_OPPONENT : BATTLE_SCENE_BATTLER_PLAYER;
+    const uint8_t* de = battler == BATTLE_SCENE_BATTLER_OPPONENT ? EnemyData : PlayerData;
+    log_runtime_event("ANIMATION", "named boundary=hit-presentation-show battler=%s",
+        battler == BATTLE_SCENE_BATTLER_OPPONENT ? "opponent" : "player");
+    SetBattleSceneBattlerPresentationVisible(battler, true);
     // CALL(aBattleBGEffect_RunPicResizeScript);
     BattleBGEffect_RunPicResizeScript(bc, de);
     // RET;
@@ -971,7 +976,10 @@ static void BattleBGEffect_EnterMon(struct BattleBGEffect* bc) {
     // LD_addr_A(wBattlePicResizeTempPointer);
     // LD_A_D;
     // LD_addr_A(wBattlePicResizeTempPointer + 1);
-    const uint8_t* de = (BGEffect_CheckBattleTurn(bc) == 0)? EnemyData: PlayerData;
+    bool opponentTurn = BGEffect_CheckBattleTurn(bc) == 0;
+    const uint8_t* de = opponentTurn ? EnemyData : PlayerData;
+    log_runtime_event("ANIMATION", "named boundary=send-out-enter-mon battler=%s",
+        opponentTurn ? "opponent" : "player");
     // CALL(aBattleBGEffect_RunPicResizeScript);
     BattleBGEffect_RunPicResizeScript(bc, de);
     // RET;
@@ -1161,7 +1169,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // REG_HL = Coords[*hl2];
                 enum BattleSceneBattlerId battler = *hl2 < 3
                     ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT;
-                ClearBattleSceneBattlerTiles(battler);
+                ClearBattleSceneBattlerPresentationTiles(battler);
                 // POP_BC;
                 // RET;
                 goto zero;
@@ -1223,7 +1231,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 for(size_t i = 0; i < (size_t)w * h; i++)
                     imageTiles[i] = de[i];
                 uint8_t coordIndex = hl2[2];
-                PlaceBattleSceneBattlerPattern(battler,
+                PlaceBattleSceneBattlerPresentationLegacyPattern(battler,
                     (Coords[coordIndex] % SCREEN_WIDTH) * TILE_WIDTH,
                     (Coords[coordIndex] / SCREEN_WIDTH) * TILE_WIDTH,
                     w, h, imageTiles);

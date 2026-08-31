@@ -79,6 +79,9 @@ struct BattleAnimationSprite {
     uint8_t resourceKind;
     uint8_t category;
     uint8_t layer;
+    // Zero retains the authored object-frame size selected by the transition
+    // host. Native scene resources may declare their semantic tile span.
+    uint8_t tileSpan;
     bool legacyOamTilePair;
 };
 
@@ -147,7 +150,18 @@ struct BattleSceneBattlerView {
     const struct BattleSceneBattlerTile* tiles;
     size_t tileCount;
     uint8_t palette;
+    // A battler's battle lifetime is independent from a temporary animation
+    // presentation.  The compositor consumes their conjunction.
+    bool persistentVisible;
+    bool presentationVisible;
     bool visible;
+    int16_t presentationOffsetX;
+    int16_t presentationOffsetY;
+    bool presentationClipEnabled;
+    int16_t presentationClipX;
+    int16_t presentationClipY;
+    uint8_t presentationClipWidth;
+    uint8_t presentationClipHeight;
 };
 
 struct BattleAnimationTileBinding {
@@ -180,15 +194,22 @@ void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t palette, bool mirrorTileColumns);
 void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
     const uint8_t* pixels, size_t tileCount);
-void SetBattleSceneBattlerVisible(enum BattleSceneBattlerId battler, bool visible);
+void SetBattleSceneBattlerPersistentVisible(enum BattleSceneBattlerId battler, bool visible);
+void SetBattleSceneBattlerPresentationVisible(enum BattleSceneBattlerId battler, bool visible);
 void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDelta, int16_t yDelta);
-void ClearBattleSceneBattlerTiles(enum BattleSceneBattlerId battler);
+void BeginBattleSceneBattlerFaintPresentation(enum BattleSceneBattlerId battler);
+void ClearBattleSceneBattlerPresentationTransforms(void);
+void ClearBattleSceneBattlerPresentationTiles(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height);
 void ClearBattleSceneBattlerPresentationMasks(void);
 void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
     const uint8_t* imageTiles);
+void PlaceBattleSceneBattlerPresentationLegacyPattern(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height,
+    const uint8_t* imageTiles);
+void ClearBattleSceneBattlerPresentationPlacements(void);
 const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
