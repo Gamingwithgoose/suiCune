@@ -315,14 +315,14 @@ void ClearActorHud(void){
         // hlcoord(9, 7, wTilemap);
         // LD_BC((5 << 8) | 11);
         // CALL(aClearBox);
-        ClearBox(coord(9, 7, wram->wTilemap), 11, 5);
+        ClearBox(coord(9, 7, BattleAnimationTilemap()), 11, 5);
         // RET;
         return;
     }
     else {
         // hlcoord(1, 0, wTilemap);
         // LD_BC((4 << 8) | 10);
-        ClearBox(coord(1, 0, wram->wTilemap), 10, 4);
+        ClearBox(coord(1, 0, BattleAnimationTilemap()), 10, 4);
         // CALL(aClearBox);
         // RET;
         return;

@@ -4,6 +4,7 @@
 #include "palettes.h"
 #include "delay.h"
 #include "../engine/gfx/cgb_layouts.h"
+#include "../engine/battle_anims/core.h"
 
 void ClearBGPalettes(void) {
     // CALL(aClearPalettes);
@@ -117,8 +118,11 @@ void v_CopyTilemapAtOnce(void) {
     // CP_A(0x80 - 1);
     // IF_C goto wait;
 
+    const tile_t* tilemap = BattleAnimationPresentationActive()
+        ? BattleAnimationTilemap()
+        : wram->wTilemap;
     v_CopyTilemapAtOnce_CopyBGMapViaStack(gb.vram + VRAM_BANK_SIZE + (hram.hBGMapAddress & 0x1ff0), coord(0, 0, wram->wAttrmap));
-    v_CopyTilemapAtOnce_CopyBGMapViaStack(gb.vram + (hram.hBGMapAddress & 0x1ff0), coord(0, 0, wram->wTilemap));
+    v_CopyTilemapAtOnce_CopyBGMapViaStack(gb.vram + (hram.hBGMapAddress & 0x1ff0), coord(0, 0, tilemap));
 
     // wait2:
     // LDH_A_addr(rLY);

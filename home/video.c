@@ -2,6 +2,7 @@
 #include "video.h"
 #include "delay.h"
 #include "../engine/tilesets/tileset_anims.h"
+#include "../engine/battle_anims/core.h"
 
 //  Functions dealing with VRAM.
 
@@ -294,7 +295,10 @@ static void UpdateBGMap_update(uint8_t* dst, const uint8_t* hl) {
 
 static void UpdateBGMap_Tiles(uint8_t* dst) {
     // hlcoord(0, 0, wTilemap);
-    return UpdateBGMap_update(dst, coord(0, 0, wram->wTilemap));
+    const tile_t* tilemap = BattleAnimationPresentationActive()
+        ? BattleAnimationTilemap()
+        : wram->wTilemap;
+    return UpdateBGMap_update(dst, coord(0, 0, tilemap));
 }
 
 static void UpdateBGMap_Attr(uint8_t* dst) {

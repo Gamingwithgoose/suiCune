@@ -117,6 +117,7 @@ void BattleAnimationIdSetLowByte(uint8_t id);
 void BeginBattleAnimationPresentation(void);
 void EndBattleAnimationPresentation(void);
 bool BattleAnimationPresentationActive(void);
+tile_t* BattleAnimationTilemap(void);
 uint8_t* BattleAnimationScanlineOverrides(void);
 uint8_t* BattleAnimationScanlineScratch(void);
 uint8_t* BattleAnimationPaletteOutput(bool objectPalette);

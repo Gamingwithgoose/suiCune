@@ -5278,3 +5278,267 @@ Exact stopping point and next recommended task
 - Next: convert battle-scene tilemap and sprite-layer ownership to native
   renderer resources, then remove the presentation-entry import and remaining
   virtual-OAM suppression path.
+
+2026-08-30 — Isolate battle-animation tilemap presentation state
+==================================================================
+
+Completed work
+--------------
+- Added a native, screen-sized battle-animation tilemap to
+  `BattleAnimationPresentationState`.
+- `BeginBattleAnimationPresentation` now imports the currently displayed
+  tilemap once at animation entry. Battle-animation commands and background
+  effects mutate that native tilemap for the animation lifetime instead of
+  mutating `wTilemap`.
+- Migrated all active C tilemap mutations in `anim_commands.c` and
+  `bg_effects.c`, including actor-HUD clearing, battler hiding/reveal effects,
+  and picture-resize scripts.
+- Updated both incremental background-map uploads and full tilemap copies to
+  select the native animation tilemap while presentation is active. Attribute
+  map ownership is unchanged because this animation code does not mutate it.
+
+Architectural effect
+--------------------
+- Battle-animation tile effects now have one authoritative native presentation
+  buffer. The shared WRAM tilemap is no longer a synchronized animation
+  sidecar and animation mutations are deliberately not copied back on exit.
+- The one-time entry import is temporary migration code for the existing
+  global battle renderer. Its exact removal condition is a native battle-scene
+  renderer that owns the baseline tilemap before an animation begins.
+- No Game Boy bank selection was introduced. The remaining VRAM upload code
+  is renderer transport and remains a separate native-renderer conversion
+  task.
+- No save-format implication: this is transient presentation state only.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `home/video.c`
+- `home/tilemap.c`
+- `LOCAL_CHANGELOG.txt`
+
+Partially completed / untouched work
+------------------------------------
+- Partially completed: battle-animation palette, scanline, and now tilemap
+  state are native for an active animation, but their initial values still
+  come from the legacy global battle renderer at the explicit entry boundary.
+- Untouched: native battle-scene baseline ownership, attribute-map ownership,
+  virtual-OAM suppression removal, native sprite composition, native
+  animation-content tables/scripts, and broader memory/banking/renderer
+  conversion. No ASM file was deleted: source/build/runtime proof that any
+  file is obsolete has not been established.
+
+Static validation and risks
+---------------------------
+- Source inspection confirms that the only remaining active
+  `wram->wTilemap` use in `engine/battle_anims` is the one-time entry import;
+  no active battle-animation command or effect writes the shared tilemap.
+- Source inspection confirms both full and incremental tilemap upload paths
+  select the native presentation tilemap while active.
+- Suspected runtime risk requiring user validation: effects that hide, reveal,
+  resize, or clear battler/HUD areas must be checked through a complete
+  animation, including restoration at animation exit. No fallback to shared
+  WRAM was added.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing and source-reviewing the battle-animation tilemap
+  ownership migration.
+- Next: replace legacy virtual-OAM clearing during active battle animations
+  with native battle-scene layer ownership, then move the baseline battle
+  tilemap and attribute map into the same native scene state so the temporary
+  entry import can be removed.
+
+2026-08-30 — Remove battle-animation virtual-OAM source mutation
+==================================================================
+
+Completed work
+--------------
+- Replaced all active battle-animation writes and clears of
+  `wVirtualOAMSprite` with native battle-presentation layer suppression.
+- The battle-animation renderer still submits animation and trainer-HUD
+  sprites directly to the SDL pixel renderer. The legacy sprite producer is
+  now hidden at presentation transport time rather than being destructively
+  rewritten every animation frame.
+- `BattleAnim_ClearOAM` now applies its retained-sprite palette behavior only
+  to native animation sprites. It no longer rewrites palette bits in the
+  shared virtual-OAM array.
+- `ExitBattle` explicitly releases suppression, returning legacy sprite
+  output to the normal overworld sprite producer without restoring stale
+  copies of prior OAM bytes.
+
+Architectural effect
+--------------------
+- Battle animation no longer owns, clears, or uses the fixed 40-entry virtual
+  OAM array as authoritative animation state. Its own render list remains
+  dynamically sized and native.
+- A temporary renderer transport bridge remains in `TransferVirtualOAM`:
+  while the native battle-scene layer suppresses legacy sprites, it sends an
+  empty legacy OAM output instead of copying the legacy source. Its exact
+  removal condition is a native general sprite renderer that no longer
+  consumes `gb.oam` at all.
+- No save-format implication: the suppression state is transient battle-view
+  state only.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `home/vblank.c`
+- `engine/battle/core.c`
+- `LOCAL_CHANGELOG.txt`
+
+Partially completed / untouched work
+------------------------------------
+- Partially completed: active battle-animation tilemap, palette, scanline,
+  sprite objects, HUD sprites, and legacy-sprite suppression now have native
+  owners. Their baseline scene inputs and final renderer transport remain
+  legacy during the migration.
+- Untouched: native battle-scene baseline/attribute-map ownership, general
+  sprite renderer replacement, LCD/timing-state ownership, native graphics
+  resources, and replacement of legacy animation content/script encoding.
+  No ASM file was deleted; source/build/runtime proof of obsolescence is not
+  yet available.
+
+Static validation and risks
+---------------------------
+- Source inspection confirms `engine/battle_anims` has no active direct use
+  of `wVirtualOAMSprite` after this change.
+- Source inspection confirms the legacy sprite source is suppressed only in
+  the output transfer path and is released from `ExitBattle`.
+- Suspected runtime risk requiring user validation: trainer send-out, capture,
+  transform, substitute, and battle exit must be checked for correct sprite
+  disappearance and overworld-sprite restoration. No build or runtime test
+  was performed.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing the virtual-OAM source-ownership boundary for
+  active battle animations and source-reviewing the output path.
+- Next battle-animation program stage: move active animation LCD/scroll and
+  background-update scheduling out of HRAM fields into native presentation
+  state, then migrate battle-scene baseline tilemap and attribute-map
+  ownership to remove the remaining entry imports.
+
+2026-08-30 — Move animation scanline-control state out of HRAM
+===============================================================
+
+Completed work
+--------------
+- Added `BattleAnimationVideoState` to the native presentation owner for the
+  active LCD register selector and scanline-effect start/end range.
+- Migrated every active producer in `engine/battle_anims/functions.c` and
+  `engine/battle_anims/bg_effects.c` from `hLCDCPointer`, `hLYOverrideStart`,
+  and `hLYOverrideEnd` to the native state.
+- Updated both LCD scanline consumers and battle scanline-push eligibility to
+  read native video state during an active battle animation.
+- Retained a one-time explicit import of those three legacy values at
+  animation entry; animation mutations are not copied back to HRAM.
+
+Architectural effect
+--------------------
+- Battle-animation effect code no longer uses HRAM addresses as its
+  authoritative scanline-control state. The native presentation state owns
+  the selector and range for the complete active-animation lifetime.
+- The temporary import remains only because the broader renderer still owns
+  baseline display state. Its exact removal condition is native battle-scene
+  display state initialized before animation entry.
+- No save-format implication: this is transient presentation state.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/functions.c`
+- `engine/battle_anims/bg_effects.c`
+- `home/battle.c`
+- `home/lcd.c`
+- `LOCAL_CHANGELOG.txt`
+
+Partially completed / untouched work
+------------------------------------
+- Partially completed: active battle-animation sprite, tilemap, palette,
+  scanline buffer, scanline range, and LCD-selector ownership is native.
+- Untouched: native SCX/SCY/window/background-update scheduling, baseline
+  battle scene and attribute map, general sprite renderer, native graphics
+  resources, and native animation content/script encoding. No ASM file was
+  deleted because proof of whole-project obsolescence is still unavailable.
+
+Static validation and risks
+---------------------------
+- Source inspection confirms no active code in `engine/battle_anims` reads or
+  writes `hLCDCPointer`, `hLYOverrideStart`, or `hLYOverrideEnd`.
+- Source inspection confirms the two LCD renderer consumers select the native
+  state while presentation is active.
+- Suspected runtime risk requiring user validation: all effects that pan,
+  wobble, wave, or resize scanline regions must be checked, particularly at
+  animation start/end and when an effect changes SCX versus SCY. No build or
+  runtime test was performed.
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing the full animation scanline-control ownership
+  migration and source-reviewing all producers and consumers.
+- Next battle-animation program stage: migrate animation scroll/window and
+  background-update scheduling from HRAM to the same native presentation
+  state, then move baseline tilemap and attribute-map ownership into native
+  battle-scene state so the remaining entry imports can be removed.
+
+2026-08-31 — Revert unvalidated battle-animation presentation regressions
+==========================================================================
+
+Regression correction
+---------------------
+- User runtime testing reported that the virtual-OAM suppression conversion
+  made a battle Pokémon disappear, truncated Leer, and was followed by a
+  tackle-path crash. The suppression layer and its renderer transport bridge
+  were removed in full; battle animation again uses the known working virtual
+  OAM behavior until the general sprite renderer can be replaced as a complete
+  subsystem.
+- The scanline-control migration was also removed in full because tackle is a
+  direct scanline-control consumer and it had not received runtime validation.
+  Active animation code again uses the established HRAM scanline selector and
+  range path.
+- The completed native tilemap presentation conversion remains intact; it is
+  independent of the two reverted changes.
+
+Files modified by the correction
+--------------------------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/functions.c`
+- `home/battle.c`
+- `home/lcd.c`
+- `home/vblank.c`
+- `engine/battle/core.c`
+- `LOCAL_CHANGELOG.txt`
+
+Current state and next task
+---------------------------
+- Completed and retained: native battle-animation tilemap ownership.
+- Reverted: virtual-OAM suppression and native scanline-control ownership.
+  They must not be considered completed native conversions.
+- Untouched: all other remaining battle-animation conversion work.
+- Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- Next recommended task: do not resume either reverted layer in isolation.
+  First design and implement a complete native battle-scene sprite compositor
+  with verified trainer/send-out/battler ownership, then migrate scanline
+  scheduling only alongside its native display scheduler.
