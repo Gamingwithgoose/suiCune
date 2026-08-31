@@ -208,7 +208,10 @@ uint8_t LoadBattleAnimGFX(uint8_t* de, uint8_t a){
         LoadPNG2bppAssetSectionToVRAM(de, gfx->gfxPath, 0x0, 1);
         LoadPNG2bppAssetSectionToVRAM(de + 1 * LEN_2BPP_TILE, gfx->gfxPath, 0x2, 1);
         LoadPNG2bppAssetSectionToVRAM(de + 2 * LEN_2BPP_TILE, gfx->gfxPath, 0x5, 2);
-        LoadPNG2bppAssetSectionToVRAM(de + 4 * LEN_2BPP_TILE, gfx->gfxPath, 0xa, 7);
+        // The 16x72 beam asset's final source tile is the lower half of the
+        // 8x16 Leer pair beginning at logical tile 10.  It was previously
+        // omitted from native storage, leaving the host to read past it.
+        LoadPNG2bppAssetSectionToVRAM(de + 4 * LEN_2BPP_TILE, gfx->gfxPath, 0xa, 8);
         break;
     default:
         LoadPNG2bppAssetSectionToVRAM(de, gfx->gfxPath, 0x0, gfx->tiles);

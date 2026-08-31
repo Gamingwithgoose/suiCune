@@ -116,6 +116,10 @@ enum BattleSceneScanlineEffect {
     // Scanline samples are unsigned, absolute scroll-register values in
     // pixels. They are not signed deltas from BattleSceneCamera*().
     BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET,
+    // Native battler movement is a signed framebuffer-pixel displacement.
+    // The retained LCD background projection continues to consume the
+    // original unsigned SCX bytes independently.
+    BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT,
     BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET,
 };
 
@@ -185,7 +189,8 @@ const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerI
 void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlers(void);
-const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
+const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
+    size_t tileSpan);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 uint8_t BattleAnimationParameterGet(void);
 void BattleAnimationParameterSet(uint8_t parameter);
@@ -210,9 +215,10 @@ enum BattleSceneScanlineEffect BattleSceneScanlineEffectGet(void);
 uint8_t BattleSceneScanlineEffectStart(void);
 uint8_t BattleSceneScanlineEffectEnd(void);
 // Return the framebuffer-pixel scroll offset for a display scanline. An active
-// scanline effect supplies the committed absolute value; otherwise the scene
-// camera does. Producers write next-frame samples through ScanlineScratch(),
-// which PushLYOverrides commits to ScanlineOverrides().
+// absolute effect supplies a committed register value; a native displacement
+// effect supplies a signed pixel delta; otherwise the scene camera does.
+// Producers write next-frame samples through ScanlineScratch(), which
+// PushLYOverrides commits to ScanlineOverrides().
 int16_t BattleSceneHorizontalOffsetForLine(uint8_t line);
 int16_t BattleSceneVerticalOffsetForLine(uint8_t line);
 uint8_t* BattleAnimationScanlineOverrides(void);

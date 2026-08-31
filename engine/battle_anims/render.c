@@ -60,9 +60,15 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
             pixelSource.tileId = sprite->resourceTileId;
             if(largeSprites && sprite->legacyOamTilePair)
                 pixelSource.tileId &= 0xfffe;
+            size_t tileSpan = largeSprites ? 2 : 1;
+            const uint8_t* tilePixels = BattleAnimationSpritePixels(&pixelSource, tileSpan);
+            // Never let the legacy host fall back to VRAM after a failed
+            // native lookup; the incomplete record is omitted for this frame.
+            if(tilePixels == NULL)
+                continue;
             drawSprite(context, line->pixels, line->priority, sprite->yCoord,
                 sprite->xCoord, sprite->tileId, sprite->attributes,
-                BattleAnimationSpritePixels(&pixelSource));
+                tilePixels);
         }
     }
 }

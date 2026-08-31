@@ -28,7 +28,9 @@ const struct BattleAnimGFX AnimObjGFX[] = {
     [ANIM_GFX_BUBBLE]       = anim_obj_gfx(13, AnimObjBubbleGFX),
     [ANIM_GFX_NOISE]        = anim_obj_gfx(16, AnimObjNoiseGFX),
     [ANIM_GFX_POWDER]       = anim_obj_gfx( 2, AnimObjPowderGFX),
-    [ANIM_GFX_BEAM]         = anim_obj_gfx(11, AnimObjBeamGFX),
+    // The final Leer OAM set begins at native tile 10 in 8x16 mode and
+    // therefore needs the authored companion at logical tile 11.
+    [ANIM_GFX_BEAM]         = anim_obj_gfx(12, AnimObjBeamGFX),
     [ANIM_GFX_SPEED]        = anim_obj_gfx( 9, AnimObjSpeedGFX),
     [ANIM_GFX_CHARGE]       = anim_obj_gfx( 9, AnimObjChargeGFX),
     [ANIM_GFX_WIND]         = anim_obj_gfx(19, AnimObjWindGFX),

@@ -2028,6 +2028,10 @@ static void BattleBGEffect_Tackle(struct BattleBGEffect* bc) {
             // LD_A(LOW(rSCX));
             // CALL(aBattleBGEffect_SetLCDStatCustoms1);
             BattleBGEffect_SetLCDStatCustoms1(bc, LOW(rSCX));
+            // The retained LCD plane consumes unsigned SCX samples. Native
+            // battlers consume the same authored range as signed pixel motion.
+            BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT,
+                hram.hLYOverrideStart, hram.hLYOverrideEnd);
             // LDH_A_addr(hLYOverrideEnd);
             // INC_A;
             // LDH_addr_A(hLYOverrideEnd);
@@ -2084,6 +2088,8 @@ static void BattleBGEffect_BodySlam(struct BattleBGEffect* bc) {
             // LD_A(LOW(rSCX));
             // CALL(aBattleBGEffect_SetLCDStatCustoms2);
             BattleBGEffect_SetLCDStatCustoms2(bc, LOW(rSCX));
+            BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT,
+                hram.hLYOverrideStart, hram.hLYOverrideEnd);
             // LDH_A_addr(hLYOverrideEnd);
             // INC_A;
             // LDH_addr_A(hLYOverrideEnd);
@@ -2298,6 +2304,8 @@ static void VitalThrow_MoveBackwards(struct BattleBGEffect* bc) {
     // LD_A(LOW(rSCX));
     // CALL(aBattleBGEffect_SetLCDStatCustoms1);
     BattleBGEffect_SetLCDStatCustoms1(bc, LOW(rSCX));
+    BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT,
+        hram.hLYOverrideStart, hram.hLYOverrideEnd);
     // LDH_A_addr(hLYOverrideEnd);
     // INC_A;
     // LDH_addr_A(hLYOverrideEnd);

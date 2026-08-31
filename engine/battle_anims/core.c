@@ -3,6 +3,8 @@
 #include "helpers.h"
 #include "bg_effects.h"
 #include "../../data/battle_anims/objects.h"
+#include <stdio.h>
+#include "../../util/log.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -56,6 +58,7 @@ struct NativeBattleAnimationState {
     size_t bgEffectCount;
     size_t bgEffectCapacity;
     uint8_t lastObjectIndex;
+    bool tackleResourceBoundsLogged;
 };
 
 struct BattleAnimationPresentationState {
@@ -333,8 +336,13 @@ void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
         abort();
     for(uint8_t row = 0; row < height; row++) {
         for(uint8_t column = 0; column < width; column++) {
-            imageTiles[(size_t)row * width + column] = (uint8_t)((size_t)row * width +
-                (mirrorTileColumns ? width - 1 - column : column));
+            // PlaceGraphicNative numbers source tiles down each source
+            // column, then advances to the next display column. Alignment
+            // mirrors columns only; FixBackpicAlignment already mirrors bits
+            // inside each decoded tile.
+            uint8_t sourceColumn = mirrorTileColumns ? width - 1 - column : column;
+            imageTiles[(size_t)row * width + column] =
+                (uint8_t)((size_t)sourceColumn * height + row);
         }
     }
     PlaceBattleSceneBattlerPattern(battler, x, y, width, height, imageTiles);
@@ -403,9 +411,10 @@ void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler){
         abort();
     for(uint8_t row = 0; row < state->defaultHeight; row++) {
         for(uint8_t column = 0; column < state->defaultWidth; column++) {
-            imageTiles[(size_t)row * state->defaultWidth + column] = (uint8_t)((size_t)row *
-                state->defaultWidth + (state->defaultMirrorTileColumns
-                    ? state->defaultWidth - 1 - column : column));
+            uint8_t sourceColumn = state->defaultMirrorTileColumns
+                ? state->defaultWidth - 1 - column : column;
+            imageTiles[(size_t)row * state->defaultWidth + column] =
+                (uint8_t)((size_t)sourceColumn * state->defaultHeight + row);
         }
     }
     PlaceBattleSceneBattlerPattern(battler, state->defaultX, state->defaultY,
@@ -432,7 +441,10 @@ void ClearBattleSceneBattlers(void){
     }
 }
 
-const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite){
+const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
+    size_t tileSpan){
+    if(sprite == NULL || tileSpan == 0)
+        return NULL;
     const uint8_t* pixels;
     size_t capacity;
     if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_HUD) {
@@ -447,8 +459,19 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
         pixels = sBattleAnimationState.tilePixels;
         capacity = sBattleAnimationState.tilePixelCapacity;
     }
-    if(sprite->tileId >= capacity)
+    // In 8x16 mode the draw host reads two complete native tiles, including
+    // when Y-flipped. Validate the span before exposing a source pointer.
+    if(pixels == NULL || sprite->tileId > capacity || tileSpan > capacity - sprite->tileId) {
+        // TEMPORARY Tackle diagnostic: the remaining crash cannot be proven
+        // without runtime observation. Emit the first rejected native source
+        // only, so a failing action identifies its resource/span boundary.
+        if(BattleAnimationIdGet() == TACKLE && !sBattleAnimationState.tackleResourceBoundsLogged) {
+            log_err("Native Tackle resource bounds: kind=%u tile=%u span=%zu capacity=%zu\n",
+                sprite->resourceKind, sprite->tileId, tileSpan, capacity);
+            sBattleAnimationState.tackleResourceBoundsLogged = true;
+        }
         return NULL;
+    }
     return pixels + (size_t)sprite->tileId * LEN_2BPP_TILE;
 }
 
@@ -558,8 +581,11 @@ uint8_t BattleSceneScanlineEffectEnd(void){
 }
 
 int16_t BattleSceneHorizontalOffsetForLine(uint8_t line){
-    if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET &&
+    if((sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET ||
+        sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT) &&
         line >= sBattleSceneDisplay.scanlineStart && line <= sBattleSceneDisplay.scanlineEnd) {
+        if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_DISPLACEMENT)
+            return (int8_t)BattleAnimationScanlineOverrides()[line];
         return BattleAnimationScanlineOverrides()[line];
     }
     return sBattleSceneDisplay.cameraX;

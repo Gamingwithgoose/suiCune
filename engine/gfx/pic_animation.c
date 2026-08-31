@@ -757,9 +757,13 @@ static void PokeAnim_GetFrame(void){
     // CALL(aPokeAnim_ConvertAndApplyBitmask);
     enum BattleSceneBattlerId battler;
     if(PokeAnim_BattleSceneBattler(&battler)) {
-        // Native frame substitution requires native frame-tile and bitmask
-        // content. Preserve the authoritative base image rather than corrupt
-        // it by treating the command byte as a complete PNG-frame index.
+        // TEMPORARY FALLBACK: native frame composition requires the per-species
+        // payloads referenced by gfx/pokemon/*_frames.asm and
+        // gfx/pokemon/bitmasks.asm. Referenced files such as
+        // gfx/pokemon/totodile/frames.asm and bitmask.asm are absent from this
+        // tree, so preserve the authoritative base image instead of inventing
+        // frame data or treating a command byte as a PNG-frame index. Remove
+        // this fallback when those payloads are imported into native tables.
         RestoreBattleSceneBattlerBaseImage(battler);
     }
     else {

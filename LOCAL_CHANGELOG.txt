@@ -5932,3 +5932,69 @@ Build/runtime validation: not performed.
 - Runtime verification remains required for player backpic orientation,
   animated opponent persistence, complete Leer beams, and player/opponent
   Tackle sequences.
+
+2026-08-31 — Battle renderer source-only stabilization follow-up
+=================================================================
+
+Completed repairs
+-----------------
+- Corrected native player backpic placement and every native restore path to
+  match the historical column-major `PlaceGraphicNative` ordering. Right
+  alignment now selects source columns in reverse order only; it does not
+  conflate tile-order reversal with `FixBackpicAlignment`'s per-tile bit
+  reversal.
+- Made native sprite-resource lookup span-aware. The compositor now validates
+  one complete 8x8 tile or two complete 8x16 tiles before passing a pixel
+  pointer to the retained object host; failed lookups are omitted rather than
+  falling back to VRAM or reading beyond native storage. This applies to
+  animation, HUD, and battler resource kinds, including Y-flipped sprites.
+- Repaired the authored Beam resource mapping used by Leer. Its 16x72 source
+  contains the twelfth companion tile required by OAM set 76's 8x16 pair at
+  logical tile 10; the native loader and resource declaration now retain that
+  exact tile instead of relying on adjacent storage.
+- Added a native signed scanline-displacement mode for Tackle, Body Slam, and
+  Vital Throw. Their battlers interpret `0xfe` as -2 pixels while the retained
+  LCD background projection still receives the original unsigned SCX bytes.
+
+Retained boundary and diagnostics
+---------------------------------
+- PokeAnim is not a completed native animation implementation. The tree has
+  top-level frame/bitmask manifests, but the referenced per-species payloads
+  (for example `gfx/pokemon/totodile/frames.asm` and `bitmask.asm`) are
+  absent. The battle path therefore retains the documented temporary base-image
+  fallback. Remove it only after importing those payloads into native content
+  tables and composing their frame/bitmask data natively.
+- Static trace of Leer covers ten queued objects, two OAM records per beam,
+  eight per tip, dynamic scene-sprite lifetime, and the Beam resource range.
+  The exact final-pair omission was repaired; runtime verification remains
+  required for visual completeness.
+- No exact source-only proof identifies the remaining opponent-Tackle crash.
+  A temporary, one-per-animation `log_err` diagnostic reports a rejected
+  native Tackle resource kind/tile/span/capacity if the span guard encounters
+  one. Remove it after runtime verification confirms no rejection and the
+  crash is resolved.
+- Runtime observations remain unchanged: opponent frontpics render normally;
+  player backpics scramble after sendout; Leer is incomplete; opponent Tackle
+  crashes. No runtime claim is made by this entry.
+
+Files modified
+--------------
+- `data/battle_anims/object_gfx.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/helpers.c`
+- `engine/battle_anims/render.c`
+- `engine/gfx/pic_animation.c`
+
+Validation and next closure
+---------------------------
+- Static validation reviewed the historical `PlaceGraphicNative` implementation
+  at `b5663088fe3da48ab71d673a11cc7bd7482d47df`, all callers of the changed
+  sprite-resource API, 8x16 host reads and Y-flip behavior, the Beam PNG
+  dimensions/source range, Leer object/OAM/frame data, Tackle's script,
+  background effect, scanline commit, and native compositor paths.
+- Build/runtime validation: not performed.
+- Next task: execute the four stated battle regressions, collect the temporary
+  Tackle diagnostic if emitted, and only then determine the next repair. No
+  forward battle migration was started.
