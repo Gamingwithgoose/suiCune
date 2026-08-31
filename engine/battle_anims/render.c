@@ -26,7 +26,8 @@ static void RenderBattler(const struct BattleSceneRenderLine* line,
             if(displayX >= 0 && displayX < SCREEN_WIDTH_PX &&
                 (!battler->presentationClipEnabled ||
                 (displayX >= battler->presentationClipX &&
-                displayX < battler->presentationClipX + battler->presentationClipWidth))) {
+                displayX < battler->presentationClipX + battler->presentationClipWidth)) &&
+                !BattleSceneForegroundUIContains(displayX, line->line)) {
                 uint8_t color = (low & 1) | ((high & 1) << 1);
                 line->pixels[displayX] = line->colorMode
                     ? (battler->palette << 2) + color

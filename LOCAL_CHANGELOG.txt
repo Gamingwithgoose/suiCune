@@ -6261,6 +6261,14 @@ Completed repairs
   base pixels, and persistent placement (`x`, `y`, `imageTile`). Logs occur at
   image installation, current-image mutation, base restoration, persistent
   placement mutation, and presentation boundaries.
+- Added semantic foreground UI regions to the native battle scene. The native
+  battler compositor now leaves BG-authored battle UI pixels intact only while
+  their owning battle UI is active; it neither redraws the BG nor restores
+  battler ownership to the tilemap.
+- Registered the normal, contest, and Safari command-menu rectangles; the
+  move-selection rectangle; its separate PP/type information rectangle; and
+  the shared battle textbox rectangle. Each owner clears its region at the
+  matching menu/text lifecycle boundary.
 - Distinguished allocated and active records for animation objects and BG
   effects in presentation snapshots. Tile bindings report all allocated
   bindings as active because their native representation has no retired-state
@@ -6291,14 +6299,29 @@ Static findings and boundaries
   outer animation presentation ends. The retained trainer tilemap projection
   remains a compatibility boundary pending a wider battle-background ownership
   migration.
+- Battle command menus, move-selection and move information boxes, and battle
+  textboxes are authored through `wTilemap` and copied into the BG map. The
+  hardware Window remains a separate later compositor plane. HP/status HUD
+  boxes are also BG-authored, but their current field rectangles do not
+  intersect persistent battler placement and therefore require no foreground
+  occlusion region.
+- `SlideBattlePicOut` remains a legacy tilemap mutation at two retained battle
+  sequencing points. The first result is immediately captured by
+  `LoadTilemapToTempTilemap`; the second precedes textbox/menu tilemap setup.
+  No native trainer consumes this mutation. It is retained pending runtime
+  validation of those still-legacy tilemap backup/restore paths rather than
+  being removed on source inference alone.
 
 Files modified
 --------------
 - `engine/battle/core.c`
+- `engine/battle/menu.c`
 - `engine/battle_anims/anim_commands.c`
 - `engine/battle_anims/bg_effects.c`
 - `engine/battle_anims/core.c`
 - `engine/battle_anims/core.h`
+- `engine/battle_anims/render.c`
+- `home/battle.c`
 - `LOCAL_CHANGELOG.txt`
 
 Validation and next closure
@@ -6307,6 +6330,11 @@ Validation and next closure
   `CopyBackpic` compatibility projection, animation 257, the shared hit/show
   path, all current/base pixel store writers, persistent and temporary tile
   placement writers, presentation teardown, and pool active-state predicates.
+- Static validation also traced BG/wTilemap ownership and lifecycle boundaries
+  for the command, move-selection, move-information, and battle-text boxes;
+  the native battler write loop; hardware Window ordering; and baseline/effect
+  sprite composition. Faint clipping/offset and temporary placement ownership
+  remain unchanged.
 - Build/runtime validation: not performed.
 - Next task: run a trainer battle through slide settlement and player send-out,
   then a wild battle through Scratch and Tackle; inspect
@@ -6344,9 +6372,10 @@ Completed repairs
   verifies exact `x`, `y`, and `imageTile` equality with persistent placement
   and fails explicitly if the identity invariant is violated.
 - Reordered the compositor to render persistent native battlers after the
-  battle background and before the legacy window plane. Window/menu/text
-  content now remains foreground content while native scene sprites and
-  animation effects retain sprite-layer composition.
+  battle background and before the legacy hardware Window plane. Hardware
+  Window content remains foreground while native scene sprites and animation
+  effects retain sprite-layer composition. BG-authored menus require explicit
+  foreground-region ownership and are handled by the later battle UI repair.
 - Replaced persistent battler-tile translation with semantic transient
   presentation offset. Fainting initializes a clip rectangle from the
   battler's default field region, moves only the temporary offset, then hides

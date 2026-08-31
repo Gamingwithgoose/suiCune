@@ -186,6 +186,9 @@ void MobileTextBorder(void){
 
 //  Open a textbox and print text at hl.
 void BattleTextbox(const struct TextCmd* hl){
+    SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_TEXTBOX,
+        TEXTBOX_X * TILE_WIDTH, TEXTBOX_Y * TILE_WIDTH,
+        TEXTBOX_WIDTH * TILE_WIDTH, TEXTBOX_HEIGHT * TILE_WIDTH);
     // PUSH_HL;
     // CALL(aSpeechTextbox);
     SpeechTextbox();
@@ -202,6 +205,7 @@ void BattleTextbox(const struct TextCmd* hl){
     // POP_HL;
     // CALL(aPrintTextboxText);
     PrintTextboxText(hl);
+    ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_TEXTBOX);
     // RET;
 }
 

@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "../../home/menu.h"
 #include "../../home/print_text.h"
+#include "../battle_anims/core.h"
 #include "../../util/log.h"
 
 static void PrintParkBallsRemaining(void);
@@ -29,6 +30,8 @@ const struct MenuHeader BattleMenuHeader = {
 
 bool LoadBattleMenu(void){
     log_runtime_event("MENU", "battle command menu open cursor=%u tilemapBackup=1", (unsigned)wram->wBattleMenuCursorPosition);
+    SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU,
+        8 * TILE_WIDTH, 12 * TILE_WIDTH, 12 * TILE_WIDTH, 6 * TILE_WIDTH);
     // LD_HL(mBattleMenuHeader);
     // CALL(aLoadMenuHeader);
     LoadMenuHeader(&BattleMenuHeader);
@@ -42,6 +45,7 @@ bool LoadBattleMenu(void){
     wram->wBattleMenuCursorPosition = wram->wMenuCursorPosition;
     // CALL(aExitMenu);
     ExitMenu();
+    ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU);
     log_runtime_event("MENU", "battle command menu close cursor=%u cancelled=%u",
         (unsigned)wram->wBattleMenuCursorPosition, (unsigned)res.flag);
     // RET;
@@ -69,6 +73,8 @@ static const struct MenuHeader ContestBattleMenuHeader = {
 };
 
 void ContestBattleMenu(void){
+    SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU,
+        2 * TILE_WIDTH, 12 * TILE_WIDTH, 18 * TILE_WIDTH, 6 * TILE_WIDTH);
     // LD_HL(mContestBattleMenuHeader);
     // CALL(aLoadMenuHeader);
     LoadMenuHeader(&ContestBattleMenuHeader);
@@ -89,6 +95,7 @@ void CommonBattleMenu(void){
     wram->wBattleMenuCursorPosition = res.a;
     // CALL(aExitMenu);
     ExitMenu();
+    ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU);
     log_runtime_event("MENU", "battle alternate menu close cursor=%u cancelled=%u",
         (unsigned)wram->wBattleMenuCursorPosition, (unsigned)res.flag);
     // RET;
@@ -150,6 +157,8 @@ static const struct MenuHeader SafariBattleMenuHeader = {
 
 void SafariBattleMenu(void){
 //  //  unreferenced
+    SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU,
+        0, 12 * TILE_WIDTH, SCREEN_WIDTH_PX, 6 * TILE_WIDTH);
     // LD_HL(mSafariBattleMenuHeader);
     // CALL(aLoadMenuHeader);
     LoadMenuHeader(&SafariBattleMenuHeader);

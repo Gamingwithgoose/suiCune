@@ -132,6 +132,17 @@ enum BattleSceneBattlerId {
     BATTLE_SCENE_BATTLER_COUNT,
 };
 
+// Legacy battle UI is still authored into the BG tilemap.  These semantic
+// owners mark the portions that must remain in front of native battlers while
+// that UI is displayed; they do not create another UI tilemap or battler copy.
+enum BattleSceneForegroundUIOwner {
+    BATTLE_SCENE_FOREGROUND_UI_COMMAND_MENU,
+    BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION,
+    BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO,
+    BATTLE_SCENE_FOREGROUND_UI_TEXTBOX,
+    BATTLE_SCENE_FOREGROUND_UI_OWNER_COUNT,
+};
+
 // A battler picture is a native image plus an explicit tile placement list.
 // x/y are framebuffer pixels; imageTile indexes decoded native tiles and does
 // not identify VRAM.
@@ -230,6 +241,10 @@ bool BattleAnimationPresentationActive(void);
 void BeginBattleSceneDisplay(void);
 void EndBattleSceneDisplay(void);
 bool BattleSceneDisplayActive(void);
+void SetBattleSceneForegroundUIRegion(enum BattleSceneForegroundUIOwner owner,
+    int16_t x, int16_t y, uint8_t width, uint8_t height);
+void ClearBattleSceneForegroundUIRegion(enum BattleSceneForegroundUIOwner owner);
+bool BattleSceneForegroundUIContains(int16_t x, int16_t y);
 void BattleSceneCameraSet(int16_t x, int16_t y);
 void BattleSceneCameraTranslate(int16_t xDelta, int16_t yDelta);
 int16_t BattleSceneCameraX(void);

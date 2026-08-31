@@ -99,7 +99,16 @@ struct BattleAnimationPresentationState {
     uint8_t scanlineScratch[BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE];
 };
 
+struct NativeBattleSceneForegroundUIRegion {
+    bool active;
+    int16_t x;
+    int16_t y;
+    uint8_t width;
+    uint8_t height;
+};
+
 struct NativeBattleSceneDisplayState {
+    struct NativeBattleSceneForegroundUIRegion foregroundUI[BATTLE_SCENE_FOREGROUND_UI_OWNER_COUNT];
     bool active;
     int16_t cameraX;
     int16_t cameraY;
@@ -975,6 +984,33 @@ void EndBattleSceneDisplay(void){
 
 bool BattleSceneDisplayActive(void){
     return sBattleSceneDisplay.active;
+}
+
+void SetBattleSceneForegroundUIRegion(enum BattleSceneForegroundUIOwner owner,
+    int16_t x, int16_t y, uint8_t width, uint8_t height){
+    if(owner >= BATTLE_SCENE_FOREGROUND_UI_OWNER_COUNT || width == 0 || height == 0)
+        return;
+    sBattleSceneDisplay.foregroundUI[owner] = (struct NativeBattleSceneForegroundUIRegion){
+        .active = true, .x = x, .y = y, .width = width, .height = height,
+    };
+}
+
+void ClearBattleSceneForegroundUIRegion(enum BattleSceneForegroundUIOwner owner){
+    if(owner < BATTLE_SCENE_FOREGROUND_UI_OWNER_COUNT)
+        sBattleSceneDisplay.foregroundUI[owner].active = false;
+}
+
+bool BattleSceneForegroundUIContains(int16_t x, int16_t y){
+    if(!sBattleSceneDisplay.active)
+        return false;
+    for(uint8_t owner = 0; owner < BATTLE_SCENE_FOREGROUND_UI_OWNER_COUNT; owner++) {
+        const struct NativeBattleSceneForegroundUIRegion* region =
+            &sBattleSceneDisplay.foregroundUI[owner];
+        if(region->active && x >= region->x && y >= region->y &&
+            x < region->x + region->width && y < region->y + region->height)
+            return true;
+    }
+    return false;
 }
 
 void BattleSceneCameraSet(int16_t x, int16_t y){

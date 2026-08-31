@@ -8560,6 +8560,8 @@ static void MoveSelectionScreen_swap(void* hl, size_t size) {
 bool MoveSelectionScreen(void){
     static const char empty_string[] = "@";
 MoveSelectionScreen:
+    ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION);
+    ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO);
     // CALL(aIsMobileBattle);
     // IF_NZ goto not_mobile;
     // FARCALL(aMobile_MoveSelectionScreen);
@@ -8628,6 +8630,16 @@ MoveSelectionScreen:
         b = 4;
         // LD_C(14);
         c = 14;
+    }
+
+    uint8_t menuTop = wram->wMoveSelectionMenuType == 0x2
+        ? 17 - NUM_MOVES - 1 - 4 : 17 - NUM_MOVES - 1;
+    SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION,
+        4 * TILE_WIDTH, menuTop * TILE_WIDTH, (c + 2) * TILE_WIDTH,
+        (b + 2) * TILE_WIDTH);
+    if(wram->wMoveSelectionMenuType == 0x0) {
+        SetBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO,
+            0, 8 * TILE_WIDTH, 11 * TILE_WIDTH, 5 * TILE_WIDTH);
     }
 
 // got_dims:
@@ -8902,6 +8914,8 @@ MoveSelectionScreen:
         if(wram->wMoveSelectionMenuType == 0x1) {
             // POP_AF;
             // RET;
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION);
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO);
             return bPressed != 0;
         }
 
@@ -8914,14 +8928,19 @@ MoveSelectionScreen:
         if(wram->wMoveSelectionMenuType == 0x2) {
             // POP_AF;
             // RET;
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION);
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO);
             return bPressed != 0;
         }
 
     // use_move:
         // POP_AF;
         // RET_NZ ;
-        if(bPressed)
+        if(bPressed) {
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION);
+            ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO);
             return true;
+        }
 
         // LD_HL(wBattleMonPP);
         // LD_A_addr(wMenuCursorY);
@@ -8980,6 +8999,8 @@ MoveSelectionScreen:
         // LD_addr_A(wCurPlayerMove);
         // XOR_A_A;
         // RET;
+        ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_SELECTION);
+        ClearBattleSceneForegroundUIRegion(BATTLE_SCENE_FOREGROUND_UI_MOVE_INFO);
         return false;
     }
 
