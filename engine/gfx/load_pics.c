@@ -6,13 +6,43 @@
 #include "../../data/pokemon/pic_pointers.h"
 #include "../../data/pokemon/unown_pic_pointers.h"
 #include "../../data/trainers/pic_pointers.h"
+#include <stdlib.h>
+#include <string.h>
 
 static void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c);
 static void FixBackpicAlignment(uint8_t* hl, uint8_t c);
 static void PadFrontpic(uint8_t* hl, uint8_t* de, uint8_t b);
 static void LoadOrientedFrontpic(uint8_t** hl, uint8_t** de, uint8_t c);
-static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
-static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
+static uint8_t* LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], uint8_t* rawPixels);
+
+struct NativeFrontpicSource {
+    uint8_t* pixels;
+    size_t tileCapacity;
+};
+
+static struct NativeFrontpicSource sNativeFrontpicSource;
+
+static uint8_t* NativeFrontpicSourcePixels(size_t requiredTiles){
+    if(requiredTiles > sNativeFrontpicSource.tileCapacity) {
+        size_t capacity = sNativeFrontpicSource.tileCapacity == 0 ? 128 : sNativeFrontpicSource.tileCapacity;
+        while(capacity < requiredTiles) {
+            if(capacity > SIZE_MAX / 2)
+                abort();
+            capacity *= 2;
+        }
+        if(capacity > SIZE_MAX / LEN_2BPP_TILE)
+            abort();
+        uint8_t* pixels = realloc(sNativeFrontpicSource.pixels, capacity * LEN_2BPP_TILE);
+        if(pixels == NULL)
+            abort();
+        memset(pixels + sNativeFrontpicSource.tileCapacity * LEN_2BPP_TILE, 0,
+            (capacity - sNativeFrontpicSource.tileCapacity) * LEN_2BPP_TILE);
+        sNativeFrontpicSource.pixels = pixels;
+        sNativeFrontpicSource.tileCapacity = capacity;
+    }
+    return sNativeFrontpicSource.pixels;
+}
 
 //  Return Unown letter in wUnownLetter based on DVs at hl
 uint8_t GetUnownLetter(uint16_t dvs){
@@ -104,9 +134,9 @@ void GetAnimatedFrontpic(uint8_t* de, uint8_t frame){
     hram.hBGMapMode = BGMAPMODE_NONE;
     uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
     // CALL(av_GetFrontpic);
-    LoadFrontpicPixels(de, frame, paddedPixels);
+    uint8_t* rawPixels = LoadFrontpicPixels(de, frame, paddedPixels);
     // CALL(aGetAnimatedEnemyFrontpic);
-    BuildAnimatedEnemyFrontpic(de, paddedPixels);
+    BuildAnimatedEnemyFrontpic(de, paddedPixels, rawPixels);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     gb_write(rSVBK, svbk);
@@ -118,7 +148,7 @@ void v_GetFrontpic(uint8_t* de, uint8_t frame){
     LoadFrontpicPixels(de, frame, paddedPixels);
 }
 
-static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]){
+static uint8_t* LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]){
     // PUSH_DE;
     // CALL(aGetBaseData);
     GetBaseData(wram->wCurSpecies);
@@ -129,20 +159,18 @@ static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[
     uint8_t c = (wram->wBasePicSize & 0xf0) >> 4;
     // PUSH_BC;
     // CALL(aGetFrontpicPointer);
-    const char* de2 = GetFrontpicPointer();
-    // LD_A(BANK(wDecompressEnemyFrontpic));
-    // LDH_addr_A(rSVBK);
-    // LD_A_B;
-    // LD_DE(wDecompressEnemyFrontpic);
-    // CALL(aFarDecompress);
     int size = c * b;
+    const char* de2 = GetFrontpicPointer();
+    size_t sourceTiles = size;
+    if(sourceTiles < 128)
+        sourceTiles = 128;
+    uint8_t* rawPixels = NativeFrontpicSourcePixels(sourceTiles);
     // log_debug("Loading frame %d (tile %d, base %d,%d) of %s.\n", frame, size * frame, b, c, de2);
-    LoadPNG2bppAssetSectionToVRAM(wram->wDecompressEnemyFrontpic, de2, size * frame, size);
+    LoadPNG2bppAssetSectionToVRAM(rawPixels, de2, size * frame, size);
     // POP_BC;
     // The padded form is transient native data rather than shared WRAM.
-    // LD_DE(wDecompressEnemyFrontpic);
     // CALL(aPadFrontpic);
-    PadFrontpic(paddedPixels, wram->wDecompressEnemyFrontpic, b);
+    PadFrontpic(paddedPixels, rawPixels, b);
     // POP_HL;
     // PUSH_HL;
     // LD_DE(wDecompressScratch);
@@ -153,6 +181,7 @@ static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[
     // POP_HL;
     // RET;
     CopyBytes(de, paddedPixels, 7 * 7 * LEN_2BPP_TILE);
+    return rawPixels;
 }
 
 const char* GetFrontpicPointer(void){
@@ -196,7 +225,7 @@ const char* GetFrontpicPointer(void){
     return p;
 }
 
-static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]){
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], uint8_t* rawPixels){
     // LD_A(BANK(vTiles3));
     // LDH_addr_A(rVBK);
     // gb_write(rVBK, MBANK(vTiles3));
@@ -222,26 +251,23 @@ static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7
     uint8_t a = wram->wBasePicSize & 0xf;
     uint8_t* de;
     uint8_t c;
-    // LD_DE(wDecompressEnemyFrontpic + 5 * 5 * LEN_2BPP_TILE);
     // LD_C(5 * 5);
     // CP_A(5);
     // IF_Z goto got_dims;
     if(a == 5) {
-        de = wram->wDecompressEnemyFrontpic + 5 * 5 * LEN_2BPP_TILE;
+        de = rawPixels + 5 * 5 * LEN_2BPP_TILE;
         c = 5 * 5;
     }
-    // LD_DE(wDecompressEnemyFrontpic + 6 * 6 * LEN_2BPP_TILE);
     // LD_C(6 * 6);
     // CP_A(6);
     // IF_Z goto got_dims;
     else if(a == 6) {
-        de = wram->wDecompressEnemyFrontpic + 6 * 6 * LEN_2BPP_TILE;
+        de = rawPixels + 6 * 6 * LEN_2BPP_TILE;
         c = 6 * 6;
     }
-    // LD_DE(wDecompressEnemyFrontpic + 7 * 7 * LEN_2BPP_TILE);
     // LD_C(7 * 7);
     else {
-        de = wram->wDecompressEnemyFrontpic + 7 * 7 * LEN_2BPP_TILE;
+        de = rawPixels + 7 * 7 * LEN_2BPP_TILE;
         c = 7 * 7;
     }
 

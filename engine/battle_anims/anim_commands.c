@@ -23,16 +23,12 @@
 #include "../../gfx/sprites.h"
 #include "../../audio/engine.h"
 #include <stdarg.h>
+#include <string.h>
 
 static battleanim_s sBattleAnim;
 
-struct MinimizePic {
-    uint8_t* hl;
-    uint8_t* de;
-    uint8_t c;
-};
-
-static struct MinimizePic GetMinimizePic(void);
+static void GetSubstitutePic(void);
+static size_t BuildMinimizePic(uint8_t pixels[7 * 7 * LEN_2BPP_TILE]);
 static void CopyMinimizePic(uint8_t* de);
 
 //  Battle animation command interpreter.
@@ -1473,11 +1469,7 @@ void BattleAnimCmd_RaiseSub(void){
     // LD_A(1);  // unnecessary bankswitch?
     // LDH_addr_A(rSVBK);
 
-    // XOR_A_A;  // BANK(sScratch)
-    // CALL(aOpenSRAM);
-    OpenSRAM(MBANK(asScratch));
-
-    return GetSubstitutePic();
+    GetSubstitutePic();
 }
 
 static void GetSubstitutePic_CopyTile(uint8_t* de, const char* hl, int start){
@@ -1488,23 +1480,8 @@ static void GetSubstitutePic_CopyTile(uint8_t* de, const char* hl, int start){
     // RET;
 }
 
-void GetSubstitutePic(void){
-//  //  used only for BANK(GetSubstitutePic)
-    // LD_HL(sScratch);
-    uint8_t* hl = GBToRAMAddr(sScratch);
-    // LD_BC((7 * 7) * LEN_2BPP_TILE);
-    uint16_t bc = (7 * 7) * LEN_2BPP_TILE;
-
-    do {
-    // loop:
-        // XOR_A_A;
-        // LD_hli_A;
-        *(hl++) = 0;
-        // DEC_BC;
-        // LD_A_C;
-        // OR_A_B;
-        // IF_NZ goto loop;
-    } while(--bc != 0);
+static void GetSubstitutePic(void){
+    uint8_t pixels[7 * 7 * LEN_2BPP_TILE] = {0};
 
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -1513,25 +1490,25 @@ void GetSubstitutePic(void){
         // LD_HL(mMonsterSpriteGFX + 0 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (2 * 7 + 5) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (2 * 7 + 5) * LEN_2BPP_TILE), MonsterSpriteGFX, 0);
+        GetSubstitutePic_CopyTile(pixels + (2 * 7 + 5) * LEN_2BPP_TILE, MonsterSpriteGFX, 0);
         // LD_HL(mMonsterSpriteGFX + 1 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (3 * 7 + 5) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (2 * 7 + 6) * LEN_2BPP_TILE), MonsterSpriteGFX, 1);
+        GetSubstitutePic_CopyTile(pixels + (2 * 7 + 6) * LEN_2BPP_TILE, MonsterSpriteGFX, 1);
         // LD_HL(mMonsterSpriteGFX + 2 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (2 * 7 + 6) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (3 * 7 + 5) * LEN_2BPP_TILE), MonsterSpriteGFX, 2);
+        GetSubstitutePic_CopyTile(pixels + (3 * 7 + 5) * LEN_2BPP_TILE, MonsterSpriteGFX, 2);
         // LD_HL(mMonsterSpriteGFX + 3 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (3 * 7 + 6) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (3 * 7 + 6) * LEN_2BPP_TILE), MonsterSpriteGFX, 3);
+        GetSubstitutePic_CopyTile(pixels + (3 * 7 + 6) * LEN_2BPP_TILE, MonsterSpriteGFX, 3);
 
         // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x00);
         // LD_DE(sScratch);
         // LD_BC((BANK(aGetSubstitutePic) << 8) | 7 * 7);
         // CALL(aRequest2bpp);
-        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x00, GBToRAMAddr(sScratch), 7 * 7 * LEN_2BPP_TILE);
+        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x00, pixels, 7 * 7 * LEN_2BPP_TILE);
         // goto done;
     }
     else {
@@ -1539,35 +1516,26 @@ void GetSubstitutePic(void){
         // LD_HL(mMonsterSpriteGFX + 4 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (2 * 6 + 4) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (2 * 6 + 4) * LEN_2BPP_TILE), MonsterSpriteGFX, 4);
+        GetSubstitutePic_CopyTile(pixels + (2 * 6 + 4) * LEN_2BPP_TILE, MonsterSpriteGFX, 4);
         // LD_HL(mMonsterSpriteGFX + 5 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (3 * 6 + 4) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (2 * 6 + 5) * LEN_2BPP_TILE), MonsterSpriteGFX, 5);
+        GetSubstitutePic_CopyTile(pixels + (2 * 6 + 5) * LEN_2BPP_TILE, MonsterSpriteGFX, 5);
         // LD_HL(mMonsterSpriteGFX + 6 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (2 * 6 + 5) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (3 * 6 + 4) * LEN_2BPP_TILE), MonsterSpriteGFX, 6);
+        GetSubstitutePic_CopyTile(pixels + (3 * 6 + 4) * LEN_2BPP_TILE, MonsterSpriteGFX, 6);
         // LD_HL(mMonsterSpriteGFX + 7 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (3 * 6 + 5) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
-        GetSubstitutePic_CopyTile(GBToRAMAddr(sScratch + (3 * 6 + 5) * LEN_2BPP_TILE), MonsterSpriteGFX, 7);
+        GetSubstitutePic_CopyTile(pixels + (3 * 6 + 5) * LEN_2BPP_TILE, MonsterSpriteGFX, 7);
 
         // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x31);
         // LD_DE(sScratch);
         // LD_BC((BANK(aGetSubstitutePic) << 8) | 6 * 6);
         // CALL(aRequest2bpp);
-        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x31, GBToRAMAddr(sScratch), 6 * 6 * LEN_2BPP_TILE);
+        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x31, pixels, 6 * 6 * LEN_2BPP_TILE);
     }
-
-// done:
-    // CALL(aCloseSRAM);
-    CloseSRAM();
-
-    // POP_AF;
-    // LDH_addr_A(rSVBK);
-    // RET;
-    return;
 
 }
 
@@ -1577,37 +1545,21 @@ void BattleAnimCmd_MinimizeOpp(void){
     // LD_A(1);  // unnecessary bankswitch?
     // LDH_addr_A(rSVBK);
 
-    // XOR_A_A;  // BANK(sScratch)
-    // CALL(aOpenSRAM);
-    OpenSRAM(MBANK(asScratch));
-    // CALL(aGetMinimizePic);
-    struct MinimizePic pic = GetMinimizePic();
+    uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+    size_t tileCount = BuildMinimizePic(pixels);
     // CALL(aRequest2bpp);
-    CopyBytes(pic.hl, pic.de, pic.c * LEN_2BPP_TILE);
-    // CALL(aCloseSRAM);
-    CloseSRAM();
+    CopyBytes((hram.hBattleTurn == TURN_PLAYER)
+            ? vram->vTiles2 + LEN_2BPP_TILE * 0x31
+            : vram->vTiles2 + LEN_2BPP_TILE * 0x00,
+        pixels, tileCount * LEN_2BPP_TILE);
 
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // RET;
 }
 
-struct MinimizePic GetMinimizePic(void){
-    // LD_HL(sScratch);
-    uint16_t hl = sScratch;
-    // LD_BC((7 * 7) * LEN_2BPP_TILE);
-    uint16_t bc = (7 * 7) * LEN_2BPP_TILE;
-
-    do {
-    // loop:
-        // XOR_A_A;
-        // LD_hli_A;
-        gb_write(hl++, 0);
-        // DEC_BC;
-        // LD_A_C;
-        // OR_A_B;
-        // IF_NZ goto loop;
-    } while(--bc != 0);
+static size_t BuildMinimizePic(uint8_t pixels[7 * 7 * LEN_2BPP_TILE]){
+    memset(pixels, 0, 7 * 7 * LEN_2BPP_TILE);
 
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
@@ -1615,23 +1567,23 @@ struct MinimizePic GetMinimizePic(void){
     if(hram.hBattleTurn != TURN_PLAYER) {
         // LD_DE(sScratch + (3 * 7 + 5) * LEN_2BPP_TILE);
         // CALL(aCopyMinimizePic);
-        CopyMinimizePic(GBToRAMAddr(sScratch + (3 * 7 + 5) * LEN_2BPP_TILE));
+        CopyMinimizePic(pixels + (3 * 7 + 5) * LEN_2BPP_TILE);
         // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x00);
         // LD_DE(sScratch);
         // LD_BC((BANK(aGetMinimizePic) << 8) | 7 * 7);
         // RET;
-        return (struct MinimizePic){.hl = vram->vTiles2 + LEN_2BPP_TILE * 0x00, .de = GBToRAMAddr(sScratch), .c = 7 * 7};
+        return 7 * 7;
     }
     else {
     // player:
         // LD_DE(sScratch + (3 * 6 + 4) * LEN_2BPP_TILE);
         // CALL(aCopyMinimizePic);
-        CopyMinimizePic(GBToRAMAddr(sScratch + (3 * 6 + 4) * LEN_2BPP_TILE));
+        CopyMinimizePic(pixels + (3 * 6 + 4) * LEN_2BPP_TILE);
         // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x31);
         // LD_DE(sScratch);
         // LD_BC((BANK(aGetMinimizePic) << 8) | 6 * 6);
         // RET;
-        return (struct MinimizePic){.hl = vram->vTiles2 + LEN_2BPP_TILE * 0x31, .de = GBToRAMAddr(sScratch), .c = 6 * 6};
+        return 6 * 6;
     }
 
 }
@@ -1653,16 +1605,11 @@ void BattleAnimCmd_Minimize(void){
     // LD_A(1);  // unnecessary bankswitch?
     // LDH_addr_A(rSVBK);
 
-    // XOR_A_A;  // BANK(sScratch)
-    // CALL(aOpenSRAM);
-    OpenSRAM(MBANK(asScratch));
-    // CALL(aGetMinimizePic);
-    struct MinimizePic pic = GetMinimizePic();
+    uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+    size_t tileCount = BuildMinimizePic(pixels);
     // LD_HL(vTiles0 + LEN_2BPP_TILE * 0x00);
     // CALL(aRequest2bpp);
-    CopyBytes(vram->vTiles0 + LEN_2BPP_TILE * 0x00, pic.de, pic.c * LEN_2BPP_TILE);
-    // CALL(aCloseSRAM);
-    CloseSRAM();
+    CopyBytes(vram->vTiles0 + LEN_2BPP_TILE * 0x00, pixels, tileCount * LEN_2BPP_TILE);
 
     // POP_AF;
     // LDH_addr_A(rSVBK);

@@ -53,7 +53,6 @@ void BattleAnimCmd_E7(void);
 void BattleAnimCmd_Transform(void);
 void BattleAnimCmd_UpdateActorPic(void);
 void BattleAnimCmd_RaiseSub(void);
-void GetSubstitutePic(void);
 void BattleAnimCmd_MinimizeOpp(void);
 // void GetMinimizePic(void);
 // void CopyMinimizePic(uint8_t* de);

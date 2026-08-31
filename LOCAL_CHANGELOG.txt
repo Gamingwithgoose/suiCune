@@ -4502,3 +4502,62 @@ Exact stopping point and next recommended task
 - Next: model the raw animated-front-picture source layout as an explicit
   native resource, then migrate battle picture destinations and renderer
   consumers away from VRAM-backed tile identities.
+
+2026-08-30 — Native battle picture source and animation scratch ownership
+=========================================================================
+
+Completed work
+--------------
+- `engine/gfx/load_pics.c` now owns the raw animated-front-picture source in
+  a dynamically growing native resource. The old `wDecompressEnemyFrontpic`
+  WRAM buffer has no active C consumer in the picture-loading path.
+- The native source preserves the existing persistent lifetime and starting
+  capacity while growing when a source image requires more tiles. Padded and
+  transformed picture buffers remain explicit function-owned data.
+- `engine/battle_anims/anim_commands.c` now builds Substitute, Minimize, and
+  Minimize-Opp picture transforms in native local buffers. These commands no
+  longer open SRAM, address `sScratch`, or use Game Boy RAM access helpers as
+  temporary image storage.
+- `GetSubstitutePic` and the minimize builder are internal implementation
+  details now that no active caller needs a legacy-addressable scratch buffer.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Raw picture input, padding, orientation, Substitute, and Minimize staging
+  now have native C ownership with no synchronized WRAM/SRAM copy.
+- Existing battle picture destinations and the display tilemap remain
+  VRAM-backed. The corresponding WRAM fields are retained only as part of the
+  broader address-map compatibility layout and must not be removed until that
+  layout has no remaining source/build/runtime dependency.
+- No ASM source was deleted: this resource migration alone does not prove
+  unused reference material obsolete.
+
+Source-level validation and risks
+---------------------------------
+- Checked that active C references to `wDecompressEnemyFrontpic`,
+  `sScratch`, the removed public Substitute helper, and the old minimize
+  record are absent from the migrated paths.
+- Preserved current source offsets, persistent source lifetime, image byte
+  counts, and player/enemy destination selection. Runtime coverage is still
+  required for animated front pictures, Substitute, and both Minimize paths.
+
+Files modified
+--------------
+- `engine/gfx/load_pics.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/anim_commands.h`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing native ownership of the raw picture source and the
+  selected battle-animation scratch transforms. Legacy picture destinations
+  remain intentionally untouched.
+- Next: introduce native battle-picture presentation resources and migrate
+  their display consumers, then remove the remaining battle-animation VRAM
+  source reads and fallback renderer path only after coverage confirms them
+  obsolete.
