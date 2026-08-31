@@ -11,6 +11,8 @@ static void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c);
 static void FixBackpicAlignment(uint8_t* hl, uint8_t c);
 static void PadFrontpic(uint8_t* hl, uint8_t* de, uint8_t b);
 static void LoadOrientedFrontpic(uint8_t** hl, uint8_t** de, uint8_t c);
+static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
 
 //  Return Unown letter in wUnownLetter based on DVs at hl
 uint8_t GetUnownLetter(uint16_t dvs){
@@ -100,10 +102,11 @@ void GetAnimatedFrontpic(uint8_t* de, uint8_t frame){
     // XOR_A_A;
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_NONE;
+    uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
     // CALL(av_GetFrontpic);
-    v_GetFrontpic(de, frame);
+    LoadFrontpicPixels(de, frame, paddedPixels);
     // CALL(aGetAnimatedEnemyFrontpic);
-    GetAnimatedEnemyFrontpic(de);
+    BuildAnimatedEnemyFrontpic(de, paddedPixels);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     gb_write(rSVBK, svbk);
@@ -111,6 +114,11 @@ void GetAnimatedFrontpic(uint8_t* de, uint8_t frame){
 }
 
 void v_GetFrontpic(uint8_t* de, uint8_t frame){
+    uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
+    LoadFrontpicPixels(de, frame, paddedPixels);
+}
+
+static void LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]){
     // PUSH_DE;
     // CALL(aGetBaseData);
     GetBaseData(wram->wCurSpecies);
@@ -131,10 +139,10 @@ void v_GetFrontpic(uint8_t* de, uint8_t frame){
     // log_debug("Loading frame %d (tile %d, base %d,%d) of %s.\n", frame, size * frame, b, c, de2);
     LoadPNG2bppAssetSectionToVRAM(wram->wDecompressEnemyFrontpic, de2, size * frame, size);
     // POP_BC;
-    // LD_HL(wDecompressScratch);
+    // The padded form is transient native data rather than shared WRAM.
     // LD_DE(wDecompressEnemyFrontpic);
     // CALL(aPadFrontpic);
-    PadFrontpic(wram->wDecompressScratch, wram->wDecompressEnemyFrontpic, b);
+    PadFrontpic(paddedPixels, wram->wDecompressEnemyFrontpic, b);
     // POP_HL;
     // PUSH_HL;
     // LD_DE(wDecompressScratch);
@@ -144,7 +152,7 @@ void v_GetFrontpic(uint8_t* de, uint8_t frame){
     // CALL(aGet2bpp);
     // POP_HL;
     // RET;
-    CopyBytes(de, wram->wDecompressScratch, 7 * 7 * LEN_2BPP_TILE);
+    CopyBytes(de, paddedPixels, 7 * 7 * LEN_2BPP_TILE);
 }
 
 const char* GetFrontpicPointer(void){
@@ -188,7 +196,7 @@ const char* GetFrontpicPointer(void){
     return p;
 }
 
-void GetAnimatedEnemyFrontpic(uint8_t* hl){
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]){
     // LD_A(BANK(vTiles3));
     // LDH_addr_A(rVBK);
     // gb_write(rVBK, MBANK(vTiles3));
@@ -200,7 +208,7 @@ void GetAnimatedEnemyFrontpic(uint8_t* hl){
     // LD_B_A;
     // CALL(aGet2bpp);
     // LoadPNG2bppAssetSectionToVRAM(wram->wDecompressScratch, GetFrontpicPointer(), 0, 7 * 7);
-    CopyBytes(hl, wram->wDecompressScratch, 7 * 7 * LEN_2BPP_TILE);
+    CopyBytes(hl, paddedPixels, 7 * 7 * LEN_2BPP_TILE);
     // POP_HL;
     // LD_DE(7 * 7 * LEN_2BPP_TILE);
     // ADD_HL_DE;
@@ -241,14 +249,15 @@ void GetAnimatedEnemyFrontpic(uint8_t* hl){
     // PUSH_HL;
     // PUSH_BC;
     // CALL(aLoadFrontpicTiles);
-    LoadFrontpicTiles(wram->wDecompressScratch, de, c);
+    uint8_t animatedPixels[7 * 7 * LEN_2BPP_TILE];
+    LoadFrontpicTiles(animatedPixels, de, c);
     // POP_BC;
     // POP_HL;
     // LD_DE(wDecompressScratch);
     // LDH_A_addr(hROMBank);
     // LD_B_A;
     // CALL(aGet2bpp);
-    CopyBytes(hl, wram->wDecompressScratch, 7 * 7 * LEN_2BPP_TILE);
+    CopyBytes(hl, animatedPixels, 7 * 7 * LEN_2BPP_TILE);
     // XOR_A_A;
     // LDH_addr_A(rVBK);
     // gb_write(rVBK, 0);
@@ -329,20 +338,21 @@ void GetMonBackpic(uint8_t* de, species_t species){
     // INC_HL;
     // LD_A_D;
     // CALL(aGetFarWord);
-    // LD_DE(wDecompressScratch);
+    // LD_DE(native backpic pixels);
+    uint8_t backpicPixels[6 * 6 * LEN_2BPP_TILE];
     // POP_AF;
     // CALL(aFarDecompress);
-    LoadPNG2bppAssetToVRAM(wram->wDecompressScratch, path);
-    // LD_HL(wDecompressScratch);
+    LoadPNG2bppAssetToVRAM(backpicPixels, path);
+    // LD_HL(native backpic pixels);
     // LD_C(6 * 6);
     // CALL(aFixBackpicAlignment);
-    FixBackpicAlignment(wram->wDecompressScratch, 6 * 6);
+    FixBackpicAlignment(backpicPixels, 6 * 6);
     // POP_HL;
     // LD_DE(wDecompressScratch);
     // LDH_A_addr(hROMBank);
     // LD_B_A;
     // CALL(aGet2bpp);
-    CopyBytes(de, wram->wDecompressScratch, 6 * 6 * LEN_2BPP_TILE);
+    CopyBytes(de, backpicPixels, 6 * 6 * LEN_2BPP_TILE);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // RET;
@@ -702,4 +712,3 @@ static void LoadOrientedFrontpic(uint8_t** hl, uint8_t** de, uint8_t c){
     }
 
 }
-

@@ -3,7 +3,6 @@ void GetMonFrontpic(uint8_t* de);
 void GetAnimatedFrontpic(uint8_t* de, uint8_t frame);
 void v_GetFrontpic(uint8_t* de, uint8_t frame);
 const char* GetFrontpicPointer(void);
-void GetAnimatedEnemyFrontpic(uint8_t* hl);
 // void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c);
 void GetMonBackpic(uint8_t* de, species_t species);
 void FixPicBank(void);

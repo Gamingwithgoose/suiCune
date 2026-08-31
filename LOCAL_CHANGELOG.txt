@@ -4451,3 +4451,54 @@ Exact stopping point and next recommended task
 - Next: move battle-picture staging into a native image resource and migrate
   its renderer consumers; then audit remaining battle sprite producers before
   removing the legacy VRAM fallback.
+
+2026-08-30 — Native transient picture staging
+==============================================
+
+Completed work
+--------------
+- `engine/gfx/load_pics.c` now keeps padded front pictures, animated front
+  picture transforms, and aligned back pictures in function-owned native
+  buffers instead of the shared `wDecompressScratch` WRAM area.
+- Animated front-picture construction receives its padded source explicitly;
+  the former public helper was made internal after confirming it had no active
+  callers outside this compilation unit. The loader interface no longer
+  advertises that internal staging operation.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Picture decoding remains a direct C resource load. The migrated staging
+  buffers have one owner and no synchronized WRAM copy.
+- The raw `wDecompressEnemyFrontpic` region remains active for the existing
+  animated-front-picture tile transform. Its noncompact source layout and
+  offset semantics need separate source-level migration before it can be
+  replaced safely.
+- Picture destinations still include legacy VRAM-backed consumers. This work
+  removes shared source staging only; it does not claim a complete native
+  battle-picture renderer or remove the existing compatibility destination.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed no active C caller remains for `GetAnimatedEnemyFrontpic`; the
+  only other occurrence is an inactive function-map comment.
+- Preserved 7x7 and 6x6 picture byte counts, frame selection, padding,
+  orientation, and destination writes. Runtime checks are still needed for
+  animated fronts, back pictures, and every call path using them.
+
+Files modified
+--------------
+- `engine/gfx/load_pics.c`
+- `engine/gfx/load_pics.h`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing `wDecompressScratch` from active front/back picture
+  staging while retaining the unexamined animated-front raw buffer boundary.
+- Next: model the raw animated-front-picture source layout as an explicit
+  native resource, then migrate battle picture destinations and renderer
+  consumers away from VRAM-backed tile identities.
