@@ -9,6 +9,17 @@
 static void InitBattleAnimation(struct BattleAnim* bc);
 static void InitBattleAnimBuffer(struct BattleAnim* bc);
 
+struct NativeBattleSceneBattler {
+    uint8_t* pixels;
+    size_t pixelTileCount;
+    size_t pixelTileCapacity;
+    struct BattleSceneBattlerTile* tiles;
+    size_t tileCount;
+    size_t tileCapacity;
+    uint8_t palette;
+    bool visible;
+};
+
 struct NativeBattleAnimationState {
     struct BattleAnimationTileBinding* tileBindings;
     size_t tileBindingCount;
@@ -19,6 +30,7 @@ struct NativeBattleAnimationState {
     size_t hudTilePixelCapacity;
     uint8_t* battlerTilePixels;
     size_t battlerTilePixelCapacity;
+    struct NativeBattleSceneBattler battlers[BATTLE_SCENE_BATTLER_COUNT];
     struct BattleAnimationCommandState command;
     struct BattleAnimationRenderState render;
     struct BattleAnimationEffectScratchState effectScratch;
@@ -186,6 +198,160 @@ uint8_t* BattleSceneBattlerTileWritePointer(uint16_t tileId, size_t tileCount){
 
 const uint8_t* BattleSceneBattlerPixels(void){
     return sBattleAnimationState.battlerTilePixels;
+}
+
+static void BattleSceneEnsureBattlerPixels(enum BattleSceneBattlerId battler, size_t tileCount){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || tileCount == 0)
+        abort();
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    if(tileCount <= state->pixelTileCapacity)
+        return;
+    if(tileCount > SIZE_MAX / LEN_2BPP_TILE)
+        abort();
+    uint8_t* pixels = realloc(state->pixels, tileCount * LEN_2BPP_TILE);
+    if(pixels == NULL)
+        abort();
+    state->pixels = pixels;
+    state->pixelTileCapacity = tileCount;
+}
+
+static void BattleSceneEnsureBattlerTiles(enum BattleSceneBattlerId battler, size_t tileCount){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || tileCount == 0)
+        abort();
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    if(tileCount <= state->tileCapacity)
+        return;
+    if(tileCount > SIZE_MAX / sizeof(*state->tiles))
+        abort();
+    struct BattleSceneBattlerTile* tiles = realloc(state->tiles, tileCount * sizeof(*tiles));
+    if(tiles == NULL)
+        abort();
+    state->tiles = tiles;
+    state->tileCapacity = tileCount;
+}
+
+void ClearBattleSceneBattlerTiles(enum BattleSceneBattlerId battler){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return;
+    sBattleAnimationState.battlers[battler].tileCount = 0;
+}
+
+void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return;
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    size_t write = 0;
+    int16_t right = x + width * TILE_WIDTH;
+    int16_t bottom = y + height * TILE_WIDTH;
+    for(size_t read = 0; read < state->tileCount; read++) {
+        struct BattleSceneBattlerTile tile = state->tiles[read];
+        if(tile.x >= x && tile.x < right && tile.y >= y && tile.y < bottom)
+            continue;
+        state->tiles[write++] = tile;
+    }
+    state->tileCount = write;
+}
+
+void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height,
+    const uint8_t* imageTiles){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || imageTiles == NULL || width == 0 || height == 0)
+        abort();
+    size_t tileCount = (size_t)width * height;
+    BattleSceneEnsureBattlerTiles(battler, tileCount);
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    state->tileCount = tileCount;
+    for(uint8_t row = 0; row < height; row++) {
+        for(uint8_t column = 0; column < width; column++) {
+            size_t index = (size_t)row * width + column;
+            state->tiles[index].x = x + column * TILE_WIDTH;
+            state->tiles[index].y = y + row * TILE_WIDTH;
+            state->tiles[index].imageTile = imageTiles[index];
+        }
+    }
+    state->visible = true;
+}
+
+void SetBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
+    const uint8_t* pixels, size_t tileCount, uint8_t width, uint8_t height,
+    int16_t x, int16_t y, uint8_t palette){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || pixels == NULL ||
+        tileCount < (size_t)width * height)
+        abort();
+    BattleSceneEnsureBattlerPixels(battler, tileCount);
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    CopyBytes(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
+    state->pixelTileCount = tileCount;
+    state->palette = palette;
+    uint8_t imageTiles[7 * 7];
+    if((size_t)width * height > lengthof(imageTiles))
+        abort();
+    for(size_t i = 0; i < (size_t)width * height; i++)
+        imageTiles[i] = i;
+    PlaceBattleSceneBattlerPattern(battler, x, y, width, height, imageTiles);
+}
+
+void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
+    const uint8_t* pixels, size_t tileCount){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || pixels == NULL || tileCount == 0)
+        abort();
+    BattleSceneEnsureBattlerPixels(battler, tileCount);
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    CopyBytes(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
+    state->pixelTileCount = tileCount;
+}
+
+void SetBattleSceneBattlerVisible(enum BattleSceneBattlerId battler, bool visible){
+    if(battler < BATTLE_SCENE_BATTLER_COUNT)
+        sBattleAnimationState.battlers[battler].visible = visible;
+}
+
+void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDelta, int16_t yDelta){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return;
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    for(size_t i = 0; i < state->tileCount; i++) {
+        state->tiles[i].x += xDelta;
+        state->tiles[i].y += yDelta;
+    }
+}
+
+const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler){
+    static struct BattleSceneBattlerView views[BATTLE_SCENE_BATTLER_COUNT];
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return NULL;
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    struct BattleSceneBattlerView* view = &views[battler];
+    view->pixels = state->pixels;
+    view->pixelTileCount = state->pixelTileCount;
+    view->tiles = state->tiles;
+    view->tileCount = state->tileCount;
+    view->palette = state->palette;
+    view->visible = state->visible;
+    return view;
+}
+
+bool BattleSceneBattlerForTilemap(const uint8_t* tilemap, enum BattleSceneBattlerId* battler){
+    if(tilemap == NULL || battler == NULL)
+        return false;
+    if(tilemap == coord(2, 6, wram->wTilemap)) {
+        *battler = BATTLE_SCENE_BATTLER_PLAYER;
+        return true;
+    }
+    if(tilemap == coord(12, 0, wram->wTilemap)) {
+        *battler = BATTLE_SCENE_BATTLER_OPPONENT;
+        return true;
+    }
+    return false;
+}
+
+void ClearBattleSceneBattlers(void){
+    for(size_t i = 0; i < BATTLE_SCENE_BATTLER_COUNT; i++) {
+        free(sBattleAnimationState.battlers[i].pixels);
+        free(sBattleAnimationState.battlers[i].tiles);
+        memset(&sBattleAnimationState.battlers[i], 0, sizeof(sBattleAnimationState.battlers[i]));
+    }
 }
 
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite){
@@ -447,6 +613,8 @@ void ResetNativeBattleAnimationState(void){
     struct BattleAnimationSprite* sceneSprites = sBattleAnimationState.sceneSprites;
     size_t sceneSpriteCount = sBattleAnimationState.sceneSpriteCount;
     size_t sceneSpriteCapacity = sBattleAnimationState.sceneSpriteCapacity;
+    struct NativeBattleSceneBattler battlers[BATTLE_SCENE_BATTLER_COUNT];
+    memcpy(battlers, sBattleAnimationState.battlers, sizeof(battlers));
 
     free(sBattleAnimationState.tileBindings);
     free(sBattleAnimationState.tilePixels);
@@ -462,6 +630,7 @@ void ResetNativeBattleAnimationState(void){
     sBattleAnimationState.sceneSprites = sceneSprites;
     sBattleAnimationState.sceneSpriteCount = sceneSpriteCount;
     sBattleAnimationState.sceneSpriteCapacity = sceneSpriteCapacity;
+    memcpy(sBattleAnimationState.battlers, battlers, sizeof(battlers));
 }
 
 void ClearNativeBattleAnimationObjects(void){

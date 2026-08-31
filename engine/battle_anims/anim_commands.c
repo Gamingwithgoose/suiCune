@@ -23,6 +23,7 @@
 #include "../../gfx/sprites.h"
 #include "../../audio/engine.h"
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 static battleanim_s sBattleAnim;
@@ -1181,14 +1182,20 @@ void BattleAnimCmd_BattlerGFX_1Row(void){
     BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x1 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_1Row_LoadFeet);
-    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(BattleAnimationTileWritePointer(0x80 - 6 - 7, 7), vram->vTiles2 + LEN_2BPP_TILE * (6 * 7), 7);
+    const struct BattleSceneBattlerView* opponent = BattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT);
+    const struct BattleSceneBattlerView* player = BattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER);
+    if(opponent == NULL || player == NULL || opponent->pixelTileCount < 7 * 7 || player->pixelTileCount < 6 * 6)
+        abort();
+    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_1Row_LoadFeet(
+        BattleAnimationTileWritePointer(0x80 - 6 - 7, 7),
+        opponent->pixels + LEN_2BPP_TILE * (6 * 7), 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
     BattleAnimationEffectScratchState()->gfxPicHeight = 6 * LEN_2BPP_TILE;
     // LD_A(6);  // Copy 6x1 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_1Row_LoadFeet);
-    BattleAnimCmd_BattlerGFX_1Row_LoadFeet(hl2, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 6);
+    BattleAnimCmd_BattlerGFX_1Row_LoadFeet(hl2, player->pixels, 6);
     // RET;
 }
 
@@ -1241,14 +1248,20 @@ void BattleAnimCmd_BattlerGFX_2Row(void){
     BattleAnimationEffectScratchState()->gfxPicHeight = 7 * LEN_2BPP_TILE;
     // LD_A(7);  // Copy 7x2 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_2Row_LoadHead);
-    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(BattleAnimationTileWritePointer(0x80 - 6 * 2 - 7 * 2, 14), vram->vTiles2 + LEN_2BPP_TILE * 7 * 5, 7);
+    const struct BattleSceneBattlerView* opponent = BattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT);
+    const struct BattleSceneBattlerView* player = BattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER);
+    if(opponent == NULL || player == NULL || opponent->pixelTileCount < 7 * 7 || player->pixelTileCount < 6 * 6)
+        abort();
+    uint8_t* hl2 = BattleAnimCmd_BattlerGFX_2Row_LoadHead(
+        BattleAnimationTileWritePointer(0x80 - 6 * 2 - 7 * 2, 14),
+        opponent->pixels + LEN_2BPP_TILE * 7 * 5, 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);  // Player head start tile
     // LD_A(6 * LEN_2BPP_TILE);  // Player pic height
     // LD_addr_A(wBattleAnimGFXTempPicHeight);
     BattleAnimationEffectScratchState()->gfxPicHeight = 6 * LEN_2BPP_TILE;
     // LD_A(6);  // Copy 6x2 tiles
     // CALL(aBattleAnimCmd_BattlerGFX_2Row_LoadHead);
-    BattleAnimCmd_BattlerGFX_2Row_LoadHead(hl2, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 6);
+    BattleAnimCmd_BattlerGFX_2Row_LoadHead(hl2, player->pixels, 6);
     // RET;
 }
 
@@ -1285,9 +1298,9 @@ void BattleAnimCmd_Transform(void){
         // LD_HL(wBattleMonDVs);
         // PREDEF(pGetUnownLetter);
         GetUnownLetter(wram->wBattleMon.dvs);
-        // LD_DE(vTiles0 + LEN_2BPP_TILE * 0x00);
-        // PREDEF(pGetMonFrontpic);
-        GetMonFrontpic(vram->vTiles0 + LEN_2BPP_TILE * 0x00);
+        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+        if(LoadNativeFrontpicPixels(pixels, 0))
+            UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7);
         // goto done;
     }
     else {
@@ -1298,9 +1311,9 @@ void BattleAnimCmd_Transform(void){
         // LD_HL(wEnemyMonDVs);
         // PREDEF(pGetUnownLetter);
         GetUnownLetter(wram->wEnemyMon.dvs);
-        // LD_DE(vTiles0 + LEN_2BPP_TILE * 0x00);
-        // PREDEF(pGetMonBackpic);
-        GetMonFrontpic(vram->vTiles0 + LEN_2BPP_TILE * 0x00);
+        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+        if(LoadNativeFrontpicPixels(pixels, 0))
+            UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 7 * 7);
     }
 
 // done:
@@ -1330,12 +1343,8 @@ void BattleAnimCmd_UpdateActorPic(void){
     // LD_B(0);
     // LD_C(6 * 6);
     // CALL(aRequest2bpp);
-    CopyBytes((hram.hBattleTurn == TURN_PLAYER)
-            ? vram->vTiles2 + LEN_2BPP_TILE * 0x31
-            : vram->vTiles2 + LEN_2BPP_TILE * 0x00,
-            vram->vTiles0 + LEN_2BPP_TILE * 0x00,
-        7 * 7 * LEN_2BPP_TILE);
-    // RET;
+    // Picture-changing commands update the native battler resource directly.
+    // This retained script opcode is therefore an explicit no-op.
 }
 
 void BattleAnimCmd_RaiseSub(void){
@@ -1379,11 +1388,7 @@ static void GetSubstitutePic(void){
         // CALL(aGetSubstitutePic_CopyTile);
         GetSubstitutePic_CopyTile(pixels + (3 * 7 + 6) * LEN_2BPP_TILE, MonsterSpriteGFX, 3);
 
-        // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x00);
-        // LD_DE(sScratch);
-        // LD_BC((BANK(aGetSubstitutePic) << 8) | 7 * 7);
-        // CALL(aRequest2bpp);
-        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x00, pixels, 7 * 7 * LEN_2BPP_TILE);
+        UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7);
         // goto done;
     }
     else {
@@ -1405,11 +1410,7 @@ static void GetSubstitutePic(void){
         // CALL(aGetSubstitutePic_CopyTile);
         GetSubstitutePic_CopyTile(pixels + (3 * 6 + 5) * LEN_2BPP_TILE, MonsterSpriteGFX, 7);
 
-        // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x31);
-        // LD_DE(sScratch);
-        // LD_BC((BANK(aGetSubstitutePic) << 8) | 6 * 6);
-        // CALL(aRequest2bpp);
-        CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x31, pixels, 6 * 6 * LEN_2BPP_TILE);
+        UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6);
     }
 
 }
@@ -1422,11 +1423,9 @@ void BattleAnimCmd_MinimizeOpp(void){
 
     uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
     size_t tileCount = BuildMinimizePic(pixels);
-    // CALL(aRequest2bpp);
-    CopyBytes((hram.hBattleTurn == TURN_PLAYER)
-            ? vram->vTiles2 + LEN_2BPP_TILE * 0x31
-            : vram->vTiles2 + LEN_2BPP_TILE * 0x00,
-        pixels, tileCount * LEN_2BPP_TILE);
+    UpdateBattleSceneBattlerImage((hram.hBattleTurn == TURN_PLAYER)
+            ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT,
+        pixels, tileCount);
 
     // POP_AF;
     // LDH_addr_A(rSVBK);
@@ -1482,9 +1481,9 @@ void BattleAnimCmd_Minimize(void){
 
     uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
     size_t tileCount = BuildMinimizePic(pixels);
-    // LD_HL(vTiles0 + LEN_2BPP_TILE * 0x00);
-    // CALL(aRequest2bpp);
-    CopyBytes(vram->vTiles0 + LEN_2BPP_TILE * 0x00, pixels, tileCount * LEN_2BPP_TILE);
+    UpdateBattleSceneBattlerImage((hram.hBattleTurn == TURN_PLAYER)
+            ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT,
+        pixels, tileCount);
 
     // POP_AF;
     // LDH_addr_A(rSVBK);
@@ -1546,9 +1545,9 @@ void BattleAnimCmd_BeatUp(void){
         // LD_HL(wBattleMonDVs);
         // PREDEF(pGetUnownLetter);
         GetUnownLetter(wram->wBattleMon.dvs);
-        // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x00);
-        // PREDEF(pGetMonFrontpic);
-        GetMonFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00);
+        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+        if(LoadNativeFrontpicPixels(pixels, 0))
+            UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7);
         // goto done;
     }
     else {
@@ -1556,9 +1555,9 @@ void BattleAnimCmd_BeatUp(void){
         // LD_HL(wEnemyMonDVs);
         // PREDEF(pGetUnownLetter);
         GetUnownLetter(wram->wEnemyMon.dvs);
-        // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
-        // PREDEF(pGetMonBackpic);
-        GetMonBackpic(vram->vTiles2 + LEN_2BPP_TILE * 0x31, wram->wCurPartySpecies);
+        uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
+        if(LoadNativeBackpicPixels(pixels, wram->wCurPartySpecies))
+            UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6);
     }
 
 // done:

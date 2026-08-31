@@ -6,6 +6,7 @@
 #include "../../home/delay.h"
 #include "../../home/palettes.h"
 #include "../../home/sine.h"
+#include <stdlib.h>
 
 // static int8_t* lBattlePicResizeTempPointer;
 
@@ -580,28 +581,16 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
             BattleBGEffects_IncAnonJumptableIndex(bc);
             // CALL(aBGEffect_CheckBattleTurn);
             // IF_NZ goto player_side;
-            uint8_t* hl;
-            uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0) {
-                // hlcoord(12, 0, wTilemap);
-                hl = coord(12, 0, wram->wTilemap);
-                // LD_BC((7 << 8) | 7);
-                b = 7;
-                c = 7;
+                SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
                 // goto got_pointer;
             }
             else {
             // player_side:
-                // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, wram->wTilemap);
-                // LD_BC((6 << 8) | 6);
-                b = 6;
-                c = 6;
+                SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
             }
 
         // got_pointer:
-            // CALL(aClearBox);
-            ClearBox(hl, c, b);
             // POP_BC;
             // XOR_A_A;
             // LDH_addr_A(hBGMapThird);
@@ -740,28 +729,18 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             // PUSH_BC;
             // CALL(aBGEffect_CheckBattleTurn);
             // IF_NZ goto player_side_2;
-            tile_t* hl;
-            uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0){
-                // hlcoord(12, 6, wTilemap);
-                hl = coord(12, 6, wram->wTilemap);
-                // LD_BC((1 << 8) | 7);
-                b = 1;
-                c = 7;
+                ClearBattleSceneBattlerRegion(BATTLE_SCENE_BATTLER_OPPONENT,
+                    12 * TILE_WIDTH, 6 * TILE_WIDTH, 7, 1);
                 // goto okay2;
             }
             else {
             // player_side_2:
-                // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, wram->wTilemap);
-                // LD_BC((1 << 8) | 6);
-                b = 1;
-                c = 6;
+                ClearBattleSceneBattlerRegion(BATTLE_SCENE_BATTLER_PLAYER,
+                    2 * TILE_WIDTH, 6 * TILE_WIDTH, 6, 1);
             }
 
         // okay2:
-            // CALL(aClearBox);
-            ClearBox(hl, c, b);
             // LD_A(0x1);
             // LDH_addr_A(hBGMapMode);
             hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
@@ -856,28 +835,18 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             BattleBGEffects_IncAnonJumptableIndex(bc);
             // CALL(aBGEffect_CheckBattleTurn);
             // IF_NZ goto player_side_2;
-            tile_t* hl;
-            uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0){
-                // hlcoord(12, 5, wTilemap);
-                hl = coord(12, 5, wram->wTilemap);
-                // LD_BC((2 << 8) | 7);
-                b = 2;
-                c = 7;
+                ClearBattleSceneBattlerRegion(BATTLE_SCENE_BATTLER_OPPONENT,
+                    12 * TILE_WIDTH, 5 * TILE_WIDTH, 7, 2);
                 // goto okay2;
             }
             else {
             // player_side_2:
-                // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, wram->wTilemap);
-                // LD_BC((2 << 8) | 6);
-                b = 2;
-                c = 6;
+                ClearBattleSceneBattlerRegion(BATTLE_SCENE_BATTLER_PLAYER,
+                    2 * TILE_WIDTH, 6 * TILE_WIDTH, 6, 2);
             }
 
         // okay2:
-            // CALL(aClearBox);
-            ClearBox(hl, c, b);
             // LD_A(0x1);
             // LDH_addr_A(hBGMapMode);
             hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
@@ -953,72 +922,10 @@ anon_dw:
             // LD_A_hl;
             // AND_A_A;
             // IF_Z goto user_2;
-            if(bc->battleTurn != 0){
-                // hlcoord(0, 6, wTilemap);
-                tile_t* hl = coord(0, 6, wram->wTilemap);
-                // LD_DE((8 << 8) | 6);
-                uint8_t d = 8;
-                uint8_t e = 6;
-
-                do {
-                // row1:
-                    // PUSH_DE;
-                    uint8_t d2 = d;
-                    // PUSH_HL;
-                    tile_t* hl2 = hl;
-                    do {
-                    // col1:
-                        // INC_HL;
-                        // LD_A_hld;
-                        // LD_hli_A;
-                        hl2[0] = hl2[1];
-                        // DEC_D;
-                        // IF_NZ goto col1;
-                    } while(hl2++, --d2 != 0);
-                    // POP_HL;
-                    // LD_DE(SCREEN_WIDTH);
-                    // ADD_HL_DE;
-                    hl += SCREEN_WIDTH;
-                    // POP_DE;
-                    // DEC_E;
-                    // IF_NZ goto row1;
-                } while(--e != 0);
-                // goto okay2;
-            }
-            else {
-            // user_2:
-                // hlcoord(19, 0, wTilemap);
-                tile_t* hl = coord(19, 0, wram->wTilemap);
-                // LD_DE((8 << 8) | 7);
-                uint8_t d = 8;
-                uint8_t e = 7;
-
-                do {
-                // row2:
-                    // PUSH_DE;
-                    uint8_t d2 = d;
-                    // PUSH_HL;
-                    tile_t* hl2 = hl;
-
-                    do {
-                    // col2:
-                        // DEC_HL;
-                        --hl2;
-                        // LD_A_hli;
-                        // LD_hld_A;
-                        hl2[1] = hl2[0];
-                        // DEC_D;
-                        // IF_NZ goto col2;
-                    } while(--d2 != 0);
-                    // POP_HL;
-                    // LD_DE(SCREEN_WIDTH);
-                    // ADD_HL_DE;
-                    hl += SCREEN_WIDTH;
-                    // POP_DE;
-                    // DEC_E;
-                    // IF_NZ goto row2;
-                } while(--e != 0);
-            }
+            if(bc->battleTurn != 0)
+                TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER, -TILE_WIDTH, 0);
+            else
+                TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT, TILE_WIDTH, 0);
 
         // okay2:
             // XOR_A_A;
@@ -1267,12 +1174,10 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // LD_B_A;
                 // AND_A(0xf);
                 // LD_C_A;
-                uint8_t c = *hl2 & 0xf;
                 // LD_A_B;
                 // SWAP_A;
                 // AND_A(0xf);
                 // LD_B_A;
-                uint8_t b = (*hl2 & 0xf0) >> 4;
                 hl2++;
                 //  get coords
                 // LD_E_hl;
@@ -1284,8 +1189,9 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // LD_H_hl;
                 // LD_L_A;
                 // REG_HL = Coords[*hl2];
-                // CALL(aClearBox);
-                ClearBox(wram->wTilemap + Coords[*hl2], c, b);
+                enum BattleSceneBattlerId battler = *hl2 < 3
+                    ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT;
+                ClearBattleSceneBattlerTiles(battler);
                 // POP_BC;
                 // RET;
                 goto zero;
@@ -1312,7 +1218,6 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // AND_A(0xf);
                 // LD_C_A;
                 uint8_t w = BGSquares[e].w;
-                uint8_t c = w;
                 // LD_A_B;
                 // SWAP_A;
                 // AND_A(0xf);
@@ -1323,7 +1228,6 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // INC_HL;
                 // LD_D_hl;
                 const uint8_t* de = BGSquares[e].ptr;
-                const uint8_t* de2;
                 //  get byte
                 // POP_HL;
                 // INC_HL;
@@ -1341,39 +1245,18 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // LD_H_hl;
                 // LD_L_A;
                 // REG_HL = Coords[hl2[2]];
-                uint8_t* hl3 = wram->wTilemap + Coords[hl2[2]];
-                // POP_DE;
-                //  fill box
-                do {
-                // row:
-                    de2 = de;
-                    // PUSH_BC;
-                    uint8_t c2 = c;
-                    // PUSH_HL;
-                    tile_t* hl4 = hl3;
-                    // LD_A_addr(wBattlePicResizeTempBaseTileID);
-                    // LD_B_A;
-                    uint8_t b = BattleAnimationEffectScratchState()->picResizeBaseTileId;
-                    do {
-                    // col:
-                        // LD_A_de;
-                        // ADD_A_B;
-                        // LD_hli_A;
-                        *(hl4++) = b + *de;
-                        // INC_DE;
-                        de += c;
-                        // DEC_C;
-                        // IF_NZ goto col;
-                    } while(--c2 != 0);
-                    // POP_HL;
-                    // LD_BC(SCREEN_WIDTH);
-                    // ADD_HL_BC;
-                    hl3 += SCREEN_WIDTH;
-                    // POP_BC;
-                    de = de2 + 1;
-                    // DEC_B;
-                    // IF_NZ goto row;
-                } while(--h != 0);
+                enum BattleSceneBattlerId battler = hl2[2] < 3
+                    ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT;
+                uint8_t imageTiles[7 * 7];
+                if((size_t)w * h > lengthof(imageTiles))
+                    abort();
+                for(size_t i = 0; i < (size_t)w * h; i++)
+                    imageTiles[i] = de[i];
+                uint8_t coordIndex = hl2[2];
+                PlaceBattleSceneBattlerPattern(battler,
+                    (Coords[coordIndex] % SCREEN_WIDTH) * TILE_WIDTH,
+                    (Coords[coordIndex] / SCREEN_WIDTH) * TILE_WIDTH,
+                    w, h, imageTiles);
                 // POP_BC;
                 // RET;
             }

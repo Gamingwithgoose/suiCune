@@ -1,10 +1,12 @@
 uint8_t GetUnownLetter(uint16_t dvs);
 void GetMonFrontpic(uint8_t* de);
 void GetAnimatedFrontpic(uint8_t* de, uint8_t frame);
+bool LoadNativeFrontpicPixels(uint8_t* de, uint8_t frame);
 void v_GetFrontpic(uint8_t* de, uint8_t frame);
 const char* GetFrontpicPointer(void);
 // void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c);
 void GetMonBackpic(uint8_t* de, species_t species);
+bool LoadNativeBackpicPixels(uint8_t* de, species_t species);
 void FixPicBank(void);
 void GSIntro_GetMonFrontpic(void);
 void GetTrainerPic(uint8_t* de, uint8_t tclass);

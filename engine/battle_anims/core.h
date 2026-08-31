@@ -104,6 +104,29 @@ enum BattleSceneLayer {
     BATTLE_SCENE_LAYER_COUNT,
 };
 
+enum BattleSceneBattlerId {
+    BATTLE_SCENE_BATTLER_PLAYER,
+    BATTLE_SCENE_BATTLER_OPPONENT,
+    BATTLE_SCENE_BATTLER_COUNT,
+};
+
+// A battler picture is a native image plus an explicit tile placement list.
+// Tile coordinates describe game content layout; they do not identify VRAM.
+struct BattleSceneBattlerTile {
+    int16_t x;
+    int16_t y;
+    uint16_t imageTile;
+};
+
+struct BattleSceneBattlerView {
+    const uint8_t* pixels;
+    size_t pixelTileCount;
+    const struct BattleSceneBattlerTile* tiles;
+    size_t tileCount;
+    uint8_t palette;
+    bool visible;
+};
+
 struct BattleAnimationTileBinding {
     uint8_t graphicsId;
     uint16_t tileOffset;
@@ -126,6 +149,22 @@ uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount);
 uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount);
 uint8_t* BattleSceneBattlerTileWritePointer(uint16_t tileId, size_t tileCount);
 const uint8_t* BattleSceneBattlerPixels(void);
+void SetBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
+    const uint8_t* pixels, size_t tileCount, uint8_t width, uint8_t height,
+    int16_t x, int16_t y, uint8_t palette);
+void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
+    const uint8_t* pixels, size_t tileCount);
+void SetBattleSceneBattlerVisible(enum BattleSceneBattlerId battler, bool visible);
+void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDelta, int16_t yDelta);
+void ClearBattleSceneBattlerTiles(enum BattleSceneBattlerId battler);
+void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height);
+void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height,
+    const uint8_t* imageTiles);
+const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler);
+bool BattleSceneBattlerForTilemap(const uint8_t* tilemap, enum BattleSceneBattlerId* battler);
+void ClearBattleSceneBattlers(void);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 uint8_t BattleAnimationParameterGet(void);

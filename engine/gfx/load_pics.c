@@ -133,14 +133,20 @@ void GetAnimatedFrontpic(uint8_t* de, uint8_t frame){
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_NONE;
     uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
-    // CALL(av_GetFrontpic);
     uint8_t* rawPixels = LoadFrontpicPixels(de, frame, paddedPixels);
-    // CALL(aGetAnimatedEnemyFrontpic);
     BuildAnimatedEnemyFrontpic(de, paddedPixels, rawPixels);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     gb_write(rSVBK, svbk);
     // RET;
+}
+
+bool LoadNativeFrontpicPixels(uint8_t* de, uint8_t frame){
+    if(!IsAPokemon(wram->wCurSpecies))
+        return false;
+    uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
+    LoadFrontpicPixels(de, frame, paddedPixels);
+    return true;
 }
 
 void v_GetFrontpic(uint8_t* de, uint8_t frame){
@@ -290,8 +296,12 @@ void GetMonBackpic(uint8_t* de, species_t species){
     // LD_A_addr(wCurPartySpecies);
     // CALL(aIsAPokemon);
     // RET_C ;
+    LoadNativeBackpicPixels(de, species);
+}
+
+bool LoadNativeBackpicPixels(uint8_t* de, species_t species){
     if(!IsAPokemon(species))
-        return;
+        return false;
 
     // LD_A_addr(wCurPartySpecies);
     // LD_B_A;
@@ -349,6 +359,7 @@ void GetMonBackpic(uint8_t* de, species_t species){
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // RET;
+    return true;
 }
 
 void FixPicBank(void){

@@ -5661,3 +5661,73 @@ Validation and remaining boundary
 - Next dependency closure: migrate persistent player/opponent Pokémon picture
   resources, tilemap placement, visibility, and attribute ownership into the
   battle scene before replacing the remaining battle-specific VRAM imports.
+
+2026-08-31 — Native persistent battle battler images and tile placement
+==========================================================================
+
+Completed work
+--------------
+- Added native player and opponent battler resources with growable decoded
+  pixel storage, semantic tile placement, native palette selection, and
+  visibility state. Their runtime identities are no longer VRAM tile ranges.
+- Moved battle player back-picture and opponent front-picture loading to direct
+  native asset decoding. The battle paths no longer stage either initial image
+  through `vTiles2` before presentation.
+- Added native SDL composition for persistent battlers between the background
+  plane and sprite layers. The compositor reads only the native image and tile
+  placement state for the migrated battler regions.
+- Migrated picture hide, show/resize placement, one-row/two-row battler object
+  extraction, remove-slide translation, substitute, minimize, transform,
+  Beat Up, send-out reload, and faint visibility completion to the native
+  battler state where they directly affect persistent Pokémon pictures.
+- Battle picture animation now recognizes the native opponent region and
+  updates the native resource and placement rather than writing that battle
+  region or its attribute bits through the shared tilemap.
+- Battle animation reset preserves active native battler resources; battle exit
+  releases them explicitly.
+
+Ownership and compatibility boundary
+------------------------------------
+- Native battler resources authoritatively own the migrated player/opponent
+  decoded pixels, tile placement, palette, and visibility. `wTilemap` and
+  `wAttrmap` are not authoritative for those persistent Pokémon regions.
+- The generic LCD background and OAM paths remain for unmigrated battle UI,
+  trainer pictures, and the rest of the application. No new synchronized
+  battle tilemap was introduced, and no VRAM projection is required for the
+  migrated persistent Pokémon renderer.
+- The general background renderer, full battle UI tilemap, scanline scheduler,
+  and generic OAM backend remain outside this dependency closure.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle/core.c`
+- `engine/gfx/load_pics.h`
+- `engine/gfx/load_pics.c`
+- `engine/gfx/pic_animation.c`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and remaining work
+-----------------------------
+- Windows Release build completed successfully with `build_windows_release.bat
+  --no-pause`. Runtime battle validation was not performed.
+- Static review: remaining `vram`, `wTilemap`, `wAttrmap`, OAM, and GB-address
+  uses in the touched files belong to unmigrated UI/trainer/general-renderer
+  paths, legacy fallbacks for non-battle picture views, or unrelated animation
+  scheduling. The native persistent battler path no longer reads those stores.
+- The historical disappearing-player, incomplete-Leer, and Tackle-crash cases
+  were not runtime-tested in this session; no move-specific workaround was
+  added. The migrated effect lifetime remains separate from persistent native
+  battler state.
+- Dynamic battler resource and placement arrays grow before writes and expose
+  only immutable compositor views. Existing animation/background-effect pool
+  index reacquisition remains in place; no new callback retains a pointer into
+  a reallocatable pool.
+- Next dependency closure: migrate native battler transform/faint motion and
+  background palette effects completely out of the remaining generic tilemap
+  and scanline presentation path, then replace the general battle tile/UI
+  background renderer without reintroducing a synchronized WRAM sidecar.

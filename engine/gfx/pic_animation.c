@@ -6,6 +6,7 @@
 #include "../../home/text.h"
 #include "dma_transfer.h"
 #include "../gfx/load_pics.h"
+#include "../battle_anims/core.h"
 #include "../../gfx/pokemon/anims.h"
 #include "../../gfx/pokemon/idles.h"
 #include "../../gfx/pokemon/unown_anims.h"
@@ -79,6 +80,7 @@ static void PokeAnim_StartWaitAnim(void);
 static void PokeAnim_StopWaitAnim(void);
 static bool PokeAnim_IsUnown(species_t a);
 static bool PokeAnim_IsEgg(void);
+static bool PokeAnim_BattleSceneBattler(enum BattleSceneBattlerId* battler);
 
 static void PokeAnim_GetPointer(void);
 static void PokeAnim_PlaceGraphic(void);
@@ -485,7 +487,15 @@ static void PokeAnim_DeinitFrames(void){
     // PUSH_AF;
     // LD_A(BANK(wPokeAnimCoord));
     // LDH_addr_A(rSVBK);
-    GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, 0);
+    enum BattleSceneBattlerId battler;
+    if(PokeAnim_BattleSceneBattler(&battler)) {
+        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+        if(LoadNativeFrontpicPixels(pixels, 0))
+            UpdateBattleSceneBattlerImage(battler, pixels, 7 * 7);
+    }
+    else {
+        GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, 0);
+    }
     // CALL(aPokeAnim_PlaceGraphic);
     PokeAnim_PlaceGraphic();
     // FARCALL(aHDMATransferTilemapToWRAMBank3);
@@ -729,7 +739,15 @@ static void PokeAnim_GetFrame(void){
     // CALL(aPokeAnim_CopyBitmaskToBuffer);
     // POP_HL;
     // CALL(aPokeAnim_ConvertAndApplyBitmask);
-    GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, pokeAnim->command);
+    enum BattleSceneBattlerId battler;
+    if(PokeAnim_BattleSceneBattler(&battler)) {
+        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+        if(LoadNativeFrontpicPixels(pixels, pokeAnim->command))
+            UpdateBattleSceneBattlerImage(battler, pixels, 7 * 7);
+    }
+    else {
+        GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, pokeAnim->command);
+    }
     // RET;
 
 }
@@ -1121,7 +1139,19 @@ static void PokeAnim_PlaceGraphic_ClearBox(void) {
     return ClearBox(lPokeAnimCoord, 7, 7);
 }
 
+static bool PokeAnim_BattleSceneBattler(enum BattleSceneBattlerId* battler){
+    return wram->wBattleMode != 0 && BattleSceneBattlerForTilemap(lPokeAnimCoord, battler);
+}
+
 static void PokeAnim_PlaceGraphic(void){
+    enum BattleSceneBattlerId battler;
+    if(PokeAnim_BattleSceneBattler(&battler)) {
+        uint8_t imageTiles[7 * 7];
+        for(size_t i = 0; i < lengthof(imageTiles); i++)
+            imageTiles[i] = i;
+        PlaceBattleSceneBattlerPattern(battler, 12 * TILE_WIDTH, 0, 7, 7, imageTiles);
+        return;
+    }
     // CALL(aPokeAnim_PlaceGraphic_ClearBox);
     PokeAnim_PlaceGraphic_ClearBox();
     // LD_A_addr(wBoxAlignment);
@@ -1230,6 +1260,9 @@ static void PokeAnim_SetVBank1(void){
     // XOR_A_A;
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_NONE;
+    enum BattleSceneBattlerId battler;
+    if(PokeAnim_BattleSceneBattler(&battler))
+        return;
     // CALL(aPokeAnim_SetVBank1_SetFlag);
     PokeAnim_SetVBank1_SetFlag();
 
@@ -1241,6 +1274,9 @@ static void PokeAnim_SetVBank1(void){
 }
 
 static void PokeAnim_SetVBank0(void){
+    enum BattleSceneBattlerId battler;
+    if(PokeAnim_BattleSceneBattler(&battler))
+        return;
     // CALL(aPokeAnim_GetAttrmapCoord);
     uint8_t* hl = PokeAnim_GetAttrmapCoord();
     // LD_B(7);

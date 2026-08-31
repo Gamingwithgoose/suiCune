@@ -927,6 +927,38 @@ static void DrawObjectSprite(uint8_t pixels[LCD_WIDTH], const uint8_t pixelsPrio
     }
 }
 
+static void DrawBattleSceneBattler(uint8_t pixels[LCD_WIDTH], uint8_t pixelsPrio[LCD_WIDTH],
+    const struct BattleSceneBattlerView* battler) {
+    if(battler == NULL || !battler->visible || battler->pixels == NULL)
+        return;
+    for(size_t tileIndex = 0; tileIndex < battler->tileCount; tileIndex++) {
+        const struct BattleSceneBattlerTile* tile = &battler->tiles[tileIndex];
+        if(tile->imageTile >= battler->pixelTileCount)
+            continue;
+        int16_t y = tile->y - gb.gb_reg.SCY;
+        int16_t x = tile->x - gb.gb_reg.SCX;
+        int py = gb.gb_reg.LY - y;
+        if(py < 0 || py >= TILE_WIDTH)
+            continue;
+        const uint8_t* source = battler->pixels + (size_t)tile->imageTile * LEN_2BPP_TILE;
+        uint8_t low = source[py * 2];
+        uint8_t high = source[py * 2 + 1];
+        for(uint8_t bit = 0; bit < TILE_WIDTH; bit++) {
+            int displayX = x + (TILE_WIDTH - 1 - bit);
+            if(displayX < 0 || displayX >= LCD_WIDTH)
+                continue;
+            uint8_t color = (low & 1) | ((high & 1) << 1);
+            if(gb.cgb.cgbMode)
+                pixels[displayX] = (battler->palette << 2) + color;
+            else
+                pixels[displayX] = gb.display.bg_palette[color] | LCD_PALETTE_BG;
+            pixelsPrio[displayX] = 0;
+            low >>= 1;
+            high >>= 1;
+        }
+    }
+}
+
 void gb_draw_line(void) {
     for(int i = 0; i < 32; ++i) {
         finish_gb_cycle();
@@ -1126,6 +1158,13 @@ void gb_draw_line(void) {
         }
 
         gb.display.window_clear++;  // advance window line
+    }
+
+    // Battle battlers are native background-scene resources, rendered before
+    // sprite layers. Their tile placement and palette are not read from VRAM.
+    for(uint8_t battler = BATTLE_SCENE_BATTLER_PLAYER;
+        battler < BATTLE_SCENE_BATTLER_COUNT; battler++) {
+        DrawBattleSceneBattler(pixels, pixelsPrio, BattleSceneBattler(battler));
     }
 
     // draw sprites

@@ -4793,14 +4793,16 @@ static void EnemyMonFaintedAnimation(void){
     // hlcoord(12, 5, wTilemap);
     // decoord(12, 6, wTilemap);
     // JP(mMonFaintedAnimation);
-    return MonFaintedAnimation(coord(12, 6, wram->wTilemap), coord(12, 5, wram->wTilemap));
+    MonFaintedAnimation(coord(12, 6, wram->wTilemap), coord(12, 5, wram->wTilemap));
+    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
 }
 
 static void PlayerMonFaintedAnimation(void){
     // hlcoord(1, 10, wTilemap);
     // decoord(1, 11, wTilemap);
     // JP(mMonFaintedAnimation);
-    return MonFaintedAnimation(coord(1, 11, wram->wTilemap), coord(1, 10, wram->wTilemap));
+    MonFaintedAnimation(coord(1, 11, wram->wTilemap), coord(1, 10, wram->wTilemap));
+    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
 }
 
 static void MonFaintedAnimation(tile_t* de, tile_t* hl){
@@ -12266,9 +12268,11 @@ void DropPlayerSub(void){
     // LD_HL(wBattleMonDVs);
     // PREDEF(pGetUnownLetter);
     GetUnownLetter(wram->wBattleMon.dvs);
-    // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
-    // PREDEF(pGetMonBackpic);
-    GetMonBackpic(vram->vTiles2 + LEN_2BPP_TILE * 0x31, wram->wCurPartySpecies);
+    uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
+    if(LoadNativeBackpicPixels(pixels, wram->wCurPartySpecies)) {
+        SetBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6,
+            6, 6, 2 * TILE_WIDTH, 6 * TILE_WIDTH, PAL_BATTLE_BG_PLAYER);
+    }
     // POP_AF;
     // LD_addr_A(wCurPartySpecies);
     wram->wCurPartySpecies = species;
@@ -12324,9 +12328,11 @@ void DropEnemySub(void){
     // LD_HL(wEnemyMonDVs);
     // PREDEF(pGetUnownLetter);
     GetUnownLetter(wram->wEnemyMon.dvs);
-    // LD_DE(vTiles2);
-    // PREDEF(pGetAnimatedFrontpic);
-    GetAnimatedFrontpic(vram->vTiles2, 0);
+    uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+    if(LoadNativeFrontpicPixels(pixels, 0)) {
+        SetBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7,
+            7, 7, 12 * TILE_WIDTH, 0, PAL_BATTLE_BG_ENEMY);
+    }
     // POP_AF;
     // LD_addr_A(wCurPartySpecies);
     wram->wCurPartySpecies = species;
@@ -12628,16 +12634,14 @@ static void InitEnemyWildmon(void){
     }
 
 // skip_unown:
-    // LD_DE(vTiles2);
-    // PREDEF(pGetAnimatedFrontpic);
-    GetAnimatedFrontpic(vram->vTiles2, 0);
+    uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
+    if(LoadNativeFrontpicPixels(pixels, 0)) {
+        SetBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7,
+            7, 7, 12 * TILE_WIDTH, 0, PAL_BATTLE_BG_ENEMY);
+    }
     // XOR_A_A;
     // LD_addr_A(wTrainerClass);
     wram->wTrainerClass = 0;
-    // hlcoord(12, 0, wTilemap);
-    // LD_BC((7 << 8) | 7);
-    // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStaggerNative(coord(12, 0, wram->wTilemap), 0, 7, 7);
     // RET;
 }
 
@@ -12730,6 +12734,7 @@ static void ExitBattle_HandleEndOfBattle(void){
 }
 
 void ExitBattle(void){
+    ClearBattleSceneBattlers();
     ClearBattleAnimationHudSprites();
     // CALL(aExitBattle_HandleEndOfBattle);
     ExitBattle_HandleEndOfBattle();
@@ -13709,11 +13714,6 @@ static void InitBattleDisplay(void){
     // LD_A(0x1);
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
-    // LD_A(0x31);
-    // hlcoord(2, 6, wTilemap);
-    // LD_BC((6 << 8) | 6);
-    // PREDEF(pPlaceGraphic);
-    PlaceGraphicNative(coord(2, 6, wram->wTilemap), 0x31, 6, 6);
     // XOR_A_A;
     // LDH_addr_A(hWY);
     hram.hWY = 0;
