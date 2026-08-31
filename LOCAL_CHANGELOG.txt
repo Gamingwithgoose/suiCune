@@ -4638,3 +4638,48 @@ Exact stopping point and next recommended task
 - Next: replace the remaining `pPlaceGraphic` predef route with typed native
   invocation, then move tilemap picture output itself out of legacy VRAM/tile
   identity ownership.
+
+2026-08-30 — Native physical input authority
+=============================================
+
+Completed work
+--------------
+- Removed the last active C writes to the physical joypad HRAM mirror fields
+  (`hJoypadReleased`, `hJoypadPressed`, `hJoypadDown`, and `hJoypadSum`).
+  `UpdateJoypad` now advances only the existing native SDL input state.
+- Confirmed that current C gameplay reads physical and logical input through
+  `NativeInput*` APIs rather than through those four HRAM fields.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- SDL-backed `NativeInputState` is now the sole active C authority for
+  physical input. Logical-input state remains native as well.
+- The four HRAM slots remain in the legacy address-map layout only. They can
+  be removed when the emulated address map, its layout assertions, and any
+  legacy bytecode/ASM boundary no longer require those historical addresses.
+- No temporary state synchronization was introduced and no ASM was deleted.
+
+Source-level validation and risks
+---------------------------------
+- Searched non-ASM C sources for all physical and logical joypad HRAM names.
+  The removed writes were the only active C accesses to the physical mirror
+  fields; other results are declarations or source-provenance comments.
+- The native state advance ordering and input-disable checks are unchanged.
+  Runtime coverage remains needed for input while saving, scripted input, and
+  all controller/keyboard mappings.
+
+Files modified
+--------------
+- `home/joypad.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing active C ownership of the physical joypad HRAM
+  mirrors.
+- Next: replace native frame progression's VBlank/emulator coupling with a
+  platform frame scheduler while retaining the same gameplay cadence.

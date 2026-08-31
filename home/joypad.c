@@ -48,13 +48,6 @@ void ClearJoypadLast(void) {
 // This is called automatically every frame in VBlank. SDL input arrives as
 // native action bits. Logical input is advanced separately by GetJoypad.
 void UpdateJoypad(void) {
-    //  Updates:
-
-    //  hJoypadReleased: released this frame (delta)
-    //  hJoypadPressed: pressed this frame (delta)
-    //  hJoypadDown: currently pressed
-    //  hJoypadSum: pressed so far
-
     //  Any of these three bits can be used to disable input.
     uint8_t disable = wram->wJoypadDisable;
     if((disable & ((1 << JOYPAD_DISABLE_MON_FAINT_F) | (1 << JOYPAD_DISABLE_SGB_TRANSFER_F) | (1 << 4))) != 0)
@@ -65,22 +58,9 @@ void UpdateJoypad(void) {
         return;
 
     NativeInputAdvanceFrame();
-    hram.hJoypadReleased = NativeInputReleased();
-    hram.hJoypadPressed = NativeInputPressed();
-    hram.hJoypadSum = NativeInputPressesSinceClear();
-    hram.hJoypadDown = NativeInputHeld();
-
-    //  Now that we have the input, we can do stuff with it.
-
-    //  For example, soft reset:
-    // AND_A(A_BUTTON | B_BUTTON | SELECT | START);
-    // CP_A(A_BUTTON | B_BUTTON | SELECT | START);
-    // JP_Z (mReset);
-
-    // RET;
 }
 
-//  Update mirror joypad input from hJoypadDown (real input)
+// Advance the native logical input stream from native physical input.
 void GetJoypad(void) {
     //  hJoyReleased: released this frame (delta)
     //  hJoyPressed: pressed this frame (delta)
