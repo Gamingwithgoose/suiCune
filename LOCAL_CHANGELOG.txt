@@ -5542,3 +5542,52 @@ Current state and next task
   First design and implement a complete native battle-scene sprite compositor
   with verified trainer/send-out/battler ownership, then migrate scanline
   scheduling only alongside its native display scheduler.
+
+2026-08-31 — Revert remaining battle-animation tilemap regression
+===================================================================
+
+Regression correction
+---------------------
+- After the virtual-OAM and scanline-control reversions, user testing still
+  reported disappearing battlers, truncated Leer, and a Tackle-path crash.
+  This isolated the unvalidated tilemap presentation copy as the remaining
+  candidate introduced by this conversion series.
+- Removed the animation-local tilemap copy, its public accessor, and the
+  renderer selection in the full-tilemap and incremental background-update
+  paths. Battle animation effects again update the established shared tilemap.
+- This is a regression rollback, not a native conversion. It deliberately
+  restores the prior known working ownership path rather than retaining a
+  partially functional duplicate tilemap.
+
+Files modified by the correction
+--------------------------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `home/tilemap.c`
+- `home/video.c`
+- `LOCAL_CHANGELOG.txt`
+
+Completed / partial / remaining work
+------------------------------------
+- Completed: the tilemap presentation copy and all of its callers were
+  removed coherently; no `BattleAnimationTilemap` API remains.
+- Partially completed: native battle-animation palette and scanline buffers
+  from the earlier validated work remain. They are separate from this reverted
+  tilemap experiment.
+- Untouched: a complete native battle-scene compositor, baseline scene state,
+  tilemap/attribute-map ownership, animation content representation, and ASM
+  retirement proof. No ASM file was deleted.
+
+Validation and next task
+------------------------
+- Source inspection: no remaining `BattleAnimationTilemap` reference exists.
+  The renderer and effects consistently use the shared tilemap again.
+- Build/runtime validation: NOT PERFORMED locally — per user instruction.
+- Exact stopping point: source is at the pre-tilemap-copy presentation path;
+  user rebuild/runtime testing is needed to confirm the reported regression is
+  gone.
+- Next recommended task: retain the shared tilemap until a complete native
+  battle-scene compositor can own baseline tiles, attributes, sprites, and
+  update scheduling together with focused runtime coverage.

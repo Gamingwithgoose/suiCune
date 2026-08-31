@@ -38,7 +38,6 @@ struct NativeBattleAnimationState {
 
 struct BattleAnimationPresentationState {
     bool active;
-    tile_t tilemap[SCREEN_WIDTH * SCREEN_HEIGHT];
     uint8_t dmgBGPalette;
     uint8_t dmgObjectPalette0;
     uint8_t dmgObjectPalette1;
@@ -217,7 +216,6 @@ void BeginBattleAnimationPresentation(void){
     struct BattleAnimationPresentationState* presentation = &sBattleAnimationPresentation;
     memset(presentation, 0, sizeof(*presentation));
     presentation->active = true;
-    memcpy(presentation->tilemap, wram->wTilemap, sizeof(presentation->tilemap));
     presentation->dmgBGPalette = wram->wBGP;
     presentation->dmgObjectPalette0 = wram->wOBP0;
     presentation->dmgObjectPalette1 = wram->wOBP1;
@@ -233,10 +231,6 @@ void EndBattleAnimationPresentation(void){
 
 bool BattleAnimationPresentationActive(void){
     return sBattleAnimationPresentation.active;
-}
-
-tile_t* BattleAnimationTilemap(void){
-    return sBattleAnimationPresentation.tilemap;
 }
 
 uint8_t* BattleAnimationScanlineOverrides(void){

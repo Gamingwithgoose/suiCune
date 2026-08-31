@@ -582,7 +582,7 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
             uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0) {
                 // hlcoord(12, 0, wTilemap);
-                hl = coord(12, 0, BattleAnimationTilemap());
+                hl = coord(12, 0, wram->wTilemap);
                 // LD_BC((7 << 8) | 7);
                 b = 7;
                 c = 7;
@@ -591,7 +591,7 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
             else {
             // player_side:
                 // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, BattleAnimationTilemap());
+                hl = coord(2, 6, wram->wTilemap);
                 // LD_BC((6 << 8) | 6);
                 b = 6;
                 c = 6;
@@ -742,7 +742,7 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0){
                 // hlcoord(12, 6, wTilemap);
-                hl = coord(12, 6, BattleAnimationTilemap());
+                hl = coord(12, 6, wram->wTilemap);
                 // LD_BC((1 << 8) | 7);
                 b = 1;
                 c = 7;
@@ -751,7 +751,7 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
             else {
             // player_side_2:
                 // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, BattleAnimationTilemap());
+                hl = coord(2, 6, wram->wTilemap);
                 // LD_BC((1 << 8) | 6);
                 b = 1;
                 c = 6;
@@ -858,7 +858,7 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             uint8_t b, c;
             if(BGEffect_CheckBattleTurn(bc) == 0){
                 // hlcoord(12, 5, wTilemap);
-                hl = coord(12, 5, BattleAnimationTilemap());
+                hl = coord(12, 5, wram->wTilemap);
                 // LD_BC((2 << 8) | 7);
                 b = 2;
                 c = 7;
@@ -867,7 +867,7 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
             else {
             // player_side_2:
                 // hlcoord(2, 6, wTilemap);
-                hl = coord(2, 6, BattleAnimationTilemap());
+                hl = coord(2, 6, wram->wTilemap);
                 // LD_BC((2 << 8) | 6);
                 b = 2;
                 c = 6;
@@ -953,7 +953,7 @@ anon_dw:
             // IF_Z goto user_2;
             if(bc->battleTurn != 0){
                 // hlcoord(0, 6, wTilemap);
-                tile_t* hl = coord(0, 6, BattleAnimationTilemap());
+                tile_t* hl = coord(0, 6, wram->wTilemap);
                 // LD_DE((8 << 8) | 6);
                 uint8_t d = 8;
                 uint8_t e = 6;
@@ -986,7 +986,7 @@ anon_dw:
             else {
             // user_2:
                 // hlcoord(19, 0, wTilemap);
-                tile_t* hl = coord(19, 0, BattleAnimationTilemap());
+                tile_t* hl = coord(19, 0, wram->wTilemap);
                 // LD_DE((8 << 8) | 7);
                 uint8_t d = 8;
                 uint8_t e = 7;
@@ -1283,7 +1283,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // LD_L_A;
                 // REG_HL = Coords[*hl2];
                 // CALL(aClearBox);
-                ClearBox(BattleAnimationTilemap() + Coords[*hl2], c, b);
+                ClearBox(wram->wTilemap + Coords[*hl2], c, b);
                 // POP_BC;
                 // RET;
                 goto zero;
@@ -1339,7 +1339,7 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
                 // LD_H_hl;
                 // LD_L_A;
                 // REG_HL = Coords[hl2[2]];
-                uint8_t* hl3 = BattleAnimationTilemap() + Coords[hl2[2]];
+                uint8_t* hl3 = wram->wTilemap + Coords[hl2[2]];
                 // POP_DE;
                 //  fill box
                 do {
