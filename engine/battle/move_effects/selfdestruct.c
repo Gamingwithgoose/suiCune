@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "selfdestruct.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../check_battle_scene.h"
 #include "../../../home/delay.h"
@@ -31,7 +32,7 @@ void BattleCommand_Selfdestruct(void){
     hl[3] = 0;
     // LD_A(0x1);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0x1;
+    BattleAnimationParameterSet(0x1);
     // CALL(aBattleCommand_LowerSub);
     BattleCommand_LowerSub();
     // CALL(aLoadMoveAnim);

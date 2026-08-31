@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "metronome.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../../../home/battle_vars.h"
 #include "../../../data/moves/metronome_exception_moves.h"
@@ -24,12 +25,12 @@ void BattleCommand_Metronome(void){
     if(!CheckUserIsCharging()) {
         // LD_A_addr(wBattleAnimParam);
         // PUSH_AF;
-        uint8_t param = wram->wBattleAnimParam;
+        uint8_t param = BattleAnimationParameterGet();
         // CALL(aBattleCommand_LowerSub);
         BattleCommand_LowerSub();
         // POP_AF;
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = param;
+        BattleAnimationParameterSet(param);
     }
 
 // charging:

@@ -6,6 +6,7 @@
 #include "misc.h"
 #include "used_move_text.h"
 #include "../battle_anims/anim_commands.h"
+#include "../battle_anims/core.h"
 #include "../../data/items/attributes.h"
 #include "../../data/types/type_matchups.h"
 #include "../../data/types/type_boost_items.h"
@@ -208,7 +209,7 @@ void BattleCommand_CheckTurn(void){
     // LD_addr_A(wEffectFailed);
     wram->wEffectFailed = FALSE;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0;
+    BattleAnimationParameterSet(0);
     // LD_addr_A(wAlreadyDisobeyed);
     wram->wAlreadyDisobeyed = FALSE;
     // LD_addr_A(wAlreadyFailed);
@@ -2794,7 +2795,7 @@ void BattleCommand_LowerSub(void){
     wram->wFXAnimID &= 0xff; // Clear high byte
     // INC_A;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 1;
+    BattleAnimationParameterSet(1);
     // LD_A(SUBSTITUTE);
     // JP(mLoadAnim);
     return LoadAnim(SUBSTITUTE);
@@ -2874,7 +2875,7 @@ void BattleCommand_MoveAnimNoSub(void){
             // AND_A(1);
             // XOR_A(1);
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = (wram->wBattleAnimParam & 1) ^ 1;
+            BattleAnimationParameterSet((BattleAnimationParameterGet() & 1) ^ 1);
             // LD_A_de;
             // CP_A(1);
             // PUSH_AF;
@@ -2896,7 +2897,7 @@ void BattleCommand_MoveAnimNoSub(void){
         default:
             // XOR_A_A;
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = 0;
+            BattleAnimationParameterSet(0);
             // fallthrough
 
         // CP_A(EFFECT_TRIPLE_KICK);
@@ -2968,7 +2969,7 @@ void BattleCommand_StatUpDownAnim(uint8_t anim){
     wram->wNumHits = anim;
     // XOR_A_A;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0;
+    BattleAnimationParameterSet(0);
     // LD_A(BATTLE_VARS_MOVE_ANIM);
     // CALL(aGetBattleVar);
     // LD_E_A;
@@ -3009,7 +3010,7 @@ void BattleCommand_RaiseSub(void){
     wram->wFXAnimID &= 0xff;
     // LD_A(0x2);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0x2;
+    BattleAnimationParameterSet(0x2);
     // LD_A(SUBSTITUTE);
     // JP(mLoadAnim);
     return LoadAnim(SUBSTITUTE);
@@ -3299,7 +3300,7 @@ void GetFailureResultText(void){
         StdBattleTextbox(CrashedText);
         // LD_A(0x1);
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 0x1;
+        BattleAnimationParameterSet(0x1);
         // CALL(aLoadMoveAnim);
         LoadMoveAnim();
         // LD_C(TRUE);
@@ -3534,7 +3535,7 @@ void BattleCommand_CheckFaint(void){
         wram->wFXAnimID &= 0xff;
         // INC_A;
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 1;
+        BattleAnimationParameterSet(1);
         // LD_A(DESTINY_BOND);
         // CALL(aLoadAnim);
         LoadAnim(DESTINY_BOND);
@@ -7516,7 +7517,7 @@ void BattleCommand_ForceSwitch(void){
             UpdateBattleMonInParty();
             // LD_A(0x1);
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = 0x1;
+            BattleAnimationParameterSet(0x1);
             // CALL(aAnimateCurrentMove);
             AnimateCurrentMove();
             // LD_C(20);
@@ -7600,7 +7601,7 @@ void BattleCommand_ForceSwitch(void){
             UpdateEnemyMonInParty();
             // LD_A(0x1);
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = 0x1;
+            BattleAnimationParameterSet(0x1);
             // CALL(aAnimateCurrentMove);
             AnimateCurrentMove();
             // LD_C(0x14);
@@ -7711,7 +7712,7 @@ void BattleCommand_ForceSwitch(void){
     SetBattleDraw();
     // LD_A(0x1);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0x1;
+    BattleAnimationParameterSet(0x1);
     // CALL(aAnimateCurrentMove);
     AnimateCurrentMove();
     // LD_C(20);
@@ -8322,7 +8323,7 @@ void BattleCommand_Charge(void){
     wram->wNumHits = 0;
     // INC_A;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 1;
+    BattleAnimationParameterSet(1);
     // CALL(aLoadMoveAnim);
     LoadMoveAnim();
     // LD_A(BATTLE_VARS_MOVE_ANIM);
@@ -9878,12 +9879,12 @@ void AnimateCurrentMoveEitherSide(void){
     // PUSH_BC;
     // LD_A_addr(wBattleAnimParam);
     // PUSH_AF;
-    uint8_t param = wram->wBattleAnimParam;
+    uint8_t param = BattleAnimationParameterGet();
     // CALL(aBattleCommand_LowerSub);
     BattleCommand_LowerSub();
     // POP_AF;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = param;
+    BattleAnimationParameterSet(param);
     // CALL(aPlayDamageAnim);
     PlayDamageAnim();
     // CALL(aBattleCommand_RaiseSub);
@@ -9900,12 +9901,12 @@ void AnimateCurrentMove(void){
     // PUSH_BC;
     // LD_A_addr(wBattleAnimParam);
     // PUSH_AF;
-    uint8_t param = wram->wBattleAnimParam;
+    uint8_t param = BattleAnimationParameterGet();
     // CALL(aBattleCommand_LowerSub);
     BattleCommand_LowerSub();
     // POP_AF;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = param;
+    BattleAnimationParameterSet(param);
     // CALL(aLoadMoveAnim);
     LoadMoveAnim();
     // CALL(aBattleCommand_RaiseSub);

@@ -21,6 +21,7 @@
 #include "../../home/string.h"
 #include "../../home/sram.h"
 #include "../battle_anims/anim_commands.h"
+#include "../battle_anims/core.h"
 #include "../battle/returntobattle_useball.h"
 #include "../battle/effect_commands.h"
 #include "../battle/core.h"
@@ -750,9 +751,9 @@ void PokeBallEffect(void){
 
 // not_kurt_ball:
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = (gNativeUI.currentItem < POKE_BALL + 1)
+    BattleAnimationParameterSet((gNativeUI.currentItem < POKE_BALL + 1)
         ? (uint8_t)gNativeUI.currentItem
-        : POKE_BALL;
+        : POKE_BALL);
 
     // LD_DE(ANIM_THROW_POKE_BALL);
     // LD_A_E;
@@ -3941,7 +3942,7 @@ void UseBallInTrainerBattle(void){
     wram->wFXAnimID = ANIM_THROW_POKE_BALL;
     // XOR_A_A;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0;
+    BattleAnimationParameterSet(0);
     // LDH_addr_A(hBattleTurn);
     hram.hBattleTurn = TURN_PLAYER;
     // LD_addr_A(wNumHits);

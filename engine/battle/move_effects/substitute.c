@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "substitute.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../../../home/battle_vars.h"
 #include "../../../home/battle.h"
 #include "../check_battle_scene.h"
@@ -110,7 +111,7 @@ void BattleCommand_Substitute(void){
         // LD_addr_A(wFXAnimID + 1);
         wram->wFXAnimID &= 0xff;
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 0;
+        BattleAnimationParameterSet(0);
         // LD_A(SUBSTITUTE);
         // CALL(aLoadAnim);
         LoadAnim(SUBSTITUTE);

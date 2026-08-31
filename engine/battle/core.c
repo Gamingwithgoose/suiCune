@@ -5649,7 +5649,7 @@ void ShowSetEnemyMonAndSendOutAnimation(void){
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0;
+    BattleAnimationParameterSet(0);
     // CALL(aSetEnemyTurn);
     SetEnemyTurn();
     // LD_DE(ANIM_SEND_OUT_MON);
@@ -5661,7 +5661,7 @@ void ShowSetEnemyMonAndSendOutAnimation(void){
     if(BattleCheckEnemyShininess()) {
         // LD_A(1);  // shiny anim
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 1;
+        BattleAnimationParameterSet(1);
         // LD_DE(ANIM_SEND_OUT_MON);
         // CALL(aCall_PlayBattleAnim);
         Call_PlayBattleAnim(ANIM_SEND_OUT_MON);
@@ -6393,7 +6393,7 @@ void SendOutPlayerMon(void){
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0;
+    BattleAnimationParameterSet(0);
     // LD_DE(ANIM_SEND_OUT_MON);
     // CALL(aCall_PlayBattleAnim);
     Call_PlayBattleAnim(ANIM_SEND_OUT_MON);
@@ -6402,7 +6402,7 @@ void SendOutPlayerMon(void){
     if(BattleCheckPlayerShininess()) {
         // LD_A(1);
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 1;
+        BattleAnimationParameterSet(1);
         // LD_DE(ANIM_SEND_OUT_MON);
         // CALL(aCall_PlayBattleAnim);
         Call_PlayBattleAnim(ANIM_SEND_OUT_MON);
@@ -13899,7 +13899,7 @@ static void BattleStartMessage(void){
             hram.hBattleTurn = TURN_ENEMY;
             // LD_A(1);
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = 1;
+            BattleAnimationParameterSet(1);
             // LD_DE(ANIM_SEND_OUT_MON);
             // CALL(aCall_PlayBattleAnim);
             Call_PlayBattleAnim(ANIM_SEND_OUT_MON);

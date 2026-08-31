@@ -96,6 +96,8 @@ uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount);
 uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
+uint8_t BattleAnimationParameterGet(void);
+void BattleAnimationParameterSet(uint8_t parameter);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
 const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);

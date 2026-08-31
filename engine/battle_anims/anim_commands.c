@@ -34,21 +34,9 @@ static void CopyMinimizePic(uint8_t* de);
 //  Battle animation command interpreter.
 
 void PlayBattleAnim(void){
-    // LDH_A_addr(rSVBK);
-    // PUSH_AF;
-
-    // LD_A(MBANK(awActiveAnimObjects));
-    // LDH_addr_A(rSVBK);
-    wbank_push(MBANK(awActiveAnimObjects));
-
-    // CALL(av_PlayBattleAnim);
+    // Battle-animation objects and effect state are native allocations. The
+    // entry point no longer selects the former WRAM bank that held them.
     v_PlayBattleAnim();
-
-    // POP_AF;
-    // LDH_addr_A(rSVBK);
-    // RET;
-    wbank_pop;
-
 }
 
 void v_PlayBattleAnim(void){
@@ -801,7 +789,7 @@ void BattleAnimCmd_JumpUntil(battleanim_s* anim, battleanim_func func){
     // LD_A_hl;
     // AND_A_A;
     // IF_Z goto dont_jump;
-    if(wram->wBattleAnimParam == 0) {
+    if(BattleAnimationParameterGet() == 0) {
     // dont_jump:
         // LD_HL(wBattleAnimAddress);
         // LD_E_hl;
@@ -817,7 +805,7 @@ void BattleAnimCmd_JumpUntil(battleanim_s* anim, battleanim_func func){
     }
 
     // DEC_hl;
-    --wram->wBattleAnimParam;
+    BattleAnimationParameterSet(BattleAnimationParameterGet() - 1);
     // CALL(aGetBattleAnimByte);
     // LD_E_A;
     // CALL(aGetBattleAnimByte);
@@ -887,7 +875,7 @@ void BattleAnimCmd_IfParamEqual(battleanim_s* anim, uint8_t param, battleanim_fu
     // LD_HL(wBattleAnimParam);
     // CP_A_hl;
     // IF_Z goto jump;
-    if(wram->wBattleAnimParam == param) {
+    if(BattleAnimationParameterGet() == param) {
     // jump:
         // CALL(aGetBattleAnimByte);
         // LD_E_A;
@@ -921,7 +909,7 @@ void BattleAnimCmd_IfParamAnd(battleanim_s* anim, uint8_t n, battleanim_func fun
     // LD_A_addr(wBattleAnimParam);
     // AND_A_E;
     // IF_NZ goto jump;
-    if(wram->wBattleAnimParam & n) {
+    if(BattleAnimationParameterGet() & n) {
     // jump:
         // CALL(aGetBattleAnimByte);
         // LD_E_A;
@@ -1568,7 +1556,7 @@ void BattleAnimCmd_BeatUp(void){
 
     // LD_A_addr(wBattleAnimParam);
     // LD_addr_A(wCurPartySpecies);
-    wram->wCurPartySpecies = wram->wBattleAnimParam;
+    wram->wCurPartySpecies = BattleAnimationParameterGet();
 
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;

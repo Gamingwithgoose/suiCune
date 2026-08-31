@@ -4952,3 +4952,125 @@ Exact stopping point and next recommended task
 - Next: replace the remaining battle-animation timing and display ownership
   that uses VBlank, virtual OAM clearing, and VRAM/tilemap presentation with
   explicit native frame scheduling and scene-layer resources.
+
+2026-08-30 — Native battle-animation entry ownership
+======================================================
+
+Completed work
+--------------
+- Removed the active `rSVBK`/`MBANK(awActiveAnimObjects)` push-pop sequence
+  from `PlayBattleAnim`. Battle-animation objects and background effects are
+  now native allocations, so entering their renderer no longer selects or
+  restores the former WRAM bank that stored the fixed legacy arrays.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Battle-animation script execution still delegates to the existing native C
+  command interpreter. No bank-selection compatibility wrapper remains at the
+  public animation entry point.
+- Animation parameters are still shared battle state in `wBattleAnimParam`.
+  Source inspection found many battle-effect producers and consumers outside
+  this subsystem, so that state was not moved speculatively in this pass.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed no active `wbank_push`, `wbank_pop`, `rSVBK`, or `MBANK` operation
+  remains in `engine/battle_anims`; remaining mentions are source-reference
+  comments only.
+- Runtime checking remains needed for the same animation paths as the dynamic
+  pool change. No temporary migration bridge was added.
+
+Files modified
+--------------
+- `engine/battle_anims/anim_commands.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing the battle-animation entry point's now-obsolete WRAM
+  bank transition.
+- Next: introduce an explicit native battle animation context for the shared
+  animation parameter, then migrate every battle producer and script consumer
+  atomically before removing its WRAM representation.
+
+2026-08-30 — Native battle-animation parameter ownership
+==========================================================
+
+Completed work
+--------------
+- Moved the current battle-animation parameter out of `wBattleAnimParam` into
+  native battle-animation state in `engine/battle_anims/core.c`.
+- Added explicit `BattleAnimationParameterGet` and
+  `BattleAnimationParameterSet` APIs, then migrated every active C producer
+  and consumer: battle setup, battle effect commands, item effects, debug
+  animation playback, move effects, the native animation interpreter, and
+  inline animation-script macros.
+- Preserved the parameter's shared lifetime across renderer resets. Battle
+  code supplies it before a script runs; scripts may inspect or consume it;
+  callers that temporarily lower a substitute preserve and restore it through
+  the native API exactly as before.
+- Converted Triple Kick's increment, Beat Up's species selection, conditional
+  animation branches, and `anim_jumpuntil` to native parameter access without
+  retaining a synchronized WRAM byte.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- `wBattleAnimParam` remains only as an unmapped-use legacy layout reservation
+  for reference/build compatibility. There is no active C reader or writer.
+- The parameter deliberately remains an 8-bit semantic value because current
+  Crystal animation scripts encode it as byte-sized flags, counters, item
+  identities, and species values. This is a content-format boundary; it is no
+  longer a Game Boy memory-location dependency.
+- No temporary bridge or duplicated parameter state was introduced. The
+  legacy field can be removed only after repository build/reference consumers
+  no longer require the original WRAM layout.
+
+Source-level validation and risks
+---------------------------------
+- Verified no active C `wram->wBattleAnimParam` use remains anywhere in the
+  repository. All source-level accesses now use the native API.
+- Verified `anim_jumpuntil` preserves the original zero and decrement
+  behavior, including leaving a zero parameter as zero after the terminal
+  check.
+- Runtime checking is needed for Poké Ball item animation, send-out shiny
+  animation, Triple Kick, Beat Up, Substitute, Transform, Present, Metronome,
+  Mirror Move, Sleep Talk, and debug animation playback.
+
+Files modified
+--------------
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/anim_commands.c`
+- `util/battle_anim_macros.h`
+- `engine/battle/core.c`
+- `engine/battle/effect_commands.c`
+- `engine/battle/move_effects/bide.c`
+- `engine/battle/move_effects/curse.c`
+- `engine/battle/move_effects/metronome.c`
+- `engine/battle/move_effects/mirror_move.c`
+- `engine/battle/move_effects/present.c`
+- `engine/battle/move_effects/selfdestruct.c`
+- `engine/battle/move_effects/sleep_talk.c`
+- `engine/battle/move_effects/substitute.c`
+- `engine/battle/move_effects/teleport.c`
+- `engine/battle/move_effects/transform.c`
+- `engine/battle/move_effects/triple_kick.c`
+- `engine/items/item_effects.c`
+- `engine/menus/debugmenu.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after atomically replacing every active C dependency on the shared
+  animation-parameter WRAM byte with native ownership.
+- Next: migrate the remaining `hVBlank`, `hOAMUpdate`, virtual-OAM, and
+  tilemap presentation control used by battle animation to explicit native
+  frame and scene-layer state.

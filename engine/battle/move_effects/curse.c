@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "curse.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../../../home/battle_vars.h"
 #include "../../../home/battle.h"
@@ -103,7 +104,7 @@ void BattleCommand_Curse(void){
 
         // LD_A(0x1);
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = 0x1;
+        BattleAnimationParameterSet(0x1);
         // CALL(aAnimateCurrentMove);
         AnimateCurrentMove();
         // LD_A(SPEED);

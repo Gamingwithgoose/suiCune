@@ -36,6 +36,10 @@ struct NativeBattleAnimationState {
 };
 
 static struct NativeBattleAnimationState sBattleAnimationState;
+// The parameter is supplied by battle logic before an animation begins and
+// may be consumed by its script. It intentionally survives per-animation
+// renderer resets just as the former shared battle-state byte did.
+static uint8_t sBattleAnimationParameter;
 
 struct BattleAnim* BattleAnimationObjects(void){
     return sBattleAnimationState.objects;
@@ -164,6 +168,14 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
 
 struct BattleAnimationCommandState* BattleAnimationCommandState(void){
     return &sBattleAnimationState.command;
+}
+
+uint8_t BattleAnimationParameterGet(void){
+    return sBattleAnimationParameter;
+}
+
+void BattleAnimationParameterSet(uint8_t parameter){
+    sBattleAnimationParameter = parameter;
 }
 
 struct BattleAnimationRenderState* BattleAnimationRenderState(void){

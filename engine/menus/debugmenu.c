@@ -32,6 +32,7 @@
 #include "../phone/phone.h"
 #include "../battle/core.h"
 #include "../battle_anims/anim_commands.h"
+#include "../battle_anims/core.h"
 #include "../link/link.h"
 #include "../link/link_trade.h"
 #include "../link/mystery_gift.h"
@@ -1019,15 +1020,15 @@ void DebugMenu_BattleAnim(void) {
         if(NativeInputLogicalPressed() & (A_BUTTON)) {
             if(anim == NUM_BATTLE_ANIMS + 1) {
                 wram->wFXAnimID = ANIM_THROW_POKE_BALL;
-                wram->wBattleAnimParam = POKE_BALL;
+                BattleAnimationParameterSet(POKE_BALL);
             }
             else if(anim == GROWL || anim == ROAR) {
                 wram->wFXAnimID = anim;
-                wram->wBattleAnimParam = (hram.hBattleTurn == TURN_PLAYER)? wram->wBattleMon.species: wram->wEnemyMon.species;
+                BattleAnimationParameterSet((hram.hBattleTurn == TURN_PLAYER)? wram->wBattleMon.species: wram->wEnemyMon.species);
             }
             else {
                 wram->wFXAnimID = anim;
-                wram->wBattleAnimParam = 0;
+                BattleAnimationParameterSet(0);
             }
             wram->wNumHits = 1;
             WaitBGMap();

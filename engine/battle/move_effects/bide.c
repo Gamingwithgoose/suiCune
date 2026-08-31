@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "bide.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../../../home/battle_vars.h"
 #include "../../../home/battle.h"
@@ -142,7 +143,7 @@ void BattleCommand_UnleashEnergy(void){
     *bc = (v_BattleRandom() & 1) + 2;
     // LD_A(1);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 1;
+    BattleAnimationParameterSet(1);
     // CALL(aAnimateCurrentMove);
     AnimateCurrentMove();
     // JP(mEndMoveEffect);

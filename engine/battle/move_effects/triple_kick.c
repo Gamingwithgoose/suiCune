@@ -1,12 +1,13 @@
 #include "../../../constants.h"
 #include "triple_kick.h"
+#include "../../battle_anims/core.h"
 
 void BattleCommand_TripleKick(void){
 //  triplekick
 
     // LD_A_addr(wBattleAnimParam);
     // LD_B_A;
-    uint8_t b = wram->wBattleAnimParam + 1;
+    uint8_t b = BattleAnimationParameterGet() + 1;
     // INC_B;
     // LD_HL(wCurDamage + 1);
     // LD_A_hld;
@@ -47,6 +48,6 @@ void BattleCommand_KickCounter(void){
 
     // LD_HL(wBattleAnimParam);
     // INC_hl;
-    wram->wBattleAnimParam++;
+    BattleAnimationParameterSet(BattleAnimationParameterGet() + 1);
     // RET;
 }

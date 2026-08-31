@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "transform.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../../../home/copy.h"
 #include "../../../home/battle_vars.h"
 #include "../../../home/battle.h"
@@ -30,7 +31,7 @@ void BattleCommand_Transform(void){
     // LD_addr_A(wFXAnimID + 1);
     // LD_A(0x1);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0x1;
+    BattleAnimationParameterSet(0x1);
     // LD_A(BATTLE_VARS_SUBSTATUS4);
     // CALL(aGetBattleVarAddr);
     uint8_t ss4 = *GetBattleVarAddr(BATTLE_VARS_SUBSTATUS4);
@@ -203,7 +204,7 @@ void BattleCommand_Transform(void){
     // LD_addr_A(wFXAnimID + 1);
     // LD_A(0x2);
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 0x2;
+    BattleAnimationParameterSet(0x2);
     // POP_AF;
     // LD_A(SUBSTITUTE);
     // CALL_NZ (aLoadAnim);

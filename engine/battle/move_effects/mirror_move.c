@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "mirror_move.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../../../home/names.h"
 #include "../../../home/copy_name.h"
 #include "../../../home/battle_vars.h"
@@ -63,13 +64,13 @@ void BattleCommand_MirrorMove(void){
     // IF_NZ goto done;
     if(!CheckUserIsCharging()) {
         // LD_A_addr(wBattleAnimParam);
-        uint8_t param = wram->wBattleAnimParam;
+        uint8_t param = BattleAnimationParameterGet();
         // PUSH_AF;
         // CALL(aBattleCommand_LowerSub);
         BattleCommand_LowerSub();
         // POP_AF;
         // LD_addr_A(wBattleAnimParam);
-        wram->wBattleAnimParam = param;
+        BattleAnimationParameterSet(param);
     }
 
 // done:

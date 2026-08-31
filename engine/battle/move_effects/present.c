@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "present.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../check_battle_scene.h"
 #include "../ai/scoring.h"
@@ -59,7 +60,7 @@ void BattleCommand_Present(void){
             // POP_BC;
             // LD_A(0x3);  // heal animation
             // LD_addr_A(wBattleAnimParam);
-            wram->wBattleAnimParam = 0x3;
+            BattleAnimationParameterSet(0x3);
             // CALL(aAnimateCurrentMove);
             AnimateCurrentMove();
             // CALL(aBattleCommand_SwitchTurn);
@@ -127,7 +128,7 @@ void BattleCommand_Present(void){
 // got_power:
     // LD_A_C;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = c;
+    BattleAnimationParameterSet(c);
     // CALL(aAnimateCurrentMoveEitherSide);
     AnimateCurrentMoveEitherSide();
     // LD_D_hl;

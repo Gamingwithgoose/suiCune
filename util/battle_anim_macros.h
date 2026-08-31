@@ -1,4 +1,5 @@
 #pragma once
+#include "../engine/battle_anims/core.h"
 #define ANIM_BEGIN                  switch(anim->pos) { case 0:
 #define ANIM_END                    default: break; } return 0x1;
 #define ANIM_CMD1(_cmd, ...)        anim->pos = __LINE__; _cmd(anim, ##__VA_ARGS__); return 0x0; case __LINE__:
@@ -57,9 +58,9 @@
 #define anim_call(_f)               ANIM_CMD1(BattleAnimCmd_Call, _f)
 #define anim_ret                    ANIM_RET
 
-#define anim_if_param_and(_n, _f)   if(wram->wBattleAnimParam & (_n)) goto _f;
-#define anim_if_param_equal(_n, _f) if(wram->wBattleAnimParam == (_n)) goto _f;
+#define anim_if_param_and(_n, _f)   if(BattleAnimationParameterGet() & (_n)) goto _f;
+#define anim_if_param_equal(_n, _f) if(BattleAnimationParameterGet() == (_n)) goto _f;
 #define anim_if_var_equal(_n, _f)   if(BattleAnimGetVar() == (_n)) goto _f;
 #define anim_jump(_dest)            goto _dest;
 #define anim_loop(_c, _d)           if(BattleAnimCmd_LoopInline(_c)) goto _d;
-#define anim_jumpuntil(_d)          if(wram->wBattleAnimParam-- != 0) goto _d; wram->wBattleAnimParam = 0;
+#define anim_jumpuntil(_d)          if(BattleAnimationParameterGet() != 0) { BattleAnimationParameterSet(BattleAnimationParameterGet() - 1); goto _d; } BattleAnimationParameterSet(0);

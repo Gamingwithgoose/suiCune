@@ -1,6 +1,7 @@
 #include "../../../constants.h"
 #include "teleport.h"
 #include "../effect_commands.h"
+#include "../../battle_anims/core.h"
 #include "../core.h"
 #include "../../../home/delay.h"
 #include "../../../home/battle.h"
@@ -130,7 +131,7 @@ void BattleCommand_Teleport(void){
     // LD_addr_A(wForcedSwitch);
     wram->wForcedSwitch = 1;
     // LD_addr_A(wBattleAnimParam);
-    wram->wBattleAnimParam = 1;
+    BattleAnimationParameterSet(1);
     // CALL(aSetBattleDraw);
     SetBattleDraw();
     // CALL(aBattleCommand_LowerSub);
