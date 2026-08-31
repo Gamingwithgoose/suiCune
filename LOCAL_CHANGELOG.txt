@@ -4683,3 +4683,143 @@ Exact stopping point and next recommended task
   mirrors.
 - Next: replace native frame progression's VBlank/emulator coupling with a
   platform frame scheduler while retaining the same gameplay cadence.
+
+2026-08-30 — Animated front-picture crash repair
+=================================================
+
+Completed work
+--------------
+- Replaced the animated-front-picture tile conversion's register-shaped byte
+  loop with a bounded native tile copy in `engine/gfx/load_pics.c`.
+- The native path now initializes the 7×7 animated image from the already
+  padded picture, then overlays exactly the source picture's 5×5, 6×6, or
+  7×7 tile count with the required horizontal orientation.
+- Aligned `BuildAnimatedEnemyFrontpic`'s internal declaration with its
+  read-only source parameter after the user-reported `-Werror` type conflict;
+  this is a declaration-only correction and preserves the bounded native path.
+
+Regression investigated and fixed
+---------------------------------
+- User-reported battle entry and Pokémon summary crashes share the animated
+  front-picture path. The old C conversion treated a tile count as a packed
+  register value, repeatedly invoked a byte loop with a zero byte count, and
+  wrote far beyond its 7×7 local buffer. This explains a process exit without
+  a useful game log.
+- The replacement has explicit tile and byte bounds and does not use WRAM,
+  SRAM, ROM banks, or ASM/register behavior as image scratch storage.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Animated front-picture source and transient output remain native memory.
+  The existing VRAM destination remains a display compatibility boundary and
+  was not reintroduced as the image source or scratch owner.
+
+Source-level validation and risks
+---------------------------------
+- Verified battle setup and summary animation both call `GetAnimatedFrontpic`.
+- Verified the replacement writes at most 49 tiles (784 bytes) into the fixed
+  animated output buffer and preserves the existing orientation behavior.
+- Runtime verification remains needed for battle entry, normal summary pages,
+  Unown, Eggs, and picture sizes 5×5/6×6/7×7.
+
+Files modified
+--------------
+- `engine/gfx/load_pics.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after repairing the shared animated front-picture buffer overflow.
+- Next: introduce a native picture presentation resource so battle and menu
+  views no longer use VRAM tile identities as their runtime image API.
+
+2026-08-30 — Battle-animation header type ownership build fix
+==============================================================
+
+Completed work
+--------------
+- Made `engine/battle_anims/functions.h` self-contained by including the
+  native battle-animation model definition from `core.h` and adding a normal
+  include guard.
+- This fixes the reported `struct BattleAnim` prototype-scope declarations,
+  which caused incompatible function declarations throughout
+  `functions.c` under `-Werror`.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- The header now directly depends on the native `BattleAnim` runtime model;
+  no ASM declaration, emulated register type, or compatibility wrapper was
+  introduced.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed `core.h` defines `BattleAnim` and its required semantic ID types,
+  and does not include `functions.h`, so this dependency does not create a
+  header cycle.
+- Build/runtime validation was not run locally per user instruction; the
+  reported compiler command should now see one shared structure declaration.
+
+Files modified
+--------------
+- `engine/battle_anims/functions.h`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after resolving the reported native battle-animation header failure.
+- Next: replace native frame progression's VBlank/emulator coupling with a
+  platform frame scheduler while retaining the same gameplay cadence.
+
+2026-08-30 — Native trainer-intro HUD lifecycle repair
+=======================================================
+
+Completed work
+--------------
+- Updated `engine/battle/core.c` so the end of the trainer-introduction
+  presentation clears the native trainer party-marker HUD immediately after
+  clearing the departing trainer's legacy sprite data.
+
+Regression investigated and fixed
+---------------------------------
+- The trainer party Poké Ball markers were moved to the native battle-render
+  state, but the corresponding battle-introduction cleanup still cleared only
+  legacy OAM. The native markers therefore survived into the player combat HUD
+  and overlaid the HP/EXP panel.
+- The fix uses `ClearBattleAnimationHudSprites` directly at the existing
+  battle-view lifecycle boundary; it neither calls ASM nor reintroduces OAM,
+  Game Boy register, or compatibility ownership for the native HUD.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Trainer-intro HUD markers remain owned by the native battle renderer. Legacy
+  OAM remains a compatibility destination for the trainer sprite only.
+
+Source-level validation and risks
+---------------------------------
+- Verified this cleanup follows `BattleStartMessage`, which creates the
+  trainer HUD markers, and precedes normal battle HUD drawing.
+- The same native HUD state is still cleared on battle exit. Runtime checking
+  remains needed for trainer, wild, link, tutorial, and double-battle flows.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after restoring the trainer-intro HUD's native cleanup lifecycle.
+- Next: separate battle-picture presentation resources from VRAM tile identity
+  so battle and menu picture views can use the native renderer directly.

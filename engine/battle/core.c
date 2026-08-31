@@ -12436,6 +12436,10 @@ void BattleIntro(void){
     ClearBox(coord(1, 0, wram->wTilemap), 10, 4);
     // CALL(aClearSprites);
     ClearSprites();
+    // The trainer-intro party markers are native battle-view sprites rather
+    // than entries in legacy OAM, so clear them at the same presentation
+    // boundary as the trainer sprite before drawing the combat HUD.
+    ClearBattleAnimationHudSprites();
     // LD_A_addr(wBattleMode);
     // CP_A(WILD_BATTLE);
     // CALL_Z (aUpdateEnemyHUD);

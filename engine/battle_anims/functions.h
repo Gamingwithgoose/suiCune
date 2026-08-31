@@ -1,3 +1,8 @@
+#ifndef SUICUNE_ENGINE_BATTLE_ANIMS_FUNCTIONS_H
+#define SUICUNE_ENGINE_BATTLE_ANIMS_FUNCTIONS_H
+
+#include "core.h"
+
 void DoBattleAnimFrame(struct BattleAnim* bc);
 void BattleAnimFunction_Null(struct BattleAnim* bc);
 void BattleAnimFunction_ThrowFromUserToTargetAndDisappear(struct BattleAnim* bc);
@@ -90,3 +95,5 @@ void BattleAnim_AbsSinePrecise(void);
 void BattleAnim_AbsCosinePrecise(void);
 void BattleAnimSineWave(void);
 //#include "data/battle_anims/ball_colors.h"
+
+#endif

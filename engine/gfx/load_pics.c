@@ -9,12 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c);
+static void CopyAnimatedFrontpicTiles(uint8_t* dest, const uint8_t* source, size_t tileCount);
 static void FixBackpicAlignment(uint8_t* hl, uint8_t c);
 static void PadFrontpic(uint8_t* hl, uint8_t* de, uint8_t b);
 static void LoadOrientedFrontpic(uint8_t** hl, uint8_t** de, uint8_t c);
 static uint8_t* LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE]);
-static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], uint8_t* rawPixels);
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], const uint8_t* rawPixels);
 
 struct NativeFrontpicSource {
     uint8_t* pixels;
@@ -225,7 +225,7 @@ const char* GetFrontpicPointer(void){
     return p;
 }
 
-static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], uint8_t* rawPixels){
+static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE], const uint8_t* rawPixels){
     // LD_A(BANK(vTiles3));
     // LDH_addr_A(rVBK);
     // gb_write(rVBK, MBANK(vTiles3));
@@ -249,34 +249,10 @@ static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7
     // POP_HL;
     // AND_A(0xf);
     uint8_t a = wram->wBasePicSize & 0xf;
-    uint8_t* de;
-    uint8_t c;
-    // LD_C(5 * 5);
-    // CP_A(5);
-    // IF_Z goto got_dims;
-    if(a == 5) {
-        de = rawPixels + 5 * 5 * LEN_2BPP_TILE;
-        c = 5 * 5;
-    }
-    // LD_C(6 * 6);
-    // CP_A(6);
-    // IF_Z goto got_dims;
-    else if(a == 6) {
-        de = rawPixels + 6 * 6 * LEN_2BPP_TILE;
-        c = 6 * 6;
-    }
-    // LD_C(7 * 7);
-    else {
-        de = rawPixels + 7 * 7 * LEN_2BPP_TILE;
-        c = 7 * 7;
-    }
-
-// got_dims:
-    // PUSH_HL;
-    // PUSH_BC;
-    // CALL(aLoadFrontpicTiles);
+    size_t tileCount = (size_t)a * a;
     uint8_t animatedPixels[7 * 7 * LEN_2BPP_TILE];
-    LoadFrontpicTiles(animatedPixels, de, c);
+    memcpy(animatedPixels, paddedPixels, sizeof(animatedPixels));
+    CopyAnimatedFrontpicTiles(animatedPixels, rawPixels, tileCount);
     // POP_BC;
     // POP_HL;
     // LD_DE(wDecompressScratch);
@@ -291,32 +267,23 @@ static void BuildAnimatedEnemyFrontpic(uint8_t* hl, const uint8_t paddedPixels[7
 
 }
 
-static void LoadFrontpicTiles(uint8_t* hl, uint8_t* de, uint8_t c){
-    // LD_HL(wDecompressScratch);
-    // SWAP_C;
-    // LD_A_C;
-    // AND_A(0xf);
-    // LD_B_A;
-    uint8_t b = (c & 0xf);
-    // LD_A_C;
-    // AND_A(0xf0);
-    // LD_C_A;
-    // PUSH_BC;
-    // CALL(aLoadOrientedFrontpic);
-    LoadOrientedFrontpic(&hl, &de, (c & 0xf0));
-    // POP_BC;
-
-    do {
-    // loop:
-        // PUSH_BC;
-        // LD_C(0);
-        // CALL(aLoadOrientedFrontpic);
-        LoadOrientedFrontpic(&hl, &de, 0);
-        // POP_BC;
-        // DEC_B;
-        // IF_NZ goto loop;
-    } while(--b != 0);
-    // RET;
+static void CopyAnimatedFrontpicTiles(uint8_t* dest, const uint8_t* source, size_t tileCount){
+    for(size_t tile = 0; tile < tileCount; tile++) {
+        uint8_t* write = dest + tile * LEN_2BPP_TILE;
+        const uint8_t* read = source + tile * LEN_2BPP_TILE;
+        for(size_t byte = 0; byte < LEN_2BPP_TILE; byte++) {
+            uint8_t pixelByte = *(read++);
+            if(wram->wBoxAlignment != 0) {
+                uint8_t reversed = 0;
+                for(uint8_t bit = 0; bit < 8; bit++) {
+                    reversed = (uint8_t)((reversed << 1) | (pixelByte & 1));
+                    pixelByte >>= 1;
+                }
+                pixelByte = reversed;
+            }
+            *(write++) = pixelByte;
+        }
+    }
 }
 
 void GetMonBackpic(uint8_t* de, species_t species){
