@@ -54,10 +54,11 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
             if(sprite->layer != layer)
                 continue;
             struct BattleAnimationSprite pixelSource = *sprite;
-            // Native tile resources preserve the original 8x16 image-pair
-            // selection rule explicitly. The host renderer must not infer the
-            // source pair from a VRAM/OAM tile number after this boundary.
-            if(largeSprites)
+            // Only records created from legacy OAM frame data use the 8x16
+            // low-bit pairing rule. HUD, trainer, and other native resource
+            // identities remain exact even while the host is in 8x16 mode.
+            pixelSource.tileId = sprite->resourceTileId;
+            if(largeSprites && sprite->legacyOamTilePair)
                 pixelSource.tileId &= 0xfffe;
             drawSprite(context, line->pixels, line->priority, sprite->yCoord,
                 sprite->xCoord, sprite->tileId, sprite->attributes,

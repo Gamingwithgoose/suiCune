@@ -305,7 +305,7 @@ bool LoadNativeBackpicPixels(uint8_t* de, species_t species){
 
     // LD_A_addr(wCurPartySpecies);
     // LD_B_A;
-    species_t b = wram->wCurPartySpecies;
+    species_t b = species;
     // LD_A_addr(wUnownLetter);
     // LD_C_A;
     unown_letter_t c = wram->wUnownLetter;

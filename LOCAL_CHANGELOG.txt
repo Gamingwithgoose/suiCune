@@ -5884,3 +5884,51 @@ Validation and remaining work
 - Next dependency closure: execute the battle visual regression matrix above;
   resume the battle UI/background migration only after the native scene
   renderer is verified stable.
+
+2026-08-31 — Battle renderer regression root-cause repair
+==========================================================
+
+Completed repairs
+-----------------
+- Confirmed persistent battler-image corruption: the native battle PokeAnim
+  shortcut incorrectly treated the authored animation command as a complete
+  numbered frontpic asset and replaced the decoded image wholesale. Native
+  battlers now retain immutable decoded base pixels and restore that base
+  during picture-animation frame/deinitialization paths; no battle battler is
+  sent back through VRAM or tilemap ownership.
+- Corrected player backpic placement for the original mirrored alignment
+  case. `FixBackpicAlignment` reverses tile pixels, so the native placement
+  now also reverses columns when the source path is right-aligned. The native
+  backpic loader now honors its explicit species argument.
+- Replaced the blanket 8x16 low-bit mask with explicit legacy-OAM pairing
+  metadata on animation scene sprites. HUD and trainer-baseline native
+  resource identities are no longer rounded down when the host is in 8x16
+  mode, preserving every authored Leer object/frame resource simultaneously.
+- Reworked scanline scratch writers used by Tackle and related effects so
+  zero or inverted ranges cannot underflow into 256 writes. Tackle movement
+  now uses explicit signed displacement arithmetic while preserving its
+  byte-format state. Wavy, displacement, Double Team, Acid Armor, and water
+  deformation writes have explicit native-workspace range checks; reset now
+  clears scanline endpoints and LCD callback state.
+
+Retained boundary and validation
+--------------------------------
+- The packed PokeAnim controller and original ASM frame/bitmask data remain a
+  compatibility/content boundary. The repository does not currently contain
+  native frame-tile and bitmask payloads for direct per-tile battle frame
+  composition, so the unsafe full-image substitution was removed rather than
+  fabricating frame data. Native base-image preservation is authoritative;
+  converting the missing frame/bitmask content is required before claiming
+  full native Pokémon picture animation.
+- Static review traced the original PokeAnim command/bitmask semantics,
+  mirrored six-by-six backpic placement, all three native sprite resource
+  kinds, the ten authored Leer objects and their framesets, temporary effect
+  lifetime, BG/object-pool realloc call paths, and both Tackle scanline sides.
+  Battler placement and image updates now reject out-of-range tile indices.
+- No BG-effect callback queues another BG effect while its pool pointer is
+  live. Existing object-pool index reacquisition remains necessary and is
+  retained because BG callbacks can queue animation objects.
+Build/runtime validation: not performed.
+- Runtime verification remains required for player backpic orientation,
+  animated opponent persistence, complete Leer beams, and player/opponent
+  Tackle sequences.

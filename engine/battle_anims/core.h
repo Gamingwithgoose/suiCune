@@ -71,10 +71,15 @@ struct BattleAnimationSprite {
     int16_t yCoord;
     int16_t xCoord;
     uint16_t tileId;
+    // Native resource identity is distinct from the legacy tile number still
+    // projected to the transitional object host. Only animation OAM records
+    // carry the old 8x16 pairing rule across that boundary.
+    uint16_t resourceTileId;
     uint8_t attributes;
     uint8_t resourceKind;
     uint8_t category;
     uint8_t layer;
+    bool legacyOamTilePair;
 };
 
 enum {
@@ -163,6 +168,9 @@ const uint8_t* BattleSceneBattlerPixels(void);
 void SetBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
     const uint8_t* pixels, size_t tileCount, uint8_t width, uint8_t height,
     int16_t x, int16_t y, uint8_t palette);
+void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
+    const uint8_t* pixels, size_t tileCount, uint8_t width, uint8_t height,
+    int16_t x, int16_t y, uint8_t palette, bool mirrorTileColumns);
 void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
     const uint8_t* pixels, size_t tileCount);
 void SetBattleSceneBattlerVisible(enum BattleSceneBattlerId battler, bool visible);
@@ -174,6 +182,7 @@ void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
     const uint8_t* imageTiles);
 const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler);
+void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlers(void);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);

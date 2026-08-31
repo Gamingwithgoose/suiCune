@@ -504,9 +504,10 @@ static void PokeAnim_DeinitFrames(void){
     // LDH_addr_A(rSVBK);
     enum BattleSceneBattlerId battler;
     if(PokeAnim_BattleSceneBattler(&battler)) {
-        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
-        if(LoadNativeFrontpicPixels(pixels, 0))
-            UpdateBattleSceneBattlerImage(battler, pixels, 7 * 7);
+        // Battle battlers retain their decoded native base image. The
+        // animation command identifies a bitmask/frame record, not a full
+        // numbered frontpic asset; never reinterpret it as a PNG section.
+        RestoreBattleSceneBattlerBaseImage(battler);
     }
     else {
         GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, 0);
@@ -756,9 +757,10 @@ static void PokeAnim_GetFrame(void){
     // CALL(aPokeAnim_ConvertAndApplyBitmask);
     enum BattleSceneBattlerId battler;
     if(PokeAnim_BattleSceneBattler(&battler)) {
-        uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
-        if(LoadNativeFrontpicPixels(pixels, pokeAnim->command))
-            UpdateBattleSceneBattlerImage(battler, pixels, 7 * 7);
+        // Native frame substitution requires native frame-tile and bitmask
+        // content. Preserve the authoritative base image rather than corrupt
+        // it by treating the command byte as a complete PNG-frame index.
+        RestoreBattleSceneBattlerBaseImage(battler);
     }
     else {
         GetAnimatedFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x00, pokeAnim->command);

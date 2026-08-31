@@ -12201,8 +12201,9 @@ void DropPlayerSub(void){
     GetUnownLetter(wram->wBattleMon.dvs);
     uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
     if(LoadNativeBackpicPixels(pixels, wram->wCurPartySpecies)) {
-        SetBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6,
-            6, 6, 2 * TILE_WIDTH, 6 * TILE_WIDTH, PAL_BATTLE_BG_PLAYER);
+        SetBattleSceneBattlerImageAligned(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6,
+            6, 6, 2 * TILE_WIDTH, 6 * TILE_WIDTH, PAL_BATTLE_BG_PLAYER,
+            wram->wBoxAlignment != 0);
     }
     // POP_AF;
     // LD_addr_A(wCurPartySpecies);
