@@ -12535,15 +12535,13 @@ static void InitEnemyTrainer(uint8_t tclass){
     // CALLFAR(aGetTrainerPic);
     GetTrainerPic(vram->vTiles2, tclass);
     // XOR_A_A;
-    // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0;
     // DEC_A;
     // LD_addr_A(wEnemyItemState);
     wram->wEnemyItemState = 0xff;
     // hlcoord(12, 0, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(12, 0, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(12, 0, wram->wTilemap), 0, 7, 7);
     // LD_A(-1);
     // LD_addr_A(wCurOTMon);
     wram->wCurOTMon = 0xff;
@@ -12632,12 +12630,10 @@ static void InitEnemyWildmon(void){
     // XOR_A_A;
     // LD_addr_A(wTrainerClass);
     wram->wTrainerClass = 0;
-    // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0;
     // hlcoord(12, 0, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(12, 0, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(12, 0, wram->wTilemap), 0, 7, 7);
     // RET;
 }
 
@@ -13710,12 +13706,10 @@ static void InitBattleDisplay(void){
     // LDH_addr_A(hBGMapMode);
     hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
     // LD_A(0x31);
-    // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x31;
     // hlcoord(2, 6, wTilemap);
     // LD_BC((6 << 8) | 6);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphic(coord(2, 6, wram->wTilemap), 6, 6);
+    PlaceGraphicNative(coord(2, 6, wram->wTilemap), 0x31, 6, 6);
     // XOR_A_A;
     // LDH_addr_A(hWY);
     hram.hWY = 0;
@@ -13858,12 +13852,10 @@ static void CopyBackpic(void){
     // CALL(aCopyBackpic_LoadTrainerBackpicAsOAM);
     CopyBackpic_LoadTrainerBackpicAsOAM();
     // LD_A(0x31);
-    // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x31;
     // hlcoord(2, 6, wTilemap);
     // LD_BC((6 << 8) | 6);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphic(coord(2, 6, wram->wTilemap), 6, 6);
+    PlaceGraphicNative(coord(2, 6, wram->wTilemap), 0x31, 6, 6);
     // RET;
 }
 

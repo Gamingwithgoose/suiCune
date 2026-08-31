@@ -4561,3 +4561,80 @@ Exact stopping point and next recommended task
   their display consumers, then remove the remaining battle-animation VRAM
   source reads and fallback renderer path only after coverage confirms them
   obsolete.
+
+2026-08-30 — Explicit native tilemap graphic placement
+=======================================================
+
+Completed work
+--------------
+- Added `PlaceGraphicNative` and `PlaceGraphicYStaggerNative`, whose explicit
+  start-tile argument replaces `hGraphicStartTile` as the authoritative input
+  for direct C tilemap picture placement.
+- Migrated every direct C caller of the two placement helpers across battle,
+  picture/menu, player, breeding, Hall of Fame, debug, movie, home, and mobile
+  code. Each call now supplies the source-inspected tile origin directly.
+- Updated `PlaceGraphic_Padded` to use its existing explicit `start` argument
+  in its unpadded path, eliminating its former hidden HRAM input as well.
+- Removed the superseded `hGraphicStartTile` writes that existed only to feed
+  migrated C placement calls. Existing unrelated state writes were retained.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Direct C presentation work no longer communicates a tile origin through
+  global HRAM state. Tile origin is now ordinary function data, while existing
+  `wBoxAlignment` behavior remains intentionally unchanged.
+- The old `PlaceGraphic` and `PlaceGraphicYStagger` entry points remain as a
+  narrow temporary predef compatibility boundary. `home/predef.c` still
+  dispatches `pPlaceGraphic` through emulated register/HRAM state, so deleting
+  those entry points now would break that legacy dispatcher.
+- The temporary boundary can be removed only after `Predef`/`pPlaceGraphic`
+  dispatch is migrated to a typed native call path and no source, function map,
+  or runtime caller requires the register-based ABI.
+- No ASM source was deleted: the retained predef route means the corresponding
+  legacy reference cannot yet be proven obsolete.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed all non-legacy direct C invocations now call an explicit native
+  placement helper; the two old helper names remain only as compatibility entry
+  points in `place_graphic.c`.
+- Preserved the original tile origins, dimensions, Y-staggering, and existing
+  box-alignment behavior. `MovePlayerPic` and the mobile trainer-picture path
+  were inspected against their resource destinations and use tile zero, as in
+  their original picture loads.
+- Runtime coverage is still required for each migrated menu/picture path and
+  for the legacy predef boundary.
+
+Files modified
+--------------
+- `engine/gfx/place_graphic.c`
+- `engine/gfx/place_graphic.h`
+- `engine/battle/core.c`
+- `engine/battle/misc.c`
+- `engine/debug/color_picker.c`
+- `engine/events/halloffame.c`
+- `engine/events/pokepic.c`
+- `engine/events/print_unown.c`
+- `engine/gfx/player_gfx.c`
+- `engine/menus/debugmenu.c`
+- `engine/menus/intro_menu.c`
+- `engine/menus/trainer_card.c`
+- `engine/movie/trade_animation.c`
+- `engine/pokemon/breeding.c`
+- `home/pokemon.c`
+- `mobile/mobile_22.c`
+- `mobile/mobile_42.c`
+- `mobile/mobile_5f.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after completing direct-C migration away from `hGraphicStartTile`
+  for generic tilemap graphic placement.
+- Next: replace the remaining `pPlaceGraphic` predef route with typed native
+  invocation, then move tilemap picture output itself out of legacy VRAM/tile
+  identity ownership.

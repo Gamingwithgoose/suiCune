@@ -566,11 +566,10 @@ static void DebugColor_InitScreen(void){
         // LD_addr_A(wTempEnemyMonSpecies);
         wram->wTempEnemyMonSpecies = 0;
         // LDH_addr_A(hGraphicStartTile);
-        hram.hGraphicStartTile = 0;
         // hlcoord(2, 3, wTilemap);
         // LD_BC((7 << 8) | 7);
         // PREDEF(pPlaceGraphic);
-        PlaceGraphicYStagger(coord(2, 3, wram->wTilemap), 7, 7);
+        PlaceGraphicYStaggerNative(coord(2, 3, wram->wTilemap), 0, 7, 7);
     }
     else {
     //  mon
@@ -593,11 +592,10 @@ static void DebugColor_InitScreen(void){
         GetMonBackpic(vram->vTiles2 + LEN_2BPP_TILE * 0x31, species);
         // LD_A(0x31);
         // LDH_addr_A(hGraphicStartTile);
-        hram.hGraphicStartTile = 0x31;
         // hlcoord(2, 4, wTilemap);
         // LD_BC((6 << 8) | 6);
         // PREDEF(pPlaceGraphic);
-        PlaceGraphicYStagger(coord(2, 4, wram->wTilemap), 6, 6);
+        PlaceGraphicYStaggerNative(coord(2, 4, wram->wTilemap), 0x31, 6, 6);
 
         static const char ShinyText[] = "SHINY<DEBUGTEST_BLACK><DEBUGTEST_BLACK>@";
             //db ['"レア"', 'DEBUGTEST_BLACK', 'DEBUGTEST_BLACK', '"@"'];  // Rare (shiny)

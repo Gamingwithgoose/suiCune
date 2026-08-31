@@ -75,7 +75,7 @@ void MovePlayerPic(uint8_t* hl, int16_t de){
         hram.hBGMapMode = BGMAPMODE_NONE;
         // LD_BC((7 << 8) | 7);
         // PREDEF(pPlaceGraphic);
-        PlaceGraphicYStagger(hl, 7, 7);
+        PlaceGraphicYStaggerNative(hl, 0, 7, 7);
         // XOR_A_A;
         // LDH_addr_A(hBGMapThird);
         hram.hBGMapThird = 0;
@@ -281,11 +281,10 @@ void DrawIntroPlayerPic(void){
 //  Draw
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0;
     // hlcoord(6, 4, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(6, 4, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(6, 4, wram->wTilemap), 0, 7, 7);
     // RET;
 }
 
@@ -298,4 +297,3 @@ void GetKrisBackpic(void){
     LoadPNG2bppAssetToVRAMByColumn(vram->vTiles2 + LEN_2BPP_TILE * 0x31, KrisBackpic);
     // RET;
 }
-

@@ -859,10 +859,9 @@ void Hatch_UpdateFrontpicBGMapCenter(tile_t* hl, uint8_t b, uint8_t c, uint8_t a
     hram.hBGMapAddress = (b << 8) | (hram.hBGMapAddress & 0xff);
     // LD_A_C;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = c;
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(hl, 7, 7);
+    PlaceGraphicYStaggerNative(hl, c, 7, 7);
     // POP_AF;
     // CALL(aHatch_LoadFrontpicPal);
     Hatch_LoadFrontpicPal(a);

@@ -411,9 +411,8 @@ void TrainerCard_PrintTopHalfOfCard(void){
     // LD_BC((5 << 8) | 7);
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0;
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(14, 1, wram->wTilemap), 5, 7);
+    PlaceGraphicYStaggerNative(coord(14, 1, wram->wTilemap), 0, 5, 7);
     // RET;
 }
 

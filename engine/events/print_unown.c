@@ -235,10 +235,9 @@ static void v_UnownPrinter_UpdateUnownFrontpic(void){
     // hlcoord(1, 6, wTilemap);
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x0;
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(1, 6, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(1, 6, wram->wTilemap), 0, 7, 7);
     // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
     // FARCALL(aRotateUnownFrontpic);
     RotateUnownFrontpic(vram->vTiles2 + LEN_2BPP_TILE * 0x31);
@@ -317,9 +316,8 @@ void PlaceUnownPrinterFrontpic(void){
     // hlcoord(7, 11, wTilemap);
     // LD_A(0x31);
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x31;
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(7, 11, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(7, 11, wram->wTilemap), 0x31, 7, 7);
     // RET;
 }

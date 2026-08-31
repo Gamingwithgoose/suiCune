@@ -52,10 +52,9 @@ void Pokepic(void){
     uint8_t* hl = Coord2Tile(wram->wMenuBorderLeftCoord + 1, wram->wMenuBorderTopCoord + 1);
     // LD_A(0x80);
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x80;
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(hl, 7, 7);
+    PlaceGraphicYStaggerNative(hl, 0x80, 7, 7);
     // CALL(aWaitBGMap);
     WaitBGMap();
     // RET;

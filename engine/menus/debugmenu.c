@@ -650,8 +650,7 @@ void DebugMenu_GFXTest(void) {
         if(NativeInputLogicalPressed() & (B_BUTTON))
             break;
         if(NativeInputLogicalPressed() & (A_BUTTON))  {
-            hram.hGraphicStartTile = 0;
-            PlaceGraphic(coord(0, 0, wram->wTilemap), 7, 7);
+            PlaceGraphicNative(coord(0, 0, wram->wTilemap), 0, 7, 7);
         }
         DelayFrame();
     }
@@ -970,11 +969,9 @@ void DebugMenu_BattleAnim(void) {
     wram->wTempBattleMonSpecies = gPokemon.partyMon[0].mon.species;
     wram->wTempEnemyMonSpecies = wram->wOTPartySpecies[0];
     GetSGBLayout(SCGB_BATTLE_COLORS);
-    hram.hGraphicStartTile = 0x31;
-    PlaceGraphicYStagger(coord(2, 6, wram->wTilemap), 6, 6);
+    PlaceGraphicYStaggerNative(coord(2, 6, wram->wTilemap), 0x31, 6, 6);
     GetEnemyMonFrontpic();
-    hram.hGraphicStartTile = 0;
-    PlaceGraphicYStagger(coord(12, 0, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(12, 0, wram->wTilemap), 0, 7, 7);
     SpeechTextbox();
     DebugMenu_BattleAnim_PlaceText(anim);
     ApplyTilemap();

@@ -1,9 +1,8 @@
 #include "../../constants.h"
 #include "place_graphic.h"
 
-//  Fill wBoxAlignment-aligned box width b height c
-//  with iterating tile starting from hGraphicStartTile at hl.
-void PlaceGraphic(uint8_t* hl, uint8_t b, uint8_t c){
+// Fill a wBoxAlignment-aligned box with sequential tile IDs.
+void PlaceGraphicNative(uint8_t* hl, uint8_t startTile, uint8_t b, uint8_t c){
     // LD_DE(SCREEN_WIDTH);
     uint8_t a;
 
@@ -11,8 +10,7 @@ void PlaceGraphic(uint8_t* hl, uint8_t b, uint8_t c){
     // AND_A_A;
     // IF_NZ goto right;
     if(wram->wBoxAlignment == 0) {
-        // LDH_A_addr(hGraphicStartTile);
-        a = hram.hGraphicStartTile;
+        a = startTile;
     // x1:
         do {
             // PUSH_BC;
@@ -53,8 +51,7 @@ void PlaceGraphic(uint8_t* hl, uint8_t b, uint8_t c){
         // POP_BC;
         hl += c - 1;
 
-        // LDH_A_addr(hGraphicStartTile);
-        a = hram.hGraphicStartTile;
+        a = startTile;
 
         do {
         // x2:
@@ -87,10 +84,8 @@ void PlaceGraphic(uint8_t* hl, uint8_t b, uint8_t c){
 
 }
 
-//  Fill wBoxAlignment-aligned box width b height c
-//  with iterating tile starting from hGraphicStartTile at hl.
-//  Uses y-axis for staggering.
-void PlaceGraphicYStagger(uint8_t* hl, uint8_t b, uint8_t c){
+// Fill a wBoxAlignment-aligned box with sequential tile IDs, staggering by row.
+void PlaceGraphicYStaggerNative(uint8_t* hl, uint8_t startTile, uint8_t b, uint8_t c){
     // LD_DE(SCREEN_WIDTH);
     uint8_t a;
 
@@ -98,8 +93,7 @@ void PlaceGraphicYStagger(uint8_t* hl, uint8_t b, uint8_t c){
     // AND_A_A;
     // IF_NZ goto right;
     if(wram->wBoxAlignment == 0) {
-        // LDH_A_addr(hGraphicStartTile);
-        a = hram.hGraphicStartTile;
+        a = startTile;
     // y1:
         do {
             // PUSH_BC;
@@ -140,8 +134,7 @@ void PlaceGraphicYStagger(uint8_t* hl, uint8_t b, uint8_t c){
         // POP_BC;
         hl += b - 1;
 
-        // LDH_A_addr(hGraphicStartTile);
-        a = hram.hGraphicStartTile;
+        a = startTile;
 
         do {
         // x2:
@@ -174,9 +167,19 @@ void PlaceGraphicYStagger(uint8_t* hl, uint8_t b, uint8_t c){
 
 }
 
+// Legacy predef entry points.  Direct C callers must use the explicit native
+// variants above; these remain only while the emulated predef dispatcher exists.
+void PlaceGraphic(uint8_t* hl, uint8_t b, uint8_t c){
+    PlaceGraphicNative(hl, hram.hGraphicStartTile, b, c);
+}
+
+void PlaceGraphicYStagger(uint8_t* hl, uint8_t b, uint8_t c){
+    PlaceGraphicYStaggerNative(hl, hram.hGraphicStartTile, b, c);
+}
+
 void PlaceGraphic_Padded(uint8_t* hl, uint8_t start, uint8_t w, uint8_t h, uint8_t w2, uint8_t h2, uint8_t fill) {
     if(w == w2 && h == h2)
-        return PlaceGraphicYStagger(hl, w, h);
+        return PlaceGraphicYStaggerNative(hl, start, w, h);
     
     uint8_t x1, x2, y1, y2;
     if(wram->wBoxAlignment == 0) {

@@ -360,11 +360,10 @@ void AnimateHOFMonEntrance(struct HOFMon* mon){
     GetMonBackpic(vram->vTiles2 + LEN_2BPP_TILE * 0x31, mon->species);
     // LD_A(0x31);
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x31;
     // hlcoord(6, 6, wTilemap);
     // LD_BC((6 << 8) | 6);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(6, 6, wram->wTilemap), 6, 6);
+    PlaceGraphicYStaggerNative(coord(6, 6, wram->wTilemap), 0x31, 6, 6);
     // LD_A(0xd0);
     // LDH_addr_A(hSCY);
     hram.hSCY = 0xd0;
@@ -781,11 +780,10 @@ void HOF_AnimatePlayerPic(void){
     GetPlayerBackpic();
     // LD_A(0x31);
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x31;
     // hlcoord(6, 6, wTilemap);
     // LD_BC((6 << 8) | 6);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(6, 6, wram->wTilemap), 6, 6);
+    PlaceGraphicYStaggerNative(coord(6, 6, wram->wTilemap), 0x31, 6, 6);
     // LD_A(0xd0);
     // LDH_addr_A(hSCY);
     hram.hSCY = 0xd0;
@@ -818,11 +816,10 @@ void HOF_AnimatePlayerPic(void){
     HOF_LoadTrainerFrontpic();
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x0;
     // hlcoord(12, 5, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(12, 5, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(12, 5, wram->wTilemap), 0, 7, 7);
     // LD_A(0xc0);
     // LDH_addr_A(hSCX);
     hram.hSCX = 0xc0;

@@ -1476,11 +1476,10 @@ static void Intro_PrepTrainerPic(uint8_t tclass) {
     GetTrainerPic(vram->vTiles2, tclass);
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x0;
     // hlcoord(6, 4, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(6, 4, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(6, 4, wram->wTilemap), 0, 7, 7);
     // RET;
 }
 
@@ -1491,11 +1490,10 @@ static void ShrinkFrame(const char* path) {
     LoadPNG2bppAssetSectionToVRAM(vram->vTiles2, path, 0, 7 * 7);
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0;
     // hlcoord(6, 4, wTilemap);
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(6, 4, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(6, 4, wram->wTilemap), 0, 7, 7);
     // RET;
 }
 

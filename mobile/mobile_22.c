@@ -1722,11 +1722,10 @@ void Function897d5(const uint8_t* bc){
     // asm_897f3:
         // LD_A(0x37);
         // LDH_addr_A(hGraphicStartTile);
-        hram.hGraphicStartTile = 0x37;
         // hlcoord(12, 3, wTilemap);
         // LD_BC((7 << 8) | 7);
         // PREDEF(pPlaceGraphic);
-        PlaceGraphicYStagger(coord(12, 3, wram->wTilemap), 7, 7);
+        PlaceGraphicYStaggerNative(coord(12, 3, wram->wTilemap), 0x37, 7, 7);
         // CALL(aFunction8963d);
         Function8963d();
         // POP_BC;

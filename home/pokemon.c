@@ -128,10 +128,9 @@ void v_PrepMonFrontpic(tile_t* hl){
         // POP_HL;
         // XOR_A_A;
         // LDH_addr_A(hGraphicStartTile);
-        hram.hGraphicStartTile = 0;
         // LD_BC((7 << 8) | 7);
         // PREDEF(pPlaceGraphic);
-        PlaceGraphicYStagger(hl, 7, 7);
+        PlaceGraphicYStaggerNative(hl, 0, 7, 7);
         // XOR_A_A;
         // LD_addr_A(wBoxAlignment);
         wram->wBoxAlignment = 0;

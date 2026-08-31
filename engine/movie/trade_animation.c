@@ -1297,10 +1297,9 @@ void TradeAnim_ShowFrontpic(const uint8_t* de){
     // hlcoord(7, 2, wTilemap);
     // XOR_A_A;
     // LDH_addr_A(hGraphicStartTile);
-    hram.hGraphicStartTile = 0x0;
     // LD_BC((7 << 8) | 7);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(7, 2, wram->wTilemap), 7, 7);
+    PlaceGraphicYStaggerNative(coord(7, 2, wram->wTilemap), 0, 7, 7);
     // CALL(aWaitBGMap);
     WaitBGMap();
     // RET;

@@ -2204,7 +2204,7 @@ void Function17d98b(void){
     // ADD_HL_DE;
     // LD_BC(0x707);
     // PREDEF(pPlaceGraphic);
-    PlaceGraphicYStagger(coord(0, 0, wram->wTilemap) + de, 7, 7);
+    PlaceGraphicYStaggerNative(coord(0, 0, wram->wTilemap) + de, 0, 7, 7);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // CALL(aFunction17e349);
