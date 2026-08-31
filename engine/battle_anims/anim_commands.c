@@ -22,6 +22,7 @@
 #include "../../data/battle_anims/object_gfx.h"
 #include "../../gfx/sprites.h"
 #include "../../audio/engine.h"
+#include "../../util/log.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,9 +37,11 @@ static void BattleAnimApplyFullCGBPals(void);
 //  Battle animation command interpreter.
 
 void PlayBattleAnim(void){
+    log_runtime_event("ANIMATION", "play begin id=%u", (unsigned)BattleAnimationIdGet());
     BeginBattleAnimationPresentation();
     v_PlayBattleAnim();
     EndBattleAnimationPresentation();
+    log_runtime_event("ANIMATION", "play complete id=%u", (unsigned)BattleAnimationIdGet());
 }
 
 void v_PlayBattleAnim(void){
@@ -105,6 +108,7 @@ void BattleAnimRunScript(void){
         // FARCALL(aCheckBattleScene);
         // IF_C goto disabled;
         if(CheckBattleScene()) {
+            log_runtime_event("ANIMATION", "scene animation enabled id=%u", (unsigned)BattleAnimationIdGet());
             // CALL(aBattleAnimClearHud);
             BattleAnimClearHud();
             // CALL(aRunBattleAnimScript);
@@ -120,6 +124,9 @@ void BattleAnimRunScript(void){
             BattleAnimDelayFrame();
             // CALL(aBattleAnimRestoreHuds);
             BattleAnimRestoreHuds();
+        }
+        else {
+            log_runtime_event("ANIMATION", "scene animation skipped id=%u setting=disabled", (unsigned)BattleAnimationIdGet());
         }
 
     // disabled:

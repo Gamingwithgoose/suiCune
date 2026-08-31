@@ -37,6 +37,7 @@
 #include "../../home/trainers.h"
 #include "../../home/joypad.h"
 #include "../../home/sram.h"
+#include "../../util/log.h"
 #include "../../home/item.h"
 #include "../../data/trainers/leaders.h"
 #include "../pokemon/experience.h"
@@ -12199,11 +12200,17 @@ void DropPlayerSub(void){
     // LD_HL(wBattleMonDVs);
     // PREDEF(pGetUnownLetter);
     GetUnownLetter(wram->wBattleMon.dvs);
+    log_runtime_event("PICTURE", "player backpic request species=%u level=%u alignment=%u destination=16,48 grid=6x6",
+        (unsigned)wram->wCurPartySpecies, (unsigned)wram->wBattleMon.level,
+        (unsigned)(wram->wBoxAlignment != 0));
     uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
     if(LoadNativeBackpicPixels(pixels, wram->wCurPartySpecies)) {
         SetBattleSceneBattlerImageAligned(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6,
             6, 6, 2 * TILE_WIDTH, 6 * TILE_WIDTH, PAL_BATTLE_BG_PLAYER,
             wram->wBoxAlignment != 0);
+    }
+    else {
+        log_runtime_event("ERROR", "player backpic load rejected species=%u", (unsigned)wram->wCurPartySpecies);
     }
     // POP_AF;
     // LD_addr_A(wCurPartySpecies);
@@ -12260,10 +12267,15 @@ void DropEnemySub(void){
     // LD_HL(wEnemyMonDVs);
     // PREDEF(pGetUnownLetter);
     GetUnownLetter(wram->wEnemyMon.dvs);
+    log_runtime_event("PICTURE", "opponent frontpic request species=%u level=%u destination=96,0 grid=7x7",
+        (unsigned)wram->wEnemyMon.species, (unsigned)wram->wEnemyMon.level);
     uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
     if(LoadNativeFrontpicPixels(pixels, 0)) {
         SetBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7,
             7, 7, 12 * TILE_WIDTH, 0, PAL_BATTLE_BG_ENEMY);
+    }
+    else {
+        log_runtime_event("ERROR", "opponent frontpic load rejected species=%u", (unsigned)wram->wEnemyMon.species);
     }
     // POP_AF;
     // LD_addr_A(wCurPartySpecies);
@@ -12666,6 +12678,9 @@ static void ExitBattle_HandleEndOfBattle(void){
 }
 
 void ExitBattle(void){
+    log_runtime_set_battle_context(0, "Exiting");
+    log_runtime_event("BATTLE", "exit begin battleType=%u result=%u", (unsigned)wram->wBattleType,
+        (unsigned)wram->wBattleResult);
     EndBattleSceneDisplay();
     ClearBattleSceneBattlers();
     ClearBattleAnimationHudSprites();
@@ -12673,6 +12688,7 @@ void ExitBattle(void){
     ExitBattle_HandleEndOfBattle();
     // CALL(aCleanUpBattleRAM);
     CleanUpBattleRAM();
+    log_runtime_event("BATTLE", "exit complete");
     // RET;
 }
 
@@ -13608,6 +13624,11 @@ static void InitBattleDisplay_BlankBGMap(void) {
 }
 
 static void InitBattleDisplay(void){
+    log_runtime_set_battle_context(0, "Initializing");
+    log_runtime_event("BATTLE", "initialization battleType=%u playerSpecies=%u playerLevel=%u opponentSpecies=%u opponentLevel=%u animationsEnabled=%u",
+        (unsigned)wram->wBattleType, (unsigned)wram->wBattleMon.species,
+        (unsigned)wram->wBattleMon.level, (unsigned)wram->wEnemyMon.species,
+        (unsigned)wram->wEnemyMon.level, (unsigned)CheckBattleScene());
     BeginBattleSceneDisplay();
     // CALL(aInitBattleDisplay_InitBackPic);
     InitBattleDisplay_InitBackPic();
@@ -13669,6 +13690,7 @@ static void InitBattleDisplay(void){
     // XOR_A_A;
     // LDH_addr_A(hSCX);
     hram.hSCX = 0x0;
+    BattleSceneDiagnosticSnapshot("battle-display-initialized");
     // RET;
     return;
 

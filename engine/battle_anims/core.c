@@ -31,6 +31,7 @@ struct NativeBattleSceneBattler {
     bool defaultMirrorTileColumns;
     uint8_t palette;
     bool visible;
+    uint32_t generation;
 };
 
 struct NativeBattleAnimationState {
@@ -58,7 +59,6 @@ struct NativeBattleAnimationState {
     size_t bgEffectCount;
     size_t bgEffectCapacity;
     uint8_t lastObjectIndex;
-    bool tackleResourceBoundsLogged;
 };
 
 struct BattleAnimationPresentationState {
@@ -93,6 +93,55 @@ static uint8_t sBattleAnimationParameter;
 // Battle animation selection is transient native battle state. It is kept
 // separate from the legacy WRAM layout so content IDs can outlive that layout.
 static BattleAnimationId sBattleAnimationId;
+
+static const char* BattleSceneBattlerName(enum BattleSceneBattlerId battler){
+    return battler == BATTLE_SCENE_BATTLER_PLAYER ? "player" : "opponent";
+}
+
+static void BattleResourceAbort(const char* pool, const char* reason, size_t requested){
+    log_runtime_mark_fatal(reason);
+    log_runtime_event("FATAL", "pool=%s requested=%zu", pool, requested);
+    abort();
+}
+
+void BattleSceneDiagnosticSnapshot(const char* reason){
+    for(uint8_t battler = BATTLE_SCENE_BATTLER_PLAYER;
+        battler < BATTLE_SCENE_BATTLER_COUNT; battler++) {
+        const struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+        if(state->pixelTileCount > state->pixelTileCapacity ||
+            state->basePixelTileCount > state->basePixelTileCapacity ||
+            state->tileCount > state->tileCapacity ||
+            (state->tileCount != 0 && state->tiles == NULL)) {
+            log_runtime_event("ERROR", "snapshot invariant failed battler=%s pixels=%zu/%zu base=%zu/%zu tiles=%zu/%zu tilesPresent=%u",
+                BattleSceneBattlerName(battler), state->pixelTileCount, state->pixelTileCapacity,
+                state->basePixelTileCount, state->basePixelTileCapacity, state->tileCount,
+                state->tileCapacity, (unsigned)(state->tiles != NULL));
+        }
+        else {
+            for(size_t tile = 0; tile < state->tileCount; tile++) {
+                if(state->tiles[tile].imageTile >= state->pixelTileCount) {
+                    log_runtime_event("ERROR", "snapshot invariant failed battler=%s placementIndex=%zu sourceTile=%u validRange=0..%zu",
+                        BattleSceneBattlerName(battler), tile, (unsigned)state->tiles[tile].imageTile,
+                        state->pixelTileCount == 0 ? 0 : state->pixelTileCount - 1);
+                    break;
+                }
+            }
+        }
+        log_runtime_event("BATTLE_SCENE",
+            "snapshot=%s battler=%s generation=%u visible=%u pixels=%zu/%zu base=%zu/%zu tiles=%zu/%zu palette=%u",
+            reason == NULL ? "unspecified" : reason, BattleSceneBattlerName(battler),
+            state->generation, (unsigned)state->visible, state->pixelTileCount, state->pixelTileCapacity,
+            state->basePixelTileCount, state->basePixelTileCapacity, state->tileCount,
+            state->tileCapacity, (unsigned)state->palette);
+    }
+    log_runtime_event("BATTLE_SCENE",
+        "snapshot=%s sceneSprites=%zu/%zu objects=%zu/%zu bgEffects=%zu/%zu tileBindings=%zu/%zu",
+        reason == NULL ? "unspecified" : reason,
+        sBattleAnimationState.sceneSpriteCount, sBattleAnimationState.sceneSpriteCapacity,
+        sBattleAnimationState.objectCount, sBattleAnimationState.objectCapacity,
+        sBattleAnimationState.bgEffectCount, sBattleAnimationState.bgEffectCapacity,
+        sBattleAnimationState.tileBindingCount, sBattleAnimationState.tileBindingCapacity);
+}
 
 struct BattleAnim* BattleAnimationObjects(void){
     return sBattleAnimationState.objects;
@@ -142,9 +191,11 @@ struct BattleBGEffect* AllocateBattleAnimationBGEffect(void){
         struct BattleBGEffect* effects = realloc(sBattleAnimationState.bgEffects,
             newCapacity * sizeof(*effects));
         if(effects == NULL)
-            abort();
+            BattleResourceAbort("bgEffects", "native battle background-effect allocation failed", newCapacity);
         sBattleAnimationState.bgEffects = effects;
         sBattleAnimationState.bgEffectCapacity = newCapacity;
+        log_runtime_event("RESOURCE", "pool=bgEffects oldCount=%zu oldCapacity=%zu requested=%zu newCapacity=%zu",
+            sBattleAnimationState.bgEffectCount, newCapacity / 2, sBattleAnimationState.bgEffectCount + 1, newCapacity);
     }
 
     struct BattleBGEffect* effect = &sBattleAnimationState.bgEffects[sBattleAnimationState.bgEffectCount++];
@@ -163,9 +214,11 @@ void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t ti
         struct BattleAnimationTileBinding* bindings = realloc(sBattleAnimationState.tileBindings,
             newCapacity * sizeof(*bindings));
         if(bindings == NULL)
-            abort();
+            BattleResourceAbort("tileBindings", "native battle tile-binding allocation failed", newCapacity);
         sBattleAnimationState.tileBindings = bindings;
         sBattleAnimationState.tileBindingCapacity = newCapacity;
+        log_runtime_event("RESOURCE", "pool=tileBindings oldCount=%zu oldCapacity=%zu requested=%zu newCapacity=%zu",
+            sBattleAnimationState.tileBindingCount, newCapacity / 2, index + 1, newCapacity);
     }
     sBattleAnimationState.tileBindings[index].graphicsId = graphicsId;
     sBattleAnimationState.tileBindings[index].tileOffset = tileOffset;
@@ -185,38 +238,41 @@ uint16_t BattleAnimationTileOffset(uint8_t graphicsId){
     return 0;
 }
 
-static uint8_t* BattleRenderTileWritePointer(uint8_t** pixels, size_t* capacity, uint16_t tileId, size_t tileCount){
+static uint8_t* BattleRenderTileWritePointer(const char* pool, uint8_t** pixels, size_t* capacity, uint16_t tileId, size_t tileCount){
     if(tileCount > SIZE_MAX - (size_t)tileId)
         abort();
     size_t requiredCapacity = (size_t)tileId + tileCount;
     if(requiredCapacity == 0)
         requiredCapacity = 1;
     if(requiredCapacity > *capacity) {
+        size_t oldCapacity = *capacity;
         if(requiredCapacity > SIZE_MAX / LEN_2BPP_TILE)
             abort();
         uint8_t* resizedPixels = realloc(*pixels, requiredCapacity * LEN_2BPP_TILE);
         if(resizedPixels == NULL)
-            abort();
+            BattleResourceAbort(pool, "native battle tile allocation failed", requiredCapacity);
         memset(resizedPixels + *capacity * LEN_2BPP_TILE, 0,
             (requiredCapacity - *capacity) * LEN_2BPP_TILE);
         *pixels = resizedPixels;
         *capacity = requiredCapacity;
+        log_runtime_event("RESOURCE", "pool=%s oldCapacity=%zu requested=%zu newCapacity=%zu tileId=%u",
+            pool, oldCapacity, requiredCapacity, requiredCapacity, (unsigned)tileId);
     }
     return *pixels + (size_t)tileId * LEN_2BPP_TILE;
 }
 
 uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount){
-    return BattleRenderTileWritePointer(&sBattleAnimationState.tilePixels,
+    return BattleRenderTileWritePointer("animationTiles", &sBattleAnimationState.tilePixels,
         &sBattleAnimationState.tilePixelCapacity, tileId, tileCount);
 }
 
 uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount){
-    return BattleRenderTileWritePointer(&sBattleAnimationState.hudTilePixels,
+    return BattleRenderTileWritePointer("hudTiles", &sBattleAnimationState.hudTilePixels,
         &sBattleAnimationState.hudTilePixelCapacity, tileId, tileCount);
 }
 
 uint8_t* BattleSceneBattlerTileWritePointer(uint16_t tileId, size_t tileCount){
-    return BattleRenderTileWritePointer(&sBattleAnimationState.battlerTilePixels,
+    return BattleRenderTileWritePointer("battlerTiles", &sBattleAnimationState.battlerTilePixels,
         &sBattleAnimationState.battlerTilePixelCapacity, tileId, tileCount);
 }
 
@@ -224,7 +280,7 @@ const uint8_t* BattleSceneBattlerPixels(void){
     return sBattleAnimationState.battlerTilePixels;
 }
 
-static void BattleSceneEnsurePixelBuffer(uint8_t** pixels, size_t* capacity, size_t tileCount){
+static void BattleSceneEnsurePixelBuffer(const char* pool, uint8_t** pixels, size_t* capacity, size_t tileCount){
     if(pixels == NULL || capacity == NULL || tileCount == 0)
         abort();
     if(tileCount <= *capacity)
@@ -233,8 +289,10 @@ static void BattleSceneEnsurePixelBuffer(uint8_t** pixels, size_t* capacity, siz
         abort();
     uint8_t* resizedPixels = realloc(*pixels, tileCount * LEN_2BPP_TILE);
     if(resizedPixels == NULL)
-        abort();
+        BattleResourceAbort(pool, "native battler pixel allocation failed", tileCount);
     *pixels = resizedPixels;
+    log_runtime_event("RESOURCE", "pool=%s oldCapacity=%zu requested=%zu newCapacity=%zu",
+        pool, *capacity, tileCount, tileCount);
     *capacity = tileCount;
 }
 
@@ -242,14 +300,14 @@ static void BattleSceneEnsureBattlerPixels(enum BattleSceneBattlerId battler, si
     if(battler >= BATTLE_SCENE_BATTLER_COUNT)
         abort();
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
-    BattleSceneEnsurePixelBuffer(&state->pixels, &state->pixelTileCapacity, tileCount);
+    BattleSceneEnsurePixelBuffer("battlerPixels", &state->pixels, &state->pixelTileCapacity, tileCount);
 }
 
 static void BattleSceneEnsureBattlerBasePixels(enum BattleSceneBattlerId battler, size_t tileCount){
     if(battler >= BATTLE_SCENE_BATTLER_COUNT)
         abort();
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
-    BattleSceneEnsurePixelBuffer(&state->basePixels, &state->basePixelTileCapacity, tileCount);
+    BattleSceneEnsurePixelBuffer("battlerBasePixels", &state->basePixels, &state->basePixelTileCapacity, tileCount);
 }
 
 static void BattleSceneEnsureBattlerTiles(enum BattleSceneBattlerId battler, size_t tileCount){
@@ -262,8 +320,10 @@ static void BattleSceneEnsureBattlerTiles(enum BattleSceneBattlerId battler, siz
         abort();
     struct BattleSceneBattlerTile* tiles = realloc(state->tiles, tileCount * sizeof(*tiles));
     if(tiles == NULL)
-        abort();
+        BattleResourceAbort("battlerPlacement", "native battler placement allocation failed", tileCount);
     state->tiles = tiles;
+    log_runtime_event("RESOURCE", "pool=battlerTiles oldCapacity=%zu requested=%zu newCapacity=%zu battler=%s",
+        state->tileCapacity, tileCount, tileCount, BattleSceneBattlerName(battler));
     state->tileCapacity = tileCount;
 }
 
@@ -271,6 +331,8 @@ void ClearBattleSceneBattlerTiles(enum BattleSceneBattlerId battler){
     if(battler >= BATTLE_SCENE_BATTLER_COUNT)
         return;
     sBattleAnimationState.battlers[battler].tileCount = 0;
+    log_runtime_event("BATTLE_SCENE", "clear battler tiles battler=%s",
+        BattleSceneBattlerName(battler));
 }
 
 void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
@@ -288,6 +350,8 @@ void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
         state->tiles[write++] = tile;
     }
     state->tileCount = write;
+    log_runtime_event("BATTLE_SCENE", "clear battler region battler=%s region=%d,%d grid=%ux%u remainingTiles=%zu",
+        BattleSceneBattlerName(battler), x, y, (unsigned)width, (unsigned)height, state->tileCount);
 }
 
 void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
@@ -302,8 +366,12 @@ void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
     for(uint8_t row = 0; row < height; row++) {
         for(uint8_t column = 0; column < width; column++) {
             size_t index = (size_t)row * width + column;
-            if(imageTiles[index] >= state->pixelTileCount)
+            if(imageTiles[index] >= state->pixelTileCount) {
+                log_runtime_event("ERROR", "battler=%s placement sourceTile=%u validRange=0..%zu",
+                    BattleSceneBattlerName(battler), (unsigned)imageTiles[index],
+                    state->pixelTileCount == 0 ? 0 : state->pixelTileCount - 1);
                 abort();
+            }
             state->tiles[index].x = x + column * TILE_WIDTH;
             state->tiles[index].y = y + row * TILE_WIDTH;
             state->tiles[index].imageTile = imageTiles[index];
@@ -315,9 +383,12 @@ void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
 void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
     const uint8_t* pixels, size_t tileCount, uint8_t width, uint8_t height,
     int16_t x, int16_t y, uint8_t palette, bool mirrorTileColumns){
-    if(battler >= BATTLE_SCENE_BATTLER_COUNT || pixels == NULL ||
-        tileCount < (size_t)width * height)
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT || pixels == NULL || width == 0 || height == 0 ||
+        tileCount < (size_t)width * height) {
+        log_runtime_event("ERROR", "invalid battler image battler=%u pixelsPresent=%u tileCount=%zu grid=%ux%u",
+            (unsigned)battler, (unsigned)(pixels != NULL), tileCount, (unsigned)width, (unsigned)height);
         abort();
+    }
     BattleSceneEnsureBattlerPixels(battler, tileCount);
     BattleSceneEnsureBattlerBasePixels(battler, tileCount);
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
@@ -331,21 +402,42 @@ void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
     state->defaultWidth = width;
     state->defaultHeight = height;
     state->defaultMirrorTileColumns = mirrorTileColumns;
+    state->generation++;
+    if(state->generation == 0)
+        state->generation = 1;
     uint8_t imageTiles[7 * 7];
     if((size_t)width * height > lengthof(imageTiles))
         abort();
     for(uint8_t row = 0; row < height; row++) {
         for(uint8_t column = 0; column < width; column++) {
-            // PlaceGraphicNative numbers source tiles down each source
-            // column, then advances to the next display column. Alignment
-            // mirrors columns only; FixBackpicAlignment already mirrors bits
-            // inside each decoded tile.
+            // Native PNG loaders decode tiles left-to-right then top-to-bottom.
+            // The scene compositor consumes this explicit placement list in
+            // that same row-major order. Alignment mirrors display columns
+            // only; FixBackpicAlignment already mirrors bits in each tile.
             uint8_t sourceColumn = mirrorTileColumns ? width - 1 - column : column;
             imageTiles[(size_t)row * width + column] =
-                (uint8_t)((size_t)sourceColumn * height + row);
+                (uint8_t)((size_t)row * width + sourceColumn);
         }
     }
     PlaceBattleSceneBattlerPattern(battler, x, y, width, height, imageTiles);
+    log_runtime_event("PICTURE", "replace battler=%s generation=%u sourceTiles=%zu bytes=%zu grid=%ux%u destination=%d,%d palette=%u order=row-major mirrorColumns=%u sourceFirst=%u sourceLast=%u",
+        BattleSceneBattlerName(battler), state->generation, tileCount,
+        tileCount * LEN_2BPP_TILE, (unsigned)width, (unsigned)height, x, y,
+        (unsigned)palette, (unsigned)mirrorTileColumns, (unsigned)imageTiles[0],
+        (unsigned)imageTiles[(size_t)width * height - 1]);
+    for(uint8_t row = 0; row < height; row++) {
+        char mapping[96] = "";
+        size_t offset = 0;
+        for(uint8_t column = 0; column < width; column++) {
+            int written = snprintf(mapping + offset, sizeof(mapping) - offset,
+                "%s%u", column == 0 ? "" : ",", (unsigned)imageTiles[(size_t)row * width + column]);
+            if(written < 0 || (size_t)written >= sizeof(mapping) - offset)
+                break;
+            offset += (size_t)written;
+        }
+        log_runtime_event("PICTURE", "placement battler=%s row=%u sourceTiles=%s",
+            BattleSceneBattlerName(battler), (unsigned)row, mapping);
+    }
 }
 
 void SetBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
@@ -367,11 +459,18 @@ void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
     }
     memcpy(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
     state->pixelTileCount = tileCount;
+    log_runtime_event("PICTURE", "update battler=%s generation=%u sourceTiles=%zu bytes=%zu",
+        BattleSceneBattlerName(battler), state->generation, tileCount,
+        tileCount * LEN_2BPP_TILE);
 }
 
 void SetBattleSceneBattlerVisible(enum BattleSceneBattlerId battler, bool visible){
-    if(battler < BATTLE_SCENE_BATTLER_COUNT)
+    if(battler < BATTLE_SCENE_BATTLER_COUNT) {
         sBattleAnimationState.battlers[battler].visible = visible;
+        log_runtime_event("BATTLE_SCENE", "battler=%s visible=%u generation=%u",
+            BattleSceneBattlerName(battler), (unsigned)visible,
+            sBattleAnimationState.battlers[battler].generation);
+    }
 }
 
 void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDelta, int16_t yDelta){
@@ -382,6 +481,8 @@ void TranslateBattleSceneBattler(enum BattleSceneBattlerId battler, int16_t xDel
         state->tiles[i].x += xDelta;
         state->tiles[i].y += yDelta;
     }
+    log_runtime_event("BATTLE_SCENE", "translate battler=%s dx=%d dy=%d tileCount=%zu",
+        BattleSceneBattlerName(battler), xDelta, yDelta, state->tileCount);
 }
 
 const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler){
@@ -414,11 +515,14 @@ void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler){
             uint8_t sourceColumn = state->defaultMirrorTileColumns
                 ? state->defaultWidth - 1 - column : column;
             imageTiles[(size_t)row * state->defaultWidth + column] =
-                (uint8_t)((size_t)sourceColumn * state->defaultHeight + row);
+                (uint8_t)((size_t)row * state->defaultWidth + sourceColumn);
         }
     }
     PlaceBattleSceneBattlerPattern(battler, state->defaultX, state->defaultY,
         state->defaultWidth, state->defaultHeight, imageTiles);
+    log_runtime_event("PICTURE", "restore placement battler=%s generation=%u grid=%ux%u order=row-major mirrorColumns=%u",
+        BattleSceneBattlerName(battler), state->generation, (unsigned)state->defaultWidth,
+        (unsigned)state->defaultHeight, (unsigned)state->defaultMirrorTileColumns);
 }
 
 void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler){
@@ -430,6 +534,8 @@ void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler){
     BattleSceneEnsureBattlerPixels(battler, state->basePixelTileCount);
     memcpy(state->pixels, state->basePixels, state->basePixelTileCount * LEN_2BPP_TILE);
     state->pixelTileCount = state->basePixelTileCount;
+    log_runtime_event("PICTURE", "restore base image battler=%s generation=%u sourceTiles=%zu",
+        BattleSceneBattlerName(battler), state->generation, state->basePixelTileCount);
 }
 
 void ClearBattleSceneBattlers(void){
@@ -439,6 +545,7 @@ void ClearBattleSceneBattlers(void){
         free(sBattleAnimationState.battlers[i].tiles);
         memset(&sBattleAnimationState.battlers[i], 0, sizeof(sBattleAnimationState.battlers[i]));
     }
+    log_runtime_event("BATTLE_SCENE", "clear all battler resources");
 }
 
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
@@ -455,21 +562,21 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
         pixels = sBattleAnimationState.battlerTilePixels;
         capacity = sBattleAnimationState.battlerTilePixelCapacity;
     }
-    else {
+    else if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_ANIMATION) {
         pixels = sBattleAnimationState.tilePixels;
         capacity = sBattleAnimationState.tilePixelCapacity;
+    }
+    else {
+        log_runtime_event("ERROR", "native sprite resource rejected invalidKind=%u tile=%u span=%zu",
+            (unsigned)sprite->resourceKind, (unsigned)sprite->tileId, tileSpan);
+        return NULL;
     }
     // In 8x16 mode the draw host reads two complete native tiles, including
     // when Y-flipped. Validate the span before exposing a source pointer.
     if(pixels == NULL || sprite->tileId > capacity || tileSpan > capacity - sprite->tileId) {
-        // TEMPORARY Tackle diagnostic: the remaining crash cannot be proven
-        // without runtime observation. Emit the first rejected native source
-        // only, so a failing action identifies its resource/span boundary.
-        if(BattleAnimationIdGet() == TACKLE && !sBattleAnimationState.tackleResourceBoundsLogged) {
-            log_err("Native Tackle resource bounds: kind=%u tile=%u span=%zu capacity=%zu\n",
-                sprite->resourceKind, sprite->tileId, tileSpan, capacity);
-            sBattleAnimationState.tackleResourceBoundsLogged = true;
-        }
+        log_runtime_event("ERROR", "native sprite resource rejected kind=%u tile=%u span=%zu capacity=%zu animation=%u",
+            (unsigned)sprite->resourceKind, (unsigned)sprite->tileId, tileSpan, capacity,
+            (unsigned)BattleAnimationIdGet());
         return NULL;
     }
     return pixels + (size_t)sprite->tileId * LEN_2BPP_TILE;
@@ -514,10 +621,12 @@ void BeginBattleAnimationPresentation(void){
     memcpy(presentation->objectPaletteSource, wram->wOBPals1, sizeof(presentation->objectPaletteSource));
     memcpy(presentation->bgPaletteOutput, wram->wBGPals2, sizeof(presentation->bgPaletteOutput));
     memcpy(presentation->objectPaletteOutput, wram->wOBPals2, sizeof(presentation->objectPaletteOutput));
+    log_runtime_event("ANIMATION", "presentation begin animation=%u", (unsigned)BattleAnimationIdGet());
 }
 
 void EndBattleAnimationPresentation(void){
     sBattleAnimationPresentation.active = false;
+    log_runtime_event("ANIMATION", "presentation end animation=%u", (unsigned)BattleAnimationIdGet());
 }
 
 bool BattleAnimationPresentationActive(void){
@@ -527,10 +636,14 @@ bool BattleAnimationPresentationActive(void){
 void BeginBattleSceneDisplay(void){
     memset(&sBattleSceneDisplay, 0, sizeof(sBattleSceneDisplay));
     sBattleSceneDisplay.active = true;
+    log_runtime_event("BATTLE_SCENE", "display begin");
+    BattleSceneDiagnosticSnapshot("display-begin");
 }
 
 void EndBattleSceneDisplay(void){
+    BattleSceneDiagnosticSnapshot("display-end");
     memset(&sBattleSceneDisplay, 0, sizeof(sBattleSceneDisplay));
+    log_runtime_event("BATTLE_SCENE", "display end");
 }
 
 bool BattleSceneDisplayActive(void){
@@ -677,9 +790,12 @@ static struct BattleAnimationSprite* AppendBattleSceneSprite(uint8_t category, u
         struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.sceneSprites,
             newCapacity * sizeof(*sprites));
         if(sprites == NULL)
-            abort();
+            BattleResourceAbort("sceneSprites", "native battle scene-sprite allocation failed", newCapacity);
         sBattleAnimationState.sceneSprites = sprites;
         sBattleAnimationState.sceneSpriteCapacity = newCapacity;
+        log_runtime_event("RESOURCE", "pool=sceneSprites oldCount=%zu oldCapacity=%zu requested=%zu newCapacity=%zu",
+            sBattleAnimationState.sceneSpriteCount, newCapacity / 2,
+            sBattleAnimationState.sceneSpriteCount + 1, newCapacity);
     }
     struct BattleAnimationSprite* sprite = &sBattleAnimationState.sceneSprites[sBattleAnimationState.sceneSpriteCount++];
     memset(sprite, 0, sizeof(*sprite));
@@ -839,9 +955,12 @@ bool QueueBattleAnimation(void){
         struct BattleAnim* objects = realloc(sBattleAnimationState.objects,
             newCapacity * sizeof(*objects));
         if(objects == NULL)
-            abort();
+            BattleResourceAbort("animationObjects", "native battle animation-object allocation failed", newCapacity);
         sBattleAnimationState.objects = objects;
         sBattleAnimationState.objectCapacity = newCapacity;
+        log_runtime_event("RESOURCE", "pool=animationObjects oldCount=%zu oldCapacity=%zu requested=%zu newCapacity=%zu",
+            sBattleAnimationState.objectCount, newCapacity / 2,
+            sBattleAnimationState.objectCount + 1, newCapacity);
     }
 
     struct BattleAnim* object = &sBattleAnimationState.objects[sBattleAnimationState.objectCount++];

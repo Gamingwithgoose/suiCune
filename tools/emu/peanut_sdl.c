@@ -34,6 +34,7 @@
 #include "../../util/network.h"
 #include "../../util/soft_reset.h"
 #include "../../util/intro_jumptable.h"
+#include "../../util/log.h"
 #include "../../audio/load.h"
 #include "../../util/input.h"
 #include <stdbool.h>
@@ -1197,7 +1198,10 @@ void gb_run_frame(void) {
                 }
             }
             // PEEK("EMU");
-            if (gb.cpu_reg.pc == 0x38 || gb.cpu_reg.pc == 0) exit(0);  // crash
+            if (gb.cpu_reg.pc == 0x38 || gb.cpu_reg.pc == 0) {
+                log_runtime_mark_fatal("emulation control transfer reached a crash vector");
+                exit(EXIT_FAILURE);
+            }
             /* Obtain opcode */
             opcode = (gb.gb_halt ? 0x00 : gb_read(gb.cpu_reg.pc++));
 
@@ -3375,6 +3379,7 @@ void gb_error(const enum gb_error_e gb_err, const uint16_t val) {
     log_err("Error. Press q to exit, or any other key to continue.");
 
     if (getchar() == 'q') {
+        log_runtime_mark_fatal("emulator reported a fatal error and recovery exit was selected");
         /* Record save file. */
         write_cart_ram_file("recovery.sav", "recovery.sav2", &priv->cart_ram,
                             gb_get_save_size());
@@ -3579,6 +3584,8 @@ void cleanup(void) {
 
 int main(int argc, char* argv[]) {
     (void)argc, (void)argv;
+    log_runtime_begin("suiCune");
+    atexit(log_runtime_end);
     atexit(cleanup);
     enum gb_init_error_e gb_ret;
     int ret = EXIT_SUCCESS;
@@ -3976,6 +3983,7 @@ int main(int argc, char* argv[]) {
         /* Execute CPU cycles until the screen has to be redrawn. */
         // gb_run_frame();
         Intro_Jumptable();
+        log_runtime_frame_advance();
     }
 
     ret = EXIT_SUCCESS;

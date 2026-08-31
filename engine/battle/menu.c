@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "../../home/menu.h"
 #include "../../home/print_text.h"
+#include "../../util/log.h"
 
 static void PrintParkBallsRemaining(void);
 static void PrintSafariBallsRemaining(void);
@@ -27,6 +28,7 @@ const struct MenuHeader BattleMenuHeader = {
 };
 
 bool LoadBattleMenu(void){
+    log_runtime_event("MENU", "battle command menu open cursor=%u tilemapBackup=1", (unsigned)wram->wBattleMenuCursorPosition);
     // LD_HL(mBattleMenuHeader);
     // CALL(aLoadMenuHeader);
     LoadMenuHeader(&BattleMenuHeader);
@@ -40,6 +42,8 @@ bool LoadBattleMenu(void){
     wram->wBattleMenuCursorPosition = wram->wMenuCursorPosition;
     // CALL(aExitMenu);
     ExitMenu();
+    log_runtime_event("MENU", "battle command menu close cursor=%u cancelled=%u",
+        (unsigned)wram->wBattleMenuCursorPosition, (unsigned)res.flag);
     // RET;
     return res.flag;
 }
@@ -74,6 +78,7 @@ void ContestBattleMenu(void){
 }
 
 void CommonBattleMenu(void){
+    log_runtime_event("MENU", "battle alternate menu open cursor=%u", (unsigned)wram->wBattleMenuCursorPosition);
     // LD_A_addr(wBattleMenuCursorPosition);
     // LD_addr_A(wMenuCursorPosition);
     wram->wMenuCursorPosition = wram->wBattleMenuCursorPosition;
@@ -84,6 +89,8 @@ void CommonBattleMenu(void){
     wram->wBattleMenuCursorPosition = res.a;
     // CALL(aExitMenu);
     ExitMenu();
+    log_runtime_event("MENU", "battle alternate menu close cursor=%u cancelled=%u",
+        (unsigned)wram->wBattleMenuCursorPosition, (unsigned)res.flag);
     // RET;
 }
 

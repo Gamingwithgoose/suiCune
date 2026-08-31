@@ -26,6 +26,7 @@
 #include "../../data/moves/moves.h"
 #include "../../data/moves/effects.h"
 #include "../../home/delay.h"
+#include "../../util/log.h"
 #include "../../data/battle/stat_multipliers.h"
 #include "../../data/battle/accuracy_multipliers.h"
 #include "../../data/battle/stat_names.h"
@@ -34,10 +35,15 @@
 #include <stddef.h>
 
 struct BattleCmdState gBattleCmdState;
+static uint32_t sBattleDiagnosticTurn;
 
 void DoPlayerTurn(void){
     // CALL(aSetPlayerTurn);
     SetPlayerTurn();
+    sBattleDiagnosticTurn++;
+    log_runtime_set_battle_context(sBattleDiagnosticTurn, "PlayerAction");
+    log_runtime_event("TURN", "player turn begin action=%u move=%u", (unsigned)wram->wBattlePlayerAction,
+        (unsigned)GetBattleVar(BATTLE_VARS_MOVE));
 
     // LD_A_addr(wBattlePlayerAction);
     // AND_A_A;  // BATTLEPLAYERACTION_USEMOVE?
@@ -52,6 +58,9 @@ void DoPlayerTurn(void){
 void DoEnemyTurn(void){
     // CALL(aSetEnemyTurn);
     SetEnemyTurn();
+    log_runtime_set_battle_context(sBattleDiagnosticTurn, "OpponentAction");
+    log_runtime_event("TURN", "opponent turn begin action=%u move=%u", (unsigned)wram->wBattleAction,
+        (unsigned)GetBattleVar(BATTLE_VARS_MOVE));
 
     // LD_A_addr(wLinkMode);
     // AND_A_A;
@@ -80,6 +89,9 @@ void DoTurn(void){
     // XOR_A_A;
     // LD_addr_A(wTurnEnded);
     wram->wTurnEnded = FALSE;
+    log_runtime_event("TURN", "move begin attacker=%s move=%u effect=%u",
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent",
+        (unsigned)GetBattleVar(BATTLE_VARS_MOVE), (unsigned)GetBattleVar(BATTLE_VARS_MOVE_EFFECT));
 
 // Effect command checkturn is called for every move.
     // CALL(aCheckTurn);
@@ -89,7 +101,11 @@ void DoTurn(void){
     // AND_A_A;
     // RET_NZ ;
     if(wram->wTurnEnded)
+    {
+        log_runtime_event("TURN", "move ended during precheck attacker=%s",
+            hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent");
         return;
+    }
 
     // CALL(aUpdateMoveData);
     UpdateMoveData();
@@ -108,7 +124,11 @@ void DoMove(void){
     // ADD_HL_BC;
     // LD_A(BANK(aMoveEffectsPointers));
     // CALL(aGetFarWord);
-    const uint8_t* hl = MoveEffectsPointers[GetBattleVar(BATTLE_VARS_MOVE_EFFECT)];
+    uint8_t effectId = GetBattleVar(BATTLE_VARS_MOVE_EFFECT);
+    const uint8_t* hl = MoveEffectsPointers[effectId];
+    log_runtime_event("TURN", "move effect script prepared attacker=%s move=%u effect=%u",
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent",
+        (unsigned)GetBattleVar(BATTLE_VARS_MOVE), (unsigned)effectId);
 
     // LD_DE(wBattleScriptBuffer);
     uint8_t* de = wram->wBattleScriptBuffer;
@@ -156,8 +176,10 @@ void DoMove(void){
     //  endturn_command (-2) is used to terminate branches without ending the read cycle.
         // CP_A(endturn_command);
         // RET_NC ;
-        if(a >= endturn_command)
+        if(a >= endturn_command) {
+            log_runtime_event("TURN", "move effect script complete terminator=%u", (unsigned)a);
             return;
+        }
 
     //  The rest of the commands (01-af) are read from BattleCommandPointers.
         // PUSH_BC;
@@ -173,6 +195,7 @@ void DoMove(void){
         // CALL(aGetFarWord);
 
         // CALL_hl;
+        log_runtime_event("TURN", "move effect dispatch command=%u", (unsigned)a);
         BattleCommandPointers[a-1]();
         
         // goto ReadMoveEffectCommand;
@@ -551,6 +574,7 @@ void OpponentCantMove(void){
 }
 
 void CheckEnemyTurn(void){
+    log_runtime_event("TURN", "opponent precheck begin move=%u", (unsigned)GetBattleVar(BATTLE_VARS_MOVE));
     // LD_HL(wEnemySubStatus4);
     // BIT_hl(SUBSTATUS_RECHARGE);
     // IF_Z goto no_recharge;
@@ -863,6 +887,7 @@ void EndTurn(void){
     // LD_A(0x1);
     // LD_addr_A(wTurnEnded);
     wram->wTurnEnded = 0x1;
+    log_runtime_event("TURN", "turn ended attacker=%s", hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent");
     // JP(mResetDamage);
     return ResetDamage();
 }
@@ -1461,6 +1486,8 @@ static uint8_t BattleCommand_DoTurn_consume_pp(uint8_t* hl) {
 }
 
 void BattleCommand_DoTurn(void){
+    log_runtime_event("TURN", "consume-pp boundary attacker=%s move=%u",
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent", (unsigned)GetBattleVar(BATTLE_VARS_MOVE));
     PEEK("");
     // CALL(aCheckUserIsCharging);
     // RET_NZ ;
@@ -2985,6 +3012,10 @@ void BattleCommand_SwitchTurn(void){
     // XOR_A(1);
     // LDH_addr_A(hBattleTurn);
     hram.hBattleTurn ^= 1;
+    log_runtime_set_battle_context(sBattleDiagnosticTurn,
+        hram.hBattleTurn == TURN_PLAYER ? "PlayerAction" : "OpponentAction");
+    log_runtime_event("TURN", "turn context switched to=%s",
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent");
     // RET;
 }
 
@@ -4901,6 +4932,8 @@ void PlayFXAnimID(uint16_t de){
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
     BattleAnimationIdSet(de);
+    log_runtime_event("ANIMATION", "dispatch animation=%u attacker=%s", (unsigned)de,
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent");
 
     // LD_C(3);
     // CALL(aDelayFrames);
@@ -5192,6 +5225,8 @@ void UpdateMoveData(void){
     // LD_A(BATTLE_VARS_MOVE);
     // CALL(aGetBattleVar);
     move_t move = GetBattleVar(BATTLE_VARS_MOVE);
+    log_runtime_event("TURN", "move data update attacker=%s move=%u",
+        hram.hBattleTurn == TURN_PLAYER ? "player" : "opponent", (unsigned)move);
     // LD_addr_A(wCurSpecies);
     // LD_addr_A(wNamedObjectIndex);
 
@@ -9995,6 +10030,7 @@ void PlayOpponentBattleAnim(uint16_t de){
     // LD_A_D;
     // LD_addr_A(wFXAnimID + 1);
     BattleAnimationIdSet(de);
+    log_runtime_event("ANIMATION", "opponent animation dispatch=%u", (unsigned)de);
     // XOR_A_A;
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;

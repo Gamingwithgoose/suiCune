@@ -5968,11 +5968,9 @@ Retained boundary and diagnostics
   eight per tip, dynamic scene-sprite lifetime, and the Beam resource range.
   The exact final-pair omission was repaired; runtime verification remains
   required for visual completeness.
-- No exact source-only proof identifies the remaining opponent-Tackle crash.
-  A temporary, one-per-animation `log_err` diagnostic reports a rejected
-  native Tackle resource kind/tile/span/capacity if the span guard encounters
-  one. Remove it after runtime verification confirms no rejection and the
-  crash is resolved.
+- No exact source-only proof identifies the remaining opponent-action crash.
+  The former move-specific diagnostic has been superseded by shared native
+  resource-bound diagnostics.
 - Runtime observations remain unchanged: opponent frontpics render normally;
   player backpics scramble after sendout; Leer is incomplete; opponent Tackle
   crashes. No runtime claim is made by this entry.
@@ -5995,6 +5993,76 @@ Validation and next closure
   dimensions/source range, Leer object/OAM/frame data, Tackle's script,
   background effect, scanline commit, and native compositor paths.
 - Build/runtime validation: not performed.
-- Next task: execute the four stated battle regressions, collect the temporary
-  Tackle diagnostic if emitted, and only then determine the next repair. No
-  forward battle migration was started.
+- Next task: execute the four stated battle regressions and determine the next
+  repair from shared runtime evidence. No forward battle migration was started.
+
+2026-08-31 — Battle pipeline diagnostics and stabilization
+===========================================================
+
+Completed work
+--------------
+- Added a centralized persistent runtime diagnostic log at
+  `logs/suiCune_runtime.log`. Startup creates the directory when possible,
+  truncates the previous log, records build/platform metadata, and flushes
+  every diagnostic event. Normal and known fatal exits receive distinct final
+  markers.
+- Added battle lifecycle diagnostics for display initialization/exit, picture
+  resource replacement, source asset dimensions, decoded tile ordering,
+  placement mapping, visibility, translation, menu transitions, animation
+  dispatch, animation-disabled skips, turn handoff, move-effect dispatch, and
+  effect-script completion.
+- Added allocation diagnostics for native frontpic staging, battler pixels and
+  placement, animation tiles, HUD tiles, battler tiles, scene sprites,
+  animation objects, background effects, and tile bindings. Capacity changes
+  record the previous capacity, requested capacity, and replacement capacity.
+- Hardened native scene-resource checks: unsupported resource kinds and
+  out-of-range sprite spans are rejected without a fallback to legacy storage;
+  invalid battler placement source indices emit an error before termination.
+- Corrected a proven native tile-order defect. The PNG loaders produce tiles
+  in row-major order and the native compositor consumes its explicit placement
+  list in row-major order. Persistent battler setup and restore had interpreted
+  the source as column-major, transposing six-by-six and seven-by-seven
+  pictures. Alignment now mirrors only columns of the row-major placement;
+  per-tile bit reversal remains in the picture loader.
+- Updated documentation rules so durable project history excludes non-technical
+  provenance and interaction metadata while retaining technical state,
+  validation, and remaining work.
+
+Retained boundaries and unresolved behavior
+-------------------------------------------
+- The packed battle command scripts, PokeAnim content boundary, generic
+  background/window renderer, and retained object host remain outside this
+  diagnostic closure.
+- The opponent-action crash remains unproven. The new log is intended to
+  identify the final successful shared picture/resource/render/turn boundary
+  before termination, including runs with battle animations disabled.
+- No move-specific behavior was introduced for Leer, Tackle, or an individual
+  species.
+
+Files modified
+--------------
+- `AGENTS.md`
+- `engine/battle/core.c`
+- `engine/battle/effect_commands.c`
+- `engine/battle/menu.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/gfx/load_pics.c`
+- `tools/emu/peanut_sdl.c`
+- `util/assets.c`
+- `util/assets.h`
+- `util/log.c`
+- `util/log.h`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and next closure
+---------------------------
+- Static validation traced runtime-log startup, frame progression, clean
+  shutdown, known fatal exits, every changed logger call site, picture loader
+  producer ordering, scene placement consumer ordering, resource growth paths,
+  native sprite lookup, menu transitions, and player-to-opponent turn flow.
+- Build/runtime validation: not performed.
+- Next task: run a normal battle through a player move and opponent action,
+  retain `logs/suiCune_runtime.log`, and compare the same sequence with battle
+  animations disabled before any additional battle-renderer migration.

@@ -356,6 +356,18 @@ void LoadPNG1bppAssetToVRAM(void* dest, const char* filename) {
 
 // Loads a 2bpp PNG asset from an archive, converts it to GB pixel format,
 // and writes the result to dest, assumedly a vram destination.
+bool GetPNGAssetDimensions(const char* filename, int* width, int* height) {
+    if(filename == NULL || width == NULL || height == NULL)
+        return false;
+    asset_s asset = LoadAsset(filename);
+    if(asset.ptr == NULL)
+        return false;
+    int channels;
+    int ok = stbi_info_from_memory(asset.ptr, (int)asset.size, width, height, &channels);
+    FreeAsset(asset);
+    return ok != 0;
+}
+
 void LoadPNG2bppAssetToVRAM(void* dest, const char* filename) {
     uint8_t* d = dest;
     asset_s a = LoadAsset(filename);

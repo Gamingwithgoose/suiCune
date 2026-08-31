@@ -189,6 +189,7 @@ const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerI
 void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlers(void);
+void BattleSceneDiagnosticSnapshot(const char* reason);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
     size_t tileSpan);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);

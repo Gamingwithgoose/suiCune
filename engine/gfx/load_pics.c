@@ -6,6 +6,7 @@
 #include "../../data/pokemon/pic_pointers.h"
 #include "../../data/pokemon/unown_pic_pointers.h"
 #include "../../data/trainers/pic_pointers.h"
+#include "../../util/log.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,6 +26,7 @@ static struct NativeFrontpicSource sNativeFrontpicSource;
 
 static uint8_t* NativeFrontpicSourcePixels(size_t requiredTiles){
     if(requiredTiles > sNativeFrontpicSource.tileCapacity) {
+        size_t oldCapacity = sNativeFrontpicSource.tileCapacity;
         size_t capacity = sNativeFrontpicSource.tileCapacity == 0 ? 128 : sNativeFrontpicSource.tileCapacity;
         while(capacity < requiredTiles) {
             if(capacity > SIZE_MAX / 2)
@@ -34,12 +36,16 @@ static uint8_t* NativeFrontpicSourcePixels(size_t requiredTiles){
         if(capacity > SIZE_MAX / LEN_2BPP_TILE)
             abort();
         uint8_t* pixels = realloc(sNativeFrontpicSource.pixels, capacity * LEN_2BPP_TILE);
-        if(pixels == NULL)
+        if(pixels == NULL) {
+            log_runtime_mark_fatal("native frontpic staging allocation failed");
             abort();
+        }
         memset(pixels + sNativeFrontpicSource.tileCapacity * LEN_2BPP_TILE, 0,
             (capacity - sNativeFrontpicSource.tileCapacity) * LEN_2BPP_TILE);
         sNativeFrontpicSource.pixels = pixels;
         sNativeFrontpicSource.tileCapacity = capacity;
+        log_runtime_event("RESOURCE", "pool=frontpicSource oldCapacity=%zu requested=%zu newCapacity=%zu",
+            oldCapacity, requiredTiles, capacity);
     }
     return sNativeFrontpicSource.pixels;
 }
@@ -146,6 +152,8 @@ bool LoadNativeFrontpicPixels(uint8_t* de, uint8_t frame){
         return false;
     uint8_t paddedPixels[7 * 7 * LEN_2BPP_TILE];
     LoadFrontpicPixels(de, frame, paddedPixels);
+    log_runtime_event("PICTURE", "frontpic native load complete species=%u frame=%u outputTiles=%u outputBytes=%u",
+        (unsigned)wram->wCurSpecies, (unsigned)frame, 7 * 7, 7 * 7 * LEN_2BPP_TILE);
     return true;
 }
 
@@ -167,16 +175,25 @@ static uint8_t* LoadFrontpicPixels(uint8_t* de, uint8_t frame, uint8_t paddedPix
     // CALL(aGetFrontpicPointer);
     int size = c * b;
     const char* de2 = GetFrontpicPointer();
+    int sourceWidth = 0;
+    int sourceHeight = 0;
+    bool haveSourceDimensions = GetPNGAssetDimensions(de2, &sourceWidth, &sourceHeight);
     size_t sourceTiles = size;
     if(sourceTiles < 128)
         sourceTiles = 128;
     uint8_t* rawPixels = NativeFrontpicSourcePixels(sourceTiles);
     // log_debug("Loading frame %d (tile %d, base %d,%d) of %s.\n", frame, size * frame, b, c, de2);
     LoadPNG2bppAssetSectionToVRAM(rawPixels, de2, size * frame, size);
+    log_runtime_event("PICTURE", "frontpic decoded species=%u asset=%s frame=%u sourcePixels=%dx%d dimensionsKnown=%u decodedGrid=%ux%u decodedTiles=%d decodedBytes=%zu order=row-major",
+        (unsigned)wram->wCurSpecies, de2, (unsigned)frame, sourceWidth, sourceHeight,
+        (unsigned)haveSourceDimensions, (unsigned)b, (unsigned)c, size,
+        (size_t)size * LEN_2BPP_TILE);
     // POP_BC;
     // The padded form is transient native data rather than shared WRAM.
     // CALL(aPadFrontpic);
     PadFrontpic(paddedPixels, rawPixels, b);
+    log_runtime_event("PICTURE", "frontpic padded sourceTiles=%d destinationGrid=7x7 destinationTiles=49 order=row-major alignment=%u",
+        size, (unsigned)wram->wBoxAlignment);
     // POP_HL;
     // PUSH_HL;
     // LD_DE(wDecompressScratch);
@@ -330,6 +347,9 @@ bool LoadNativeBackpicPixels(uint8_t* de, species_t species){
 // ok:
     // DEC_A;
     const char *path = hl[a - 1][1];
+    int sourceWidth = 0;
+    int sourceHeight = 0;
+    bool haveSourceDimensions = GetPNGAssetDimensions(path, &sourceWidth, &sourceHeight);
     // LD_BC(6);
     // CALL(aAddNTimes);
     // LD_BC(3);
@@ -346,10 +366,15 @@ bool LoadNativeBackpicPixels(uint8_t* de, species_t species){
     // POP_AF;
     // CALL(aFarDecompress);
     LoadPNG2bppAssetToVRAM(backpicPixels, path);
+    log_runtime_event("PICTURE", "backpic decoded species=%u asset=%s sourcePixels=%dx%d dimensionsKnown=%u decodedGrid=6x6 decodedTiles=36 decodedBytes=%u order=row-major",
+        (unsigned)species, path, sourceWidth, sourceHeight, (unsigned)haveSourceDimensions,
+        6 * 6 * LEN_2BPP_TILE);
     // LD_HL(native backpic pixels);
     // LD_C(6 * 6);
     // CALL(aFixBackpicAlignment);
     FixBackpicAlignment(backpicPixels, 6 * 6);
+    log_runtime_event("PICTURE", "backpic alignment applied species=%u bitMirror=%u tileOrder=row-major",
+        (unsigned)species, (unsigned)(wram->wBoxAlignment != 0));
     // POP_HL;
     // LD_DE(wDecompressScratch);
     // LDH_A_addr(hROMBank);
