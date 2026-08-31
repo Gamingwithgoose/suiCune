@@ -84,7 +84,11 @@ struct BattleAnimationTileBinding {
 bool QueueBattleAnimation(void);
 void DeinitBattleAnimation(struct BattleAnim* bc);
 struct BattleAnim* BattleAnimationObjects(void);
+size_t BattleAnimationObjectCount(void);
+struct BattleAnim* BattleAnimationFirstObject(void);
 struct BattleBGEffect* BattleAnimationBGEffects(void);
+size_t BattleAnimationBGEffectCount(void);
+struct BattleBGEffect* AllocateBattleAnimationBGEffect(void);
 void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t tileOffset);
 void AppendBattleAnimationTileBinding(uint8_t graphicsId, uint16_t tileOffset);
 uint16_t BattleAnimationTileOffset(uint8_t graphicsId);
@@ -98,12 +102,12 @@ const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);
 const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count);
 void ClearBattleAnimationHudSprites(void);
 void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
-    const uint8_t tileIds[PARTY_LENGTH]);
+    const uint16_t* tileIds, size_t tileCount);
 void BeginBattleAnimationRenderFrame(void);
 void ClearBattleAnimationRenderSprites(void);
 void SetBattleAnimationRenderSpritePalette(uint8_t paletteMask);
 void ResetNativeBattleAnimationState(void);
-void ClearNativeBattleAnimationObjects(size_t objectCount);
+void ClearNativeBattleAnimationObjects(void);
 void IncrementBattleAnimationObjectIndex(void);
 // void InitBattleAnimation(struct BattleAnim* bc);
 void BattleAnimOAMUpdate(struct BattleAnim* bc);

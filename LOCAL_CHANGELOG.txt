@@ -4823,3 +4823,132 @@ Exact stopping point and next recommended task
 - Stopped after restoring the trainer-intro HUD's native cleanup lifecycle.
 - Next: separate battle-picture presentation resources from VRAM tile identity
   so battle and menu picture views can use the native renderer directly.
+
+2026-08-30 — Native trainer-HUD border state
+==============================================
+
+Completed work
+--------------
+- Removed active C use of the legacy `wTrainerHUDTiles` WRAM scratch buffer
+  from `engine/battle/trainer_huds.c`.
+- Trainer-HUD border routines now pass immutable tile definitions directly to
+  their native placement helper. The helper no longer receives data through
+  the Game Boy-addressed scratch buffer.
+- Replaced the native trainer-HUD renderer's fixed 12-sprite array with a
+  dynamically allocated sprite list. Its marker API now accepts an explicit
+  count and 16-bit resource tile IDs instead of assuming six entries per side
+  and 8-bit hardware tile identity.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Border appearance remains identical and tilemap output remains a legacy
+  display compatibility boundary. The temporary border definition is now
+  native C data with function-local ownership.
+- Trainer marker sprites and their source tiles are native renderer-owned
+  dynamic resources. The current battle callers still request Crystal's six
+  party slots, but the renderer no longer imposes that fixed allocation.
+- The packed WRAM field remains in the legacy layout because it is still
+  documented by the original ASM/reference memory map; it has no active C
+  reader or writer in this trainer-HUD subsystem and is not deleted yet.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed the only C uses of `wTrainerHUDTiles` were the three border
+  writers and their common reader in `trainer_huds.c`.
+- Confirmed all three callers provide four tile values in the original order.
+- Confirmed every trainer-HUD marker caller uses the new explicit count API;
+  the legacy `wBattleHUDTiles`, `wPlaceBallsX`, `wPlaceBallsY`, and
+  `wPlaceBallsDirection` locations have no active C use in this subsystem.
+- No temporary migration bridge was introduced. Runtime checking remains
+  needed for trainer, wild, and link battle HUD borders.
+
+Files modified
+--------------
+- `engine/battle/trainer_huds.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after removing the trainer-HUD border scratch-buffer dependency.
+- Next: migrate battle-picture presentation from legacy VRAM/tilemap identity
+  into a native scene resource with explicit position, layering, and palette.
+
+2026-08-30 — Dynamic native battle-animation pools
+====================================================
+
+Completed work
+--------------
+- Replaced the native battle-animation state's fixed `NUM_ANIM_OBJECTS`
+  object array with a dynamically growing C allocation. Queueing reuses
+  inactive records, appends when needed, and no longer reports failure merely
+  because the original ten Game Boy object slots are occupied.
+- Replaced the native battle-animation state's fixed `NUM_BG_EFFECTS`
+  background-effect array with an independently growing C allocation. Effects
+  retain their existing function, turn, parameter, and lifecycle semantics,
+  but are no longer capped by the original five-slot hardware-era buffer.
+- Migrated animation object and background-effect iteration, object control
+  commands, effect control commands, clear behavior, queue behavior, and
+  native render submission to explicit native pool counts. No active C path in
+  `engine/battle_anims` now uses `NUM_ANIM_OBJECTS` or `NUM_BG_EFFECTS` as an
+  authoritative runtime capacity.
+- Replaced the direct `wAnimObject1YOffset`-style first-slot assumption used
+  by the Rollout effect with a guarded native first-object accessor. This
+  preserves its existing behavior when an animation object exists and avoids
+  writing into a fictional fixed object array when it does not.
+
+Architectural state and retained boundaries
+-------------------------------------------
+- Battle-animation instances are now native runtime records with dynamic
+  ownership in `NativeBattleAnimationState`; they are not aliases for WRAM
+  object/effect layouts or emulator object slots.
+- Legacy animation script operands, callback/function IDs, and the
+  byte-oriented animation data remain compatibility content boundaries. They
+  still use Crystal's script encoding, but the runtime instance pools no
+  longer inherit its fixed simultaneous-instance limits.
+- The historical `wActiveAnimObjects`, `wBGEffect1Function`, and related WRAM
+  layout reservations remain mapped reference/compatibility data only. They
+  have no active C reader or writer in this native pool implementation and
+  are retained until all reference/build consumers are demonstrably gone.
+- No temporary migration bridge was added. Pool allocations are freed when
+  native battle-animation state resets; trainer-HUD resources remain retained
+  across animation reset by their established battle-view lifecycle.
+
+Source-level validation and risks
+---------------------------------
+- Confirmed all C call sites of `BattleAnimationObjects` and
+  `BattleAnimationBGEffects` now iterate using native counts or use the
+  guarded first-object API.
+- Confirmed all active C uses of `NUM_ANIM_OBJECTS` and `NUM_BG_EFFECTS` were
+  removed from `engine/battle_anims`.
+- Allocation growth checks reject `size_t` overflow and allocation failure.
+- Runtime checking is still needed for densely layered battle animations,
+  simultaneous background effects, Rollout, send-out/return animations, and
+  scripts that control a previous object by its byte-sized script index. The
+  latter is still a content-format ceiling, not a native pool-capacity ceiling.
+
+Files modified
+--------------
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `LOCAL_CHANGELOG.txt`
+
+Build/test commands and results
+-------------------------------
+- None. Build/runtime validation: NOT PERFORMED locally — per user instruction.
+
+Exact stopping point and next recommended task
+----------------------------------------------
+- Stopped after moving both battle-animation instance pools off their fixed
+  Game Boy-era capacities and migrating every current C consumer to native
+  counts.
+- Next: replace the remaining battle-animation timing and display ownership
+  that uses VBlank, virtual OAM clearing, and VRAM/tilemap presentation with
+  explicit native frame scheduling and scene-layer resources.

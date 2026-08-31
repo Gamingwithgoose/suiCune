@@ -200,24 +200,11 @@ void RunBattleAnimScript(void){
         // CP_A(ROLLOUT);
         // IF_NZ goto not_rollout;
         if(wram->wFXAnimID == ROLLOUT) {
-            // LD_A(ANIM_BG_ROLLOUT);
-            // LD_B(NUM_BG_EFFECTS);
-            uint8_t b = NUM_BG_EFFECTS;
-            // LD_DE(BG_EFFECT_STRUCT_LENGTH);
-            // LD_HL(wBGEffect1Function);
-            struct BattleBGEffect* hl = BattleAnimationBGEffects();
-
-            do {
-            // find:
-                // CP_A_hl;
-                // IF_Z goto done;
-                if(hl->function == 0)
+            const struct BattleBGEffect* effects = BattleAnimationBGEffects();
+            for(size_t i = 0; i < BattleAnimationBGEffectCount(); i++) {
+                if(effects[i].function == 0)
                     break;
-                // ADD_HL_DE;
-                hl++;
-                // DEC_B;
-                // IF_NZ goto find;
-            } while(--b != 0);
+            }
         }
         else {
         // not_rollout:
@@ -1035,12 +1022,7 @@ void BattleAnimCmd_ResetObp0(void){
 void BattleAnimCmd_ClearObjs(void){
     // The native pool has no byte-addressed object layout. Clear semantic
     // object records rather than reproducing the historical partial-byte bug.
-#if BUGFIX_ANIMCMDCLEAROBJ
-    size_t objectCount = NUM_ANIM_OBJECTS;
-#else
-    size_t objectCount = NUM_ANIM_OBJECTS;
-#endif
-    ClearNativeBattleAnimationObjects(objectCount);
+    ClearNativeBattleAnimationObjects();
 }
 
 void BattleAnimCmd_1GFX(void){
@@ -1153,109 +1135,33 @@ void BattleAnimCmd_NGFX(uint8_t c, ...){
 }
 
 void BattleAnimCmd_IncObj(uint8_t a){
-    // CALL(aGetBattleAnimByte);
-    // LD_E(NUM_ANIM_OBJECTS);
-    uint8_t e = NUM_ANIM_OBJECTS;
-    // LD_BC(wActiveAnimObjects);
-    struct BattleAnim* bc = BattleAnimationObjects();
-
-    do {
-    // loop:
-        // LD_HL(BATTLEANIMSTRUCT_INDEX);
-        // ADD_HL_BC;
-        // LD_D_hl;
-        // LD_A_addr(wBattleAnimByte);
-        // CP_A_D;
-        // IF_Z goto found;
-        if(bc->index == a) {
-        // found:
-            // LD_HL(BATTLEANIMSTRUCT_JUMPTABLE_INDEX);
-            // ADD_HL_BC;
-            // INC_hl;
-            bc->jumptableIndex++;
-            // RET;
+    struct BattleAnim* objects = BattleAnimationObjects();
+    for(size_t i = 0; i < BattleAnimationObjectCount(); i++) {
+        if(objects[i].index == a) {
+            objects[i].jumptableIndex++;
             return;
         }
-        // LD_HL(BATTLEANIMSTRUCT_LENGTH);
-        // ADD_HL_BC;
-        // LD_C_L;
-        // LD_B_H;
-        bc++;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(--e != 0);
-    // RET;
+    }
 }
 
 void BattleAnimCmd_IncBGEffect(uint8_t c){
-    // CALL(aGetBattleAnimByte);
-    // LD_E(NUM_BG_EFFECTS);
-    uint8_t e = NUM_BG_EFFECTS;
-    // LD_BC(wBGEffect1Function);
-    struct BattleBGEffect* bc = BattleAnimationBGEffects();
-
-    do {
-    // loop:
-        // LD_HL(0x0);
-        // ADD_HL_BC;
-        // LD_D_hl;
-        // LD_A_addr(wBattleAnimByte);
-        // CP_A_D;
-        // IF_Z goto found;
-        if(bc->function == c) {
-        // found:
-            // LD_HL(BG_EFFECT_STRUCT_JT_INDEX);
-            // ADD_HL_BC;
-            // INC_hl;
-            bc->jumptableIndex++;
-            // RET;
+    struct BattleBGEffect* effects = BattleAnimationBGEffects();
+    for(size_t i = 0; i < BattleAnimationBGEffectCount(); i++) {
+        if(effects[i].function == c) {
+            effects[i].jumptableIndex++;
             return;
         }
-        // LD_HL(4);
-        // ADD_HL_BC;
-        // LD_C_L;
-        // LD_B_H;
-        bc++;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(--e != 0);
-    // RET;
+    }
 }
 
 void BattleAnimCmd_SetObj(uint8_t a, uint8_t jt){
-    // CALL(aGetBattleAnimByte);
-    // LD_E(NUM_ANIM_OBJECTS);
-    uint8_t e = NUM_ANIM_OBJECTS;
-    // LD_BC(wActiveAnimObjects);
-    struct BattleAnim* bc = BattleAnimationObjects();
-
-    do {
-    // loop:
-        // LD_HL(BATTLEANIMSTRUCT_INDEX);
-        // ADD_HL_BC;
-        // LD_D_hl;
-        // LD_A_addr(wBattleAnimByte);
-        // CP_A_D;
-        // IF_Z goto found;
-        if(bc->index == a) {
-        // found:
-            // CALL(aGetBattleAnimByte);
-            // LD_HL(BATTLEANIMSTRUCT_JUMPTABLE_INDEX);
-            // ADD_HL_BC;
-            // LD_hl_A;
-            bc->jumptableIndex = jt;
-            // RET;
+    struct BattleAnim* objects = BattleAnimationObjects();
+    for(size_t i = 0; i < BattleAnimationObjectCount(); i++) {
+        if(objects[i].index == a) {
+            objects[i].jumptableIndex = jt;
             return;
         }
-        // LD_HL(BATTLEANIMSTRUCT_LENGTH);
-        // ADD_HL_BC;
-        // LD_C_L;
-        // LD_B_H;
-        bc++;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(--e != 0);
-    // RET;
+    }
 }
 
 static uint8_t* BattleAnimCmd_BattlerGFX_1Row_LoadFeet(uint8_t* hl, const uint8_t* de, uint8_t a) {
@@ -2090,35 +1996,13 @@ void BattleAnim_UpdateOAM_All(void){
     // owns the complete battle sprite layer for the duration of an animation.
     BeginBattleAnimationRenderFrame();
     ByteFill(wram->wVirtualOAMSprite, sizeof(wram->wVirtualOAMSprite), 0);
-    // LD_HL(wActiveAnimObjects);
-    struct BattleAnim* hl = BattleAnimationObjects();
-    // LD_E(NUM_ANIM_OBJECTS);
-    uint8_t e = NUM_ANIM_OBJECTS;
-
-    do {
-    // loop:
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto next;
-        if(hl->index == 0)
+    struct BattleAnim* objects = BattleAnimationObjects();
+    size_t objectCount = BattleAnimationObjectCount();
+    for(size_t i = 0; i < objectCount; i++) {
+        struct BattleAnim* object = &objects[i];
+        if(object->index == 0)
             continue;
-        // LD_C_L;
-        // LD_B_H;
-        // PUSH_HL;
-        // PUSH_DE;
-        // CALL(aDoBattleAnimFrame);
-        DoBattleAnimFrame(hl);
-        // CALL(aBattleAnimOAMUpdate);
-        BattleAnimOAMUpdate(hl);
-        // POP_DE;
-        // POP_HL;
-
-    // next:
-        // LD_BC(BATTLEANIMSTRUCT_LENGTH);
-        // ADD_HL_BC;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(hl++, --e != 0);
-// done:
-    // RET;
+        DoBattleAnimFrame(object);
+        BattleAnimOAMUpdate(object);
+    }
 }

@@ -23,10 +23,15 @@ struct NativeBattleAnimationState {
     struct BattleAnimationSprite* renderSprites;
     size_t renderSpriteCount;
     size_t renderSpriteCapacity;
-    struct BattleAnimationSprite hudSprites[PARTY_LENGTH * 2];
+    struct BattleAnimationSprite* hudSprites;
     size_t hudSpriteCount;
-    struct BattleAnim objects[NUM_ANIM_OBJECTS];
-    struct BattleBGEffect bgEffects[NUM_BG_EFFECTS];
+    size_t hudSpriteCapacity;
+    struct BattleAnim* objects;
+    size_t objectCount;
+    size_t objectCapacity;
+    struct BattleBGEffect* bgEffects;
+    size_t bgEffectCount;
+    size_t bgEffectCapacity;
     uint8_t lastObjectIndex;
 };
 
@@ -36,8 +41,46 @@ struct BattleAnim* BattleAnimationObjects(void){
     return sBattleAnimationState.objects;
 }
 
+size_t BattleAnimationObjectCount(void){
+    return sBattleAnimationState.objectCount;
+}
+
+struct BattleAnim* BattleAnimationFirstObject(void){
+    if(sBattleAnimationState.objectCount == 0)
+        return NULL;
+    return &sBattleAnimationState.objects[0];
+}
+
 struct BattleBGEffect* BattleAnimationBGEffects(void){
     return sBattleAnimationState.bgEffects;
+}
+
+size_t BattleAnimationBGEffectCount(void){
+    return sBattleAnimationState.bgEffectCount;
+}
+
+struct BattleBGEffect* AllocateBattleAnimationBGEffect(void){
+    for(size_t i = 0; i < sBattleAnimationState.bgEffectCount; i++) {
+        if(sBattleAnimationState.bgEffects[i].function == 0)
+            return &sBattleAnimationState.bgEffects[i];
+    }
+
+    if(sBattleAnimationState.bgEffectCount == sBattleAnimationState.bgEffectCapacity) {
+        size_t newCapacity = sBattleAnimationState.bgEffectCapacity == 0 ? 8 : sBattleAnimationState.bgEffectCapacity;
+        if(newCapacity > SIZE_MAX / 2 || newCapacity * 2 > SIZE_MAX / sizeof(*sBattleAnimationState.bgEffects))
+            abort();
+        newCapacity *= 2;
+        struct BattleBGEffect* effects = realloc(sBattleAnimationState.bgEffects,
+            newCapacity * sizeof(*effects));
+        if(effects == NULL)
+            abort();
+        sBattleAnimationState.bgEffects = effects;
+        sBattleAnimationState.bgEffectCapacity = newCapacity;
+    }
+
+    struct BattleBGEffect* effect = &sBattleAnimationState.bgEffects[sBattleAnimationState.bgEffectCount++];
+    memset(effect, 0, sizeof(*effect));
+    return effect;
 }
 
 void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t tileOffset){
@@ -143,16 +186,36 @@ const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count){
 
 void ClearBattleAnimationHudSprites(void){
     free(sBattleAnimationState.hudTilePixels);
+    free(sBattleAnimationState.hudSprites);
     sBattleAnimationState.hudTilePixels = NULL;
     sBattleAnimationState.hudTilePixelCapacity = 0;
+    sBattleAnimationState.hudSprites = NULL;
     sBattleAnimationState.hudSpriteCount = 0;
+    sBattleAnimationState.hudSpriteCapacity = 0;
 }
 
 void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
-    const uint8_t tileIds[PARTY_LENGTH]){
-    if(firstSprite > lengthof(sBattleAnimationState.hudSprites) - PARTY_LENGTH)
+    const uint16_t* tileIds, size_t tileCount){
+    if(tileCount > SIZE_MAX - firstSprite)
         abort();
-    for(size_t i = 0; i < PARTY_LENGTH; i++) {
+    size_t requiredCapacity = firstSprite + tileCount;
+    if(requiredCapacity > sBattleAnimationState.hudSpriteCapacity) {
+        size_t newCapacity = sBattleAnimationState.hudSpriteCapacity == 0 ? 8 : sBattleAnimationState.hudSpriteCapacity;
+        while(newCapacity < requiredCapacity) {
+            if(newCapacity > SIZE_MAX / 2)
+                abort();
+            newCapacity *= 2;
+        }
+        if(newCapacity > SIZE_MAX / sizeof(*sBattleAnimationState.hudSprites))
+            abort();
+        struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.hudSprites,
+            newCapacity * sizeof(*sprites));
+        if(sprites == NULL)
+            abort();
+        sBattleAnimationState.hudSprites = sprites;
+        sBattleAnimationState.hudSpriteCapacity = newCapacity;
+    }
+    for(size_t i = 0; i < tileCount; i++) {
         struct BattleAnimationSprite* sprite = &sBattleAnimationState.hudSprites[firstSprite + i];
         sprite->yCoord = y;
         sprite->xCoord = x;
@@ -161,8 +224,8 @@ void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8
         sprite->resourceKind = BATTLE_RENDER_RESOURCE_HUD;
         x += direction;
     }
-    if(sBattleAnimationState.hudSpriteCount < firstSprite + PARTY_LENGTH)
-        sBattleAnimationState.hudSpriteCount = firstSprite + PARTY_LENGTH;
+    if(sBattleAnimationState.hudSpriteCount < requiredCapacity)
+        sBattleAnimationState.hudSpriteCount = requiredCapacity;
 }
 
 void BeginBattleAnimationRenderFrame(void){
@@ -195,26 +258,29 @@ static struct BattleAnimationSprite* AppendBattleAnimationRenderSprite(void){
 void ResetNativeBattleAnimationState(void){
     uint8_t* hudTilePixels = sBattleAnimationState.hudTilePixels;
     size_t hudTilePixelCapacity = sBattleAnimationState.hudTilePixelCapacity;
-    struct BattleAnimationSprite hudSprites[PARTY_LENGTH * 2];
+    struct BattleAnimationSprite* hudSprites = sBattleAnimationState.hudSprites;
     size_t hudSpriteCount = sBattleAnimationState.hudSpriteCount;
+    size_t hudSpriteCapacity = sBattleAnimationState.hudSpriteCapacity;
 
-    memcpy(hudSprites, sBattleAnimationState.hudSprites, sizeof(hudSprites));
     free(sBattleAnimationState.renderSprites);
     free(sBattleAnimationState.tileBindings);
     free(sBattleAnimationState.tilePixels);
+    free(sBattleAnimationState.objects);
+    free(sBattleAnimationState.bgEffects);
     memset(&sBattleAnimationState, 0, sizeof(sBattleAnimationState));
     // Trainer HUD resources are battle-view state, not transient animation
     // state. Animation setup clears must not erase them mid-battle.
     sBattleAnimationState.hudTilePixels = hudTilePixels;
     sBattleAnimationState.hudTilePixelCapacity = hudTilePixelCapacity;
-    memcpy(sBattleAnimationState.hudSprites, hudSprites, sizeof(hudSprites));
+    sBattleAnimationState.hudSprites = hudSprites;
     sBattleAnimationState.hudSpriteCount = hudSpriteCount;
+    sBattleAnimationState.hudSpriteCapacity = hudSpriteCapacity;
 }
 
-void ClearNativeBattleAnimationObjects(size_t objectCount){
-    if(objectCount > NUM_ANIM_OBJECTS)
-        objectCount = NUM_ANIM_OBJECTS;
-    memset(sBattleAnimationState.objects, 0, objectCount * sizeof(sBattleAnimationState.objects[0]));
+void ClearNativeBattleAnimationObjects(void){
+    // Inactive records are reused on demand; the native pool has no fixed
+    // hardware object-array span to clear.
+    sBattleAnimationState.objectCount = 0;
 }
 
 void IncrementBattleAnimationObjectIndex(void){
@@ -222,36 +288,32 @@ void IncrementBattleAnimationObjectIndex(void){
 }
 
 bool QueueBattleAnimation(void){
-    // LD_HL(wActiveAnimObjects);
-    // LD_E(NUM_ANIM_OBJECTS);
-    struct BattleAnim* hl = BattleAnimationObjects();
-    uint8_t e = NUM_ANIM_OBJECTS;
-
-    do {
-    // loop:
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto done;
-        if(hl->index == 0) {
-        // done:
-            // LD_C_L;
-            // LD_B_H;
-            // LD_HL(wLastAnimObjectIndex);
-            // INC_hl;
+    for(size_t i = 0; i < sBattleAnimationState.objectCount; i++) {
+        if(sBattleAnimationState.objects[i].index == 0) {
             IncrementBattleAnimationObjectIndex();
-            // CALL(aInitBattleAnimation);
-            InitBattleAnimation(hl);
-            // RET;
+            InitBattleAnimation(&sBattleAnimationState.objects[i]);
             return false;
         }
-        // LD_BC(BATTLEANIMSTRUCT_LENGTH);
-        // ADD_HL_BC;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(hl++, --e != 0);
-    // SCF;
-    // RET;
-    return true;
+    }
+
+    if(sBattleAnimationState.objectCount == sBattleAnimationState.objectCapacity) {
+        size_t newCapacity = sBattleAnimationState.objectCapacity == 0 ? 16 : sBattleAnimationState.objectCapacity;
+        if(newCapacity > SIZE_MAX / 2 || newCapacity * 2 > SIZE_MAX / sizeof(*sBattleAnimationState.objects))
+            abort();
+        newCapacity *= 2;
+        struct BattleAnim* objects = realloc(sBattleAnimationState.objects,
+            newCapacity * sizeof(*objects));
+        if(objects == NULL)
+            abort();
+        sBattleAnimationState.objects = objects;
+        sBattleAnimationState.objectCapacity = newCapacity;
+    }
+
+    struct BattleAnim* object = &sBattleAnimationState.objects[sBattleAnimationState.objectCount++];
+    memset(object, 0, sizeof(*object));
+    IncrementBattleAnimationObjectIndex();
+    InitBattleAnimation(object);
+    return false;
 }
 
 void DeinitBattleAnimation(struct BattleAnim* bc){

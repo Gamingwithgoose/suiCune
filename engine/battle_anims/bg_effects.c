@@ -122,81 +122,21 @@ static bool BattleBGEffects_CheckSGB(void);
 //  BG effects for use in battle animations.
 
 void ExecuteBGEffects(void) {
-    // SET_PC(aExecuteBGEffects);
-    // LD_HL(wActiveBGEffects);
-    struct BattleBGEffect* hl = BattleAnimationBGEffects();
-    // LD_E(NUM_BG_EFFECTS);
-    uint8_t e = NUM_BG_EFFECTS;
-
-    do {
-    // loop:
-
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto next;
-        if(hl->function != 0) {
-            // LD_C_L;
-            // LD_B_H;
-            // PUSH_HL;
-            // PUSH_DE;
-            // CALL(aDoBattleBGEffectFunction);
-            DoBattleBGEffectFunction(hl);
-            // POP_DE;
-            // POP_HL;
-        }
-    // next:
-
-        // LD_BC(BG_EFFECT_STRUCT_LENGTH);
-        // ADD_HL_BC;
-        hl++;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(--e != 0);
-    // RET;
+    struct BattleBGEffect* effects = BattleAnimationBGEffects();
+    size_t effectCount = BattleAnimationBGEffectCount();
+    for(size_t i = 0; i < effectCount; i++) {
+        if(effects[i].function != 0)
+            DoBattleBGEffectFunction(&effects[i]);
+    }
 }
 
 bool QueueBGEffect(void) {
-    // SET_PC(aQueueBGEffect);
-    // LD_HL(wActiveBGEffects);
-    struct BattleBGEffect* hl = BattleAnimationBGEffects();
-    // LD_E(NUM_BG_EFFECTS);
-    uint8_t e = NUM_BG_EFFECTS;
-
-    do {
-    // loop:
-        // LD_A_hl;
-        // AND_A_A;
-        // IF_Z goto load;
-        if(hl->function == 0) {
-        // load:
-            // LD_C_L;
-            // LD_B_H;
-            // LD_HL(BG_EFFECT_STRUCT_FUNCTION);
-            // ADD_HL_BC;
-            // LD_A_addr(wBattleBGEffectTempID);
-            // LD_hli_A;
-            hl->function = BattleAnimationCommandState()->bgEffectId;
-            // LD_A_addr(wBattleBGEffectTempJumptableIndex);
-            // LD_hli_A;
-            hl->jumptableIndex = BattleAnimationCommandState()->bgEffectJumptableIndex;
-            // LD_A_addr(wBattleBGEffectTempTurn);
-            // LD_hli_A;
-            hl->battleTurn = BattleAnimationCommandState()->bgEffectTurn;
-            // LD_A_addr(wBattleBGEffectTempParam);
-            // LD_hl_A;
-            hl->param = BattleAnimationCommandState()->bgEffectParam;
-            // RET;
-            return false;
-        }
-        // LD_BC(BG_EFFECT_STRUCT_LENGTH);
-        // ADD_HL_BC;
-        hl++;
-        // DEC_E;
-        // IF_NZ goto loop;
-    } while(--e != 0);
-    // SCF;
-    // RET;
-    return true;
+    struct BattleBGEffect* effect = AllocateBattleAnimationBGEffect();
+    effect->function = BattleAnimationCommandState()->bgEffectId;
+    effect->jumptableIndex = BattleAnimationCommandState()->bgEffectJumptableIndex;
+    effect->battleTurn = BattleAnimationCommandState()->bgEffectTurn;
+    effect->param = BattleAnimationCommandState()->bgEffectParam;
+    return false;
 }
 
 static void EndBattleBGEffect(struct BattleBGEffect* bc) {
@@ -3458,7 +3398,9 @@ static void BattleBGEffect_Rollout(struct BattleBGEffect* bc) {
     // XOR_A(0xff);
     // INC_A;
     // LD_addr_A(wAnimObject1YOffset);
-    BattleAnimationObjects()[0].yOffset = (a ^ 0xff) + 1;
+    struct BattleAnim* firstObject = BattleAnimationFirstObject();
+    if(firstObject != NULL)
+        firstObject->yOffset = (a ^ 0xff) + 1;
     // RET;
 }
 

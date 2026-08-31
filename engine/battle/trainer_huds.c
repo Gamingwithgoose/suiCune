@@ -1,14 +1,13 @@
 #include "../../constants.h"
 #include "trainer_huds.h"
-#include "../../home/copy.h"
 #include "../../home/pokedex_flags.h"
 #include "../../home/gfx.h"
 #include "../../home/text.h"
 #include "../../home/tilemap.h"
 #include "../battle_anims/core.h"
 
-static void StageBallTilesData(uint8_t count, const struct PartyMon* hl, uint8_t tileIds[PARTY_LENGTH]);
-static void PlaceHUDBorderTiles(tile_t* hl, int16_t de);
+static void StageBallTilesData(uint8_t count, const struct PartyMon* hl, uint16_t tileIds[PARTY_LENGTH]);
+static void PlaceHUDBorderTiles(tile_t* hl, int16_t de, const uint8_t tiles[4]);
 
 void BattleStart_TrainerHuds(void){
     ClearBattleAnimationHudSprites();
@@ -44,7 +43,7 @@ void ShowPlayerMonsRemaining(void){
     // LD_HL(wPartyMon1HP);
     // LD_DE(wPartyCount);
     // CALL(aStageBallTilesData);
-    uint8_t tileIds[PARTY_LENGTH];
+    uint16_t tileIds[PARTY_LENGTH];
     StageBallTilesData(gPokemon.partyCount, gPokemon.partyMon, tileIds);
 // ldpixel wPlaceBallsX, 12, 12
     // LD_A(12 * 8);
@@ -56,7 +55,7 @@ void ShowPlayerMonsRemaining(void){
     // LD_addr_A(wPlaceBallsDirection);
     // LD_HL(wVirtualOAMSprite00);
     // JP(mLoadTrainerHudOAM);
-    SetBattleAnimationHudSprites(0, a, a, 8, tileIds);
+    SetBattleAnimationHudSprites(0, a, a, 8, tileIds, PARTY_LENGTH);
 }
 
 void ShowOTTrainerMonsRemaining(void){
@@ -65,7 +64,7 @@ void ShowOTTrainerMonsRemaining(void){
     // LD_HL(wOTPartyMon1HP);
     // LD_DE(wOTPartyCount);
     // CALL(aStageBallTilesData);
-    uint8_t tileIds[PARTY_LENGTH];
+    uint16_t tileIds[PARTY_LENGTH];
     StageBallTilesData(wram->wOTPartyCount, wram->wOTPartyMon, tileIds);
 // ldpixel wPlaceBallsX, 9, 4
     // LD_HL(wPlaceBallsX);
@@ -76,11 +75,11 @@ void ShowOTTrainerMonsRemaining(void){
     // LD_addr_A(wPlaceBallsDirection);
     // LD_HL(wVirtualOAMSprite00 + PARTY_LENGTH * SPRITEOAMSTRUCT_LENGTH);
     // JP(mLoadTrainerHudOAM);
-    SetBattleAnimationHudSprites(PARTY_LENGTH, 4 * 8, 9 * 8, -8, tileIds);
+    SetBattleAnimationHudSprites(PARTY_LENGTH, 4 * 8, 9 * 8, -8, tileIds, PARTY_LENGTH);
 }
 
-static const struct PartyMon* StageBallTilesData_GetHUDTile(uint8_t* de, const struct PartyMon* hl) {
-    uint8_t b;
+static const struct PartyMon* StageBallTilesData_GetHUDTile(uint16_t* de, const struct PartyMon* hl) {
+    uint16_t b;
     // LD_A_hli;
     // AND_A_A;
     // IF_NZ goto got_hp;
@@ -123,12 +122,12 @@ static const struct PartyMon* StageBallTilesData_GetHUDTile(uint8_t* de, const s
     return hl;
 }
 
-static void StageBallTilesData(uint8_t count, const struct PartyMon* hl, uint8_t tileIds[PARTY_LENGTH]){
-    uint8_t* de = tileIds;
+static void StageBallTilesData(uint8_t count, const struct PartyMon* hl, uint16_t tileIds[PARTY_LENGTH]){
+    uint16_t* de = tileIds;
     // LD_C(PARTY_LENGTH);
     uint8_t c = PARTY_LENGTH;
     // LD_A(0x34);  // empty slot
-    uint8_t a = 0x34;
+    uint16_t a = 0x34;
 
     do {
     // loop1:
@@ -164,15 +163,10 @@ void DrawPlayerHUDBorder(void){
         0x6f,  // bottom left
         0x76,  // bottom side
     };
-    // LD_HL(mDrawPlayerHUDBorder_tiles);
-    // LD_DE(wTrainerHUDTiles);
-    // LD_BC(mDrawPlayerHUDBorder_tiles_end - mDrawPlayerHUDBorder_tiles);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wTrainerHUDTiles, tiles, sizeof(tiles));
     // hlcoord(18, 10, wTilemap);
     // LD_DE(-1);  // start on right
     // JR(mPlaceHUDBorderTiles);
-    return PlaceHUDBorderTiles(coord(18, 10, wram->wTilemap), -1);
+    return PlaceHUDBorderTiles(coord(18, 10, wram->wTilemap), -1, tiles);
 // tiles_end:
 }
 
@@ -183,15 +177,10 @@ void DrawPlayerPartyIconHUDBorder(void){
         0x6f,  // bottom left
         0x76,  // bottom side
     };
-    // LD_HL(mDrawPlayerPartyIconHUDBorder_tiles);
-    // LD_DE(wTrainerHUDTiles);
-    // LD_BC(mDrawPlayerPartyIconHUDBorder_tiles_end - mDrawPlayerPartyIconHUDBorder_tiles);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wTrainerHUDTiles, tiles, sizeof(tiles));
     // hlcoord(18, 10, wTilemap);
     // LD_DE(-1);  // start on right
     // JR(mPlaceHUDBorderTiles);
-    return PlaceHUDBorderTiles(coord(18, 10, wram->wTilemap), -1);
+    return PlaceHUDBorderTiles(coord(18, 10, wram->wTilemap), -1, tiles);
 
 // tiles_end:
 }
@@ -203,15 +192,10 @@ void DrawEnemyHUDBorder(void){
         0x78,  // bottom right
         0x76,  // bottom side
     };
-    // LD_HL(mDrawEnemyHUDBorder_tiles);
-    // LD_DE(wTrainerHUDTiles);
-    // LD_BC(mDrawEnemyHUDBorder_tiles_end - mDrawEnemyHUDBorder_tiles);
-    // CALL(aCopyBytes);
-    CopyBytes(wram->wTrainerHUDTiles, tiles, sizeof(tiles));
     // hlcoord(1, 2, wTilemap);
     // LD_DE(1);  // start on left
     // CALL(aPlaceHUDBorderTiles);
-    PlaceHUDBorderTiles(coord(1, 2, wram->wTilemap), 1);
+    PlaceHUDBorderTiles(coord(1, 2, wram->wTilemap), 1, tiles);
     // LD_A_addr(wBattleMode);
     // DEC_A;
     // RET_NZ ;
@@ -232,16 +216,16 @@ void DrawEnemyHUDBorder(void){
 
 }
 
-static void PlaceHUDBorderTiles(tile_t* hl, int16_t de){
-    // LD_A_addr(wTrainerHUDTiles + 0);
+static void PlaceHUDBorderTiles(tile_t* hl, int16_t de, const uint8_t tiles[4]){
+    // LD_A(tiles[0]);
     // LD_hl_A;
-    *hl = wram->wTrainerHUDTiles[0];
+    *hl = tiles[0];
     // LD_BC(SCREEN_WIDTH);
     // ADD_HL_BC;
     hl += SCREEN_WIDTH;
-    // LD_A_addr(wTrainerHUDTiles + 1);
+    // LD_A(tiles[1]);
     // LD_hl_A;
-    *hl = wram->wTrainerHUDTiles[1];
+    *hl = tiles[1];
     // LD_B(8);
     uint8_t b = 8;
 
@@ -249,17 +233,17 @@ static void PlaceHUDBorderTiles(tile_t* hl, int16_t de){
     // loop:
         // ADD_HL_DE;
         hl += de;
-        // LD_A_addr(wTrainerHUDTiles + 3);
+        // LD_A(tiles[3]);
         // LD_hl_A;
-        *hl = wram->wTrainerHUDTiles[3];
+        *hl = tiles[3];
         // DEC_B;
         // IF_NZ goto loop;
     } while(--b != 0);
     // ADD_HL_DE;
     hl += de;
-    // LD_A_addr(wTrainerHUDTiles + 2);
+    // LD_A(tiles[2]);
     // LD_hl_A;
-    *hl = wram->wTrainerHUDTiles[2];
+    *hl = tiles[2];
     // RET;
 }
 
@@ -270,7 +254,7 @@ void LinkBattle_TrainerHuds(void){
     // LD_HL(wPartyMon1HP);
     // LD_DE(wPartyCount);
     // CALL(aStageBallTilesData);
-    uint8_t playerTileIds[PARTY_LENGTH];
+    uint16_t playerTileIds[PARTY_LENGTH];
     StageBallTilesData(gPokemon.partyCount, gPokemon.partyMon, playerTileIds);
     // LD_HL(wPlaceBallsX);
     // LD_A(10 * 8);
@@ -280,12 +264,12 @@ void LinkBattle_TrainerHuds(void){
     // LD_addr_A(wPlaceBallsDirection);
     // LD_HL(wVirtualOAMSprite00);
     // CALL(aLoadTrainerHudOAM);
-    SetBattleAnimationHudSprites(0, 8 * 8, 10 * 8, 8, playerTileIds);
+    SetBattleAnimationHudSprites(0, 8 * 8, 10 * 8, 8, playerTileIds, PARTY_LENGTH);
 
     // LD_HL(wOTPartyMon1HP);
     // LD_DE(wOTPartyCount);
     // CALL(aStageBallTilesData);
-    uint8_t opponentTileIds[PARTY_LENGTH];
+    uint16_t opponentTileIds[PARTY_LENGTH];
     StageBallTilesData(wram->wOTPartyCount, wram->wOTPartyMon, opponentTileIds);
     // LD_HL(wPlaceBallsX);
     // LD_A(10 * 8);
@@ -293,7 +277,7 @@ void LinkBattle_TrainerHuds(void){
     // LD_hl(13 * 8);
     // LD_HL(wVirtualOAMSprite00 + PARTY_LENGTH * SPRITEOAMSTRUCT_LENGTH);
     // JP(mLoadTrainerHudOAM);
-    SetBattleAnimationHudSprites(PARTY_LENGTH, 13 * 8, 10 * 8, 8, opponentTileIds);
+    SetBattleAnimationHudSprites(PARTY_LENGTH, 13 * 8, 10 * 8, 8, opponentTileIds, PARTY_LENGTH);
 }
 
 void LoadBallIconGFX(void){
