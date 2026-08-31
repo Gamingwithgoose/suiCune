@@ -28,6 +28,7 @@
 #include "../../home/lcd.h"
 #include "../../home/init.h"
 #include "../../engine/battle_anims/core.h"
+#include "../../engine/battle_anims/render.h"
 #include "rom_patches.h"
 #include "../../util/record.h"
 #include "../../util/network.h"
@@ -927,36 +928,10 @@ static void DrawObjectSprite(uint8_t pixels[LCD_WIDTH], const uint8_t pixelsPrio
     }
 }
 
-static void DrawBattleSceneBattler(uint8_t pixels[LCD_WIDTH], uint8_t pixelsPrio[LCD_WIDTH],
-    const struct BattleSceneBattlerView* battler) {
-    if(battler == NULL || !battler->visible || battler->pixels == NULL)
-        return;
-    for(size_t tileIndex = 0; tileIndex < battler->tileCount; tileIndex++) {
-        const struct BattleSceneBattlerTile* tile = &battler->tiles[tileIndex];
-        if(tile->imageTile >= battler->pixelTileCount)
-            continue;
-        int16_t y = tile->y - gb.gb_reg.SCY;
-        int16_t x = tile->x - gb.gb_reg.SCX;
-        int py = gb.gb_reg.LY - y;
-        if(py < 0 || py >= TILE_WIDTH)
-            continue;
-        const uint8_t* source = battler->pixels + (size_t)tile->imageTile * LEN_2BPP_TILE;
-        uint8_t low = source[py * 2];
-        uint8_t high = source[py * 2 + 1];
-        for(uint8_t bit = 0; bit < TILE_WIDTH; bit++) {
-            int displayX = x + (TILE_WIDTH - 1 - bit);
-            if(displayX < 0 || displayX >= LCD_WIDTH)
-                continue;
-            uint8_t color = (low & 1) | ((high & 1) << 1);
-            if(gb.cgb.cgbMode)
-                pixels[displayX] = (battler->palette << 2) + color;
-            else
-                pixels[displayX] = gb.display.bg_palette[color] | LCD_PALETTE_BG;
-            pixelsPrio[displayX] = 0;
-            low >>= 1;
-            high >>= 1;
-        }
-    }
+static void DrawNativeBattleSceneSprite(void* context, uint8_t* pixels, uint8_t* priority,
+    int16_t y, int16_t x, uint16_t tile, uint8_t attributes, const uint8_t* tilePixels) {
+    (void)context;
+    DrawObjectSprite(pixels, priority, y, x, tile, attributes, tilePixels);
 }
 
 void gb_draw_line(void) {
@@ -1162,10 +1137,15 @@ void gb_draw_line(void) {
 
     // Battle battlers are native background-scene resources, rendered before
     // sprite layers. Their tile placement and palette are not read from VRAM.
-    for(uint8_t battler = BATTLE_SCENE_BATTLER_PLAYER;
-        battler < BATTLE_SCENE_BATTLER_COUNT; battler++) {
-        DrawBattleSceneBattler(pixels, pixelsPrio, BattleSceneBattler(battler));
-    }
+    struct BattleSceneRenderLine battleLine = {
+        .pixels = pixels,
+        .priority = pixelsPrio,
+        .line = gb.gb_reg.LY,
+        .colorMode = gb.cgb.cgbMode,
+        .monochromeBackgroundPalette = gb.display.bg_palette,
+        .monochromeBackgroundMask = LCD_PALETTE_BG,
+    };
+    RenderBattleSceneBattlers(&battleLine);
 
     // draw sprites
     if (gb.gb_reg.LCDC & LCDC_OBJ_ENABLE) {
@@ -1177,24 +1157,8 @@ void gb_draw_line(void) {
                 gb.oam[4 * spriteIndex + 2], gb.oam[4 * spriteIndex + 3], NULL);
         }
 
-        // Battle scene sprites are the authoritative battle-only presentation
-        // model. Legacy OAM remains above solely for unmigrated non-battle
-        // producers; it is not used as a battle-scene capacity or lifetime
-        // store. Draw each semantic layer in a stable order.
-        size_t battleSceneSpriteCount;
-        const struct BattleAnimationSprite* battleSceneSprites = BattleSceneSprites(&battleSceneSpriteCount);
-        for(uint8_t layer = BATTLE_SCENE_LAYER_BASELINE; layer < BATTLE_SCENE_LAYER_COUNT; layer++) {
-            for(size_t spriteIndex = battleSceneSpriteCount; spriteIndex != 0; spriteIndex--) {
-                const struct BattleAnimationSprite* sprite = &battleSceneSprites[spriteIndex - 1];
-                if(sprite->layer != layer)
-                    continue;
-                struct BattleAnimationSprite pixelSource = *sprite;
-                if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_ANIMATION)
-                    pixelSource.tileId &= (gb.gb_reg.LCDC & LCDC_OBJ_SIZE) ? 0xFFFE : 0xFFFF;
-                DrawObjectSprite(pixels, pixelsPrio, sprite->yCoord, sprite->xCoord, sprite->tileId,
-                    sprite->attributes, BattleAnimationSpritePixels(&pixelSource));
-            }
-        }
+        RenderBattleSceneSprites(&battleLine, (gb.gb_reg.LCDC & LCDC_OBJ_SIZE) != 0,
+            DrawNativeBattleSceneSprite, NULL);
     }
 
     gb.display.lcd_draw_line(pixels, gb.gb_reg.LY);

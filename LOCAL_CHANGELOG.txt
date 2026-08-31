@@ -5731,3 +5731,82 @@ Validation and remaining work
   background palette effects completely out of the remaining generic tilemap
   and scanline presentation path, then replace the general battle tile/UI
   background renderer without reintroducing a synchronized WRAM sidecar.
+
+2026-08-31 — Native battle display control and compositor boundary
+====================================================================
+
+Completed ownership transfer
+----------------------------
+- `NativeBattleSceneDisplayState` now owns battle camera offsets and the
+  active semantic scanline effect type/range. Persistent battlers consume this
+  state directly in the native battle renderer; they no longer derive position
+  from `gb.gb_reg.SCX` or `gb.gb_reg.SCY`.
+- The battle-only composition loops moved from `tools/emu/peanut_sdl.c` into
+  `engine/battle_anims/render.c`. The SDL/LCD host supplies a target scanline
+  and palette mapping callback only; it no longer owns battler or scene-sprite
+  composition policy.
+- Battle faint transitions now translate the native player/opponent battler
+  placement over the original seven two-frame steps, then change native
+  visibility. The old persistent battler tilemap-row shifting routine was
+  removed.
+- Battle picture animation uses an explicit `BattleSceneBattlerId` entry
+  point. The packed generic `PokeAnim` controller remains a narrow temporary
+  control boundary, but its active battle target is no longer inferred by
+  comparing a `wTilemap` pointer to historical coordinates.
+- Surf and battle-intro sliding effects now produce semantic native scanline
+  offset/camera state. Their per-line authored samples remain native arrays;
+  the generic LCD background plane receives only a one-way compatibility
+  projection while it remains responsible for unmigrated battle UI/background
+  tiles.
+- Native battler hide, partial-row extraction, removal-slide, and picture
+  resize paths no longer request `hBGMapMode`/`hBGMapThird` tilemap scheduling
+  merely to present their already-native battler state.
+
+Palette and retained compatibility boundaries
+---------------------------------------------
+- Battle animation palette commands and background palette effects continue to
+  mutate the native presentation palette state. Direct `rBGP` mutation was
+  removed from the touched animation paths; the generic palette backend
+  projects the native state only for its remaining LCD consumer.
+- A battle animation starts with one explicit baseline import from existing
+  palette stores because the unmigrated battle UI/background still originates
+  there. The native animation state is authoritative for palette effects while
+  the animation is active; no per-frame palette-array synchronization was
+  introduced.
+- General battle UI/window/background tilemaps, generic LCD timing, and the
+  packed non-battle `PokeAnim` runtime remain legacy consumers outside this
+  closure. `gb_draw_line()` remains the transition host for those planes and
+  invokes the native battle compositor for migrated resources.
+
+Files modified
+--------------
+- `engine/battle/core.c`
+- `engine/battle/sliding_intro.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/functions.c`
+- `engine/battle_anims/render.c` (new)
+- `engine/battle_anims/render.h` (new)
+- `engine/gfx/pic_animation.c`
+- `engine/gfx/pic_animation.h`
+- `home/battle.c`
+- `home/lcd.c`
+- `tools/emu/peanut_sdl.c`
+
+Validation and next closure
+---------------------------
+- Static audit: migrated battler paths contain no active `wTilemap` identity
+  comparison, persistent battler VRAM writes, virtual-OAM submission, or
+  `gb.oam` ownership. Remaining battle `hBGMap*`, palette, LCDC, and register
+  references belong to legacy UI/background transfer paths, generic renderer
+  hosting, or historical/reference code.
+- Windows Release build: in progress at the time of this entry; result is
+  recorded with the session handoff.
+- Runtime validation: not performed. Known battle cases requiring execution
+  remain player-battler persistence during attacks, complete Leer rendering,
+  and opponent Tackle stability.
+- Next dependency closure: move the remaining battle UI/background tile and
+  window planes into an explicit native battle frame model, then retire the
+  LCD compatibility projection from migrated battle presentation.

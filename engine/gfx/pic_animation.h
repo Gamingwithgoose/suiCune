@@ -1,3 +1,5 @@
+#include "../battle_anims/core.h"
+
 void Unused_AnimateMon_Slow_Normal(void);
 void AnimateMon_Menu(uint8_t* hl);
 void AnimateMon_Trade(uint8_t* hl);
@@ -6,6 +8,7 @@ void AnimateMon_Hatch(uint8_t* hl);
 void AnimateMon_HOF(uint8_t* hl);
 // void PokeAnims(void);
 void AnimateFrontpic(uint8_t* hl, uint8_t d, uint8_t e);
+void AnimateBattleSceneFrontpic(enum BattleSceneBattlerId battler, uint8_t animation);
 void LoadMonAnimation(uint8_t* hl, uint8_t d, uint8_t e);
 bool SetUpPokeAnim(void);
 // void PokeAnim_SetupCommands(void);

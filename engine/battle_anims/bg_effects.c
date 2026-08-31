@@ -590,15 +590,7 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
                 SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
             }
 
-        // got_pointer:
-            // POP_BC;
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapThird);
-            hram.hBGMapThird = 0x0;
-            // LD_A(0x1);
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
-            // RET;
+        // Native visibility is consumed by the battle compositor directly.
         } return;
         // if (index == 1) return BattleBGEffects_IncAnonJumptableIndex();
         case 1: return BattleBGEffects_IncAnonJumptableIndex(bc);
@@ -610,10 +602,6 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
         default:
         case 4: {
         // four:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
-            // CALL(aEndBattleBGEffect);
             EndBattleBGEffect(bc);
             // RET;
         } return;
@@ -740,12 +728,7 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
                     2 * TILE_WIDTH, 6 * TILE_WIDTH, 6, 1);
             }
 
-        // okay2:
-            // LD_A(0x1);
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
-            // POP_BC;
-            // RET;
+        // Native battler region removal has no tilemap upload.
         } return;
         // if (index == 2) return BattleBGEffects_IncAnonJumptableIndex();
         case 2: return BattleBGEffects_IncAnonJumptableIndex(bc);
@@ -757,10 +740,6 @@ static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
         default:
         case 5: {
         // five:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
-            // CALL(aEndBattleBGEffect);
             EndBattleBGEffect(bc);
             // RET;
         } return;
@@ -846,12 +825,7 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
                     2 * TILE_WIDTH, 6 * TILE_WIDTH, 6, 2);
             }
 
-        // okay2:
-            // LD_A(0x1);
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
-            // POP_BC;
-            // RET;
+        // Native battler region removal has no tilemap upload.
         } return;
         // if (index == 2) return BattleBGEffects_IncAnonJumptableIndex();
         case 2: return BattleBGEffects_IncAnonJumptableIndex(bc);
@@ -863,10 +837,6 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc) {
         default:
         case 5: {
         // five:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
-            // CALL(aEndBattleBGEffect);
             EndBattleBGEffect(bc);
             // RET;
         } return;
@@ -927,14 +897,7 @@ anon_dw:
             else
                 TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT, TILE_WIDTH, 0);
 
-        // okay2:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapThird);
-            hram.hBGMapThird = 0x0;
-            // LD_A(0x1);
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
-            // CALL(aBattleBGEffects_IncAnonJumptableIndex);
+        // Native battler placement is consumed without a tilemap upload.
             BattleBGEffects_IncAnonJumptableIndex(bc);
             // LD_HL(BG_EFFECT_STRUCT_PARAM);
             // ADD_HL_BC;
@@ -949,10 +912,6 @@ anon_dw:
         // if (index == 4) goto four;
         case 4: {
         // four:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
-            // LD_HL(BG_EFFECT_STRUCT_PARAM);
             // ADD_HL_BC;
             // LD_A_hl;
             // AND_A_A;
@@ -1264,9 +1223,6 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
         // skip:
             // CALL(aBattleBGEffects_IncAnonJumptableIndex);
             BattleBGEffects_IncAnonJumptableIndex(bc);
-            // LD_A(0x1);
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_UPDATE_TILES;
             // RET;
             return;
         } return;
@@ -1277,9 +1233,6 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
         // if (index == 3) goto restart;
         case 3: {
         // restart:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
             // LD_HL(BG_EFFECT_STRUCT_JT_INDEX);
             // ADD_HL_BC;
             // LD_hl(0x0);
@@ -1289,9 +1242,6 @@ static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const u
         // if (index == 4) goto end;
         case 4: {
         end:
-            // XOR_A_A;
-            // LDH_addr_A(hBGMapMode);
-            hram.hBGMapMode = BGMAPMODE_NONE;
             // CALL(aEndBattleBGEffect);
             EndBattleBGEffect(bc);
             // RET;
@@ -3777,8 +3727,6 @@ static void BattleBGEffects_SetLYOverrides(uint8_t a) {
 
 static void BattleBGEffect_SetLCDStatCustoms1(struct BattleBGEffect* bc, uint8_t a) {
     // SET_PC(aBattleBGEffect_SetLCDStatCustoms1);
-    // LDH_addr_A(hLCDCPointer);
-    hram.hLCDCPointer = a;
     // CALL(aBGEffect_CheckBattleTurn);
     // IF_NZ goto player_turn;
     // LD_DE((0x00 << 8) | 0x36);
@@ -3795,13 +3743,14 @@ static void BattleBGEffect_SetLCDStatCustoms1(struct BattleBGEffect* bc, uint8_t
     // LD_A_E;
     // LDH_addr_A(hLYOverrideEnd);
     hram.hLYOverrideEnd = LOW(de);
+    BattleSceneScanlineEffectSet(a == LOW(rSCX)
+        ? BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET
+        : BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET, HIGH(de), LOW(de));
     // RET;
 }
 
 static void BattleBGEffect_SetLCDStatCustoms2(struct BattleBGEffect* bc, uint8_t a) {
     // SET_PC(aBattleBGEffect_SetLCDStatCustoms2);
-    // LDH_addr_A(hLCDCPointer);
-    hram.hLCDCPointer = a;
     // CALL(aBGEffect_CheckBattleTurn);
     // IF_NZ goto player_turn;
     // LD_DE((0x00 << 8) | 0x36);
@@ -3818,6 +3767,9 @@ static void BattleBGEffect_SetLCDStatCustoms2(struct BattleBGEffect* bc, uint8_t
     // LD_A_E;
     // LDH_addr_A(hLYOverrideEnd);
     hram.hLYOverrideEnd = LOW(de);
+    BattleSceneScanlineEffectSet(a == LOW(rSCX)
+        ? BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET
+        : BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET, HIGH(de), LOW(de));
     // RET;
 }
 
@@ -3828,6 +3780,7 @@ static void BattleAnim_ResetLCDStatCustom(struct BattleBGEffect* bc) {
     hram.hLYOverrideStart = 0x0;
     // LDH_addr_A(hLYOverrideEnd);
     hram.hLYOverrideEnd = 0x0;
+    BattleSceneScanlineEffectClear();
     // CALL(aBattleBGEffects_ClearLYOverrides);
     BattleBGEffects_ClearLYOverrides();
     // XOR_A_A;
@@ -3841,11 +3794,7 @@ static void BattleAnim_ResetLCDStatCustom(struct BattleBGEffect* bc) {
 void BattleBGEffects_ResetVideoHRAM(void) {
     // SET_PC(aBattleBGEffects_ResetVideoHRAM);
     // XOR_A_A;
-    // LDH_addr_A(hLCDCPointer);
-    hram.hLCDCPointer = 0x0;
-    // LD_A(0b11100100);
-    // LDH_addr_A(rBGP);
-    gb_write(rBGP, 0b11100100);
+    BattleSceneScanlineEffectClear();
     // LD_addr_A(wBGP);
     BattleAnimationDMGBGPaletteSet(0b11100100);
     // LD_addr_A(wOBP1);

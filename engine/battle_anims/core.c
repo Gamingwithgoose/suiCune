@@ -16,6 +16,10 @@ struct NativeBattleSceneBattler {
     struct BattleSceneBattlerTile* tiles;
     size_t tileCount;
     size_t tileCapacity;
+    int16_t defaultX;
+    int16_t defaultY;
+    uint8_t defaultWidth;
+    uint8_t defaultHeight;
     uint8_t palette;
     bool visible;
 };
@@ -60,8 +64,18 @@ struct BattleAnimationPresentationState {
     uint8_t scanlineScratch[BATTLE_ANIMATION_SCANLINE_WORKSPACE_SIZE];
 };
 
+struct NativeBattleSceneDisplayState {
+    bool active;
+    int16_t cameraX;
+    int16_t cameraY;
+    enum BattleSceneScanlineEffect scanlineEffect;
+    uint8_t scanlineStart;
+    uint8_t scanlineEnd;
+};
+
 static struct NativeBattleAnimationState sBattleAnimationState;
 static struct BattleAnimationPresentationState sBattleAnimationPresentation;
+static struct NativeBattleSceneDisplayState sBattleSceneDisplay;
 // The parameter is supplied by battle logic before an animation begins and
 // may be consumed by its script. It intentionally survives per-animation
 // renderer resets just as the former shared battle-state byte did.
@@ -281,9 +295,13 @@ void SetBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
         abort();
     BattleSceneEnsureBattlerPixels(battler, tileCount);
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
-    CopyBytes(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
+    memcpy(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
     state->pixelTileCount = tileCount;
     state->palette = palette;
+    state->defaultX = x;
+    state->defaultY = y;
+    state->defaultWidth = width;
+    state->defaultHeight = height;
     uint8_t imageTiles[7 * 7];
     if((size_t)width * height > lengthof(imageTiles))
         abort();
@@ -298,7 +316,7 @@ void UpdateBattleSceneBattlerImage(enum BattleSceneBattlerId battler,
         abort();
     BattleSceneEnsureBattlerPixels(battler, tileCount);
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
-    CopyBytes(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
+    memcpy(state->pixels, pixels, tileCount * LEN_2BPP_TILE);
     state->pixelTileCount = tileCount;
 }
 
@@ -332,18 +350,20 @@ const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerI
     return view;
 }
 
-bool BattleSceneBattlerForTilemap(const uint8_t* tilemap, enum BattleSceneBattlerId* battler){
-    if(tilemap == NULL || battler == NULL)
-        return false;
-    if(tilemap == coord(2, 6, wram->wTilemap)) {
-        *battler = BATTLE_SCENE_BATTLER_PLAYER;
-        return true;
-    }
-    if(tilemap == coord(12, 0, wram->wTilemap)) {
-        *battler = BATTLE_SCENE_BATTLER_OPPONENT;
-        return true;
-    }
-    return false;
+void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return;
+    struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    if(state->defaultWidth == 0 || state->defaultHeight == 0)
+        return;
+    uint8_t imageTiles[7 * 7];
+    size_t count = (size_t)state->defaultWidth * state->defaultHeight;
+    if(count > lengthof(imageTiles))
+        abort();
+    for(size_t i = 0; i < count; i++)
+        imageTiles[i] = i;
+    PlaceBattleSceneBattlerPattern(battler, state->defaultX, state->defaultY,
+        state->defaultWidth, state->defaultHeight, imageTiles);
 }
 
 void ClearBattleSceneBattlers(void){
@@ -421,6 +441,80 @@ void EndBattleAnimationPresentation(void){
 
 bool BattleAnimationPresentationActive(void){
     return sBattleAnimationPresentation.active;
+}
+
+void BeginBattleSceneDisplay(void){
+    memset(&sBattleSceneDisplay, 0, sizeof(sBattleSceneDisplay));
+    sBattleSceneDisplay.active = true;
+}
+
+void EndBattleSceneDisplay(void){
+    memset(&sBattleSceneDisplay, 0, sizeof(sBattleSceneDisplay));
+}
+
+bool BattleSceneDisplayActive(void){
+    return sBattleSceneDisplay.active;
+}
+
+void BattleSceneCameraSet(int16_t x, int16_t y){
+    sBattleSceneDisplay.cameraX = x;
+    sBattleSceneDisplay.cameraY = y;
+}
+
+void BattleSceneCameraTranslate(int16_t xDelta, int16_t yDelta){
+    sBattleSceneDisplay.cameraX += xDelta;
+    sBattleSceneDisplay.cameraY += yDelta;
+}
+
+int16_t BattleSceneCameraX(void){
+    return sBattleSceneDisplay.cameraX;
+}
+
+int16_t BattleSceneCameraY(void){
+    return sBattleSceneDisplay.cameraY;
+}
+
+void BattleSceneScanlineEffectSet(enum BattleSceneScanlineEffect effect,
+    uint8_t startLine, uint8_t endLine){
+    sBattleSceneDisplay.scanlineEffect = effect;
+    sBattleSceneDisplay.scanlineStart = startLine;
+    sBattleSceneDisplay.scanlineEnd = endLine;
+}
+
+void BattleSceneScanlineEffectClear(void){
+    sBattleSceneDisplay.scanlineEffect = BATTLE_SCENE_SCANLINE_NONE;
+    sBattleSceneDisplay.scanlineStart = 0;
+    sBattleSceneDisplay.scanlineEnd = 0;
+}
+
+enum BattleSceneScanlineEffect BattleSceneScanlineEffectGet(void){
+    return sBattleSceneDisplay.scanlineEffect;
+}
+
+uint8_t BattleSceneScanlineEffectStart(void){
+    return sBattleSceneDisplay.scanlineStart;
+}
+
+uint8_t BattleSceneScanlineEffectEnd(void){
+    return sBattleSceneDisplay.scanlineEnd;
+}
+
+int16_t BattleSceneHorizontalOffsetForLine(uint8_t line){
+    int16_t offset = sBattleSceneDisplay.cameraX;
+    if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET &&
+        line >= sBattleSceneDisplay.scanlineStart && line <= sBattleSceneDisplay.scanlineEnd) {
+        offset += (int8_t)BattleAnimationScanlineOverrides()[line];
+    }
+    return offset;
+}
+
+int16_t BattleSceneVerticalOffsetForLine(uint8_t line){
+    int16_t offset = sBattleSceneDisplay.cameraY;
+    if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET &&
+        line >= sBattleSceneDisplay.scanlineStart && line <= sBattleSceneDisplay.scanlineEnd) {
+        offset += (int8_t)BattleAnimationScanlineOverrides()[line];
+    }
+    return offset;
 }
 
 uint8_t* BattleAnimationScanlineOverrides(void){

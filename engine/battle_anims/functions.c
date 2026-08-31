@@ -1656,15 +1656,7 @@ void BattleAnimFunction_Surf(struct BattleAnim* bc) {
     // zero:
         // CALL(aBattleAnim_IncAnonJumptableIndex);
         bc->jumptableIndex++;
-        // LD_A(LOW(rSCY));
-        // LDH_addr_A(hLCDCPointer);
-        hram.hLCDCPointer = LOW(rSCY);
-        // LD_A(0x58);
-        // LDH_addr_A(hLYOverrideStart);
-        hram.hLYOverrideStart = 0x58;
-        // LD_A(0x5e);
-        // LDH_addr_A(hLYOverrideEnd);
-        hram.hLYOverrideEnd = 0x5e;
+        BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET, 0x58, 0x5e);
         // RET;
         return;
 
@@ -1681,9 +1673,8 @@ void BattleAnimFunction_Surf(struct BattleAnim* bc) {
         if(bc->yCoord < bc->param) {
             // CALL(aBattleAnim_IncAnonJumptableIndex);
             bc->jumptableIndex++;
-            // XOR_A_A;
-            // LDH_addr_A(hLYOverrideStart);
-            hram.hLYOverrideStart = 0x0;
+            BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET, 0,
+                BattleSceneScanlineEffectEnd());
             // RET;
             return;
         }
@@ -1708,8 +1699,8 @@ void BattleAnimFunction_Surf(struct BattleAnim* bc) {
         // RET_C;
         if(bc->yOffset + bc->yCoord < 0x10)
             return;
-        // LDH_addr_A(hLYOverrideStart);
-        hram.hLYOverrideStart = bc->yOffset + bc->yCoord - 0x10;
+        BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET,
+            bc->yOffset + bc->yCoord - 0x10, BattleSceneScanlineEffectEnd());
         // LD_HL(BATTLEANIMSTRUCT_XOFFSET);
         // ADD_HL_BC;
         // LD_A_hl;
@@ -1746,18 +1737,12 @@ void BattleAnimFunction_Surf(struct BattleAnim* bc) {
             // RET_C;
             if(bc->yCoord < 0x10)
                 return;
-            // LDH_addr_A(hLYOverrideStart);
-            hram.hLYOverrideStart = bc->yCoord - 0x10;
+            BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET,
+                bc->yCoord - 0x10, BattleSceneScanlineEffectEnd());
             // RET;
             return;
         }
-        // XOR_A_A;
-        // LDH_addr_A(hLCDCPointer);
-        hram.hLCDCPointer = 0;
-        // LDH_addr_A(hLYOverrideStart);
-        hram.hLYOverrideStart = 0;
-        // LDH_addr_A(hLYOverrideEnd);
-        hram.hLYOverrideEnd = 0;
+        BattleSceneScanlineEffectClear();
         fallthrough;
 
     case 4:

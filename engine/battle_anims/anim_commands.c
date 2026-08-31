@@ -115,11 +115,7 @@ void BattleAnimRunScript(void){
             // CALL(aBattleAnimRequestPals);
             BattleAnimRequestPals();
 
-            // XOR_A_A;
-            // LDH_addr_A(hSCX);
-            hram.hSCX = 0;
-            // LDH_addr_A(hSCY);
-            hram.hSCY = 0;
+            BattleSceneCameraSet(0, 0);
             // CALL(aBattleAnimDelayFrame);
             BattleAnimDelayFrame();
             // CALL(aBattleAnimRestoreHuds);
@@ -1881,11 +1877,7 @@ void BattleAnim_RevertPals(void){
     // LD_addr_A(wOBP1);
     BattleAnimationDMGObjectPalette1Set(0b11100100);
     BattleAnimApplyFullCGBPals();
-    // XOR_A_A;
-    // LDH_addr_A(hSCX);
-    hram.hSCX = 0;
-    // LDH_addr_A(hSCY);
-    hram.hSCY = 0;
+    BattleSceneCameraSet(0, 0);
     // CALL(aBattleAnimDelayFrame);
     BattleAnimDelayFrame();
     // LD_A(0x1);
@@ -1895,8 +1887,7 @@ void BattleAnim_RevertPals(void){
 }
 
 void BattleAnim_SetBGPals(uint8_t bgp){
-    // LDH_addr_A(rBGP);
-    gb_write(rBGP, bgp);
+    BattleAnimationDMGBGPaletteSet(bgp);
     // LDH_A_addr(hCGB);
     // AND_A_A;
     // RET_Z ;
@@ -1912,14 +1903,16 @@ void BattleAnim_SetBGPals(uint8_t bgp){
     // LD_B_A;
     // LD_C(7);
     // CALL(aCopyPals);
-    CopyPals(BattleAnimationPaletteOutput(false), BattleAnimationPaletteSource(false), gb_read(rBGP), 7);
+    CopyPals(BattleAnimationPaletteOutput(false), BattleAnimationPaletteSource(false),
+        BattleAnimationDMGBGPalette(), 7);
     // LD_HL(wOBPals2);
     // LD_DE(wOBPals1);
     // LDH_A_addr(rBGP);
     // LD_B_A;
     // LD_C(2);
     // CALL(aCopyPals);
-    CopyPals(BattleAnimationPaletteOutput(true), BattleAnimationPaletteSource(true), gb_read(rBGP), 2);
+    CopyPals(BattleAnimationPaletteOutput(true), BattleAnimationPaletteSource(true),
+        BattleAnimationDMGBGPalette(), 2);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // LD_A(TRUE);

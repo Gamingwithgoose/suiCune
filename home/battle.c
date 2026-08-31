@@ -222,6 +222,12 @@ void StdBattleTextbox(const struct TextCmd* hl){
 }
 
 void PushLYOverrides(void){
+    if(BattleSceneDisplayActive()) {
+        if(BattleSceneScanlineEffectGet() == BATTLE_SCENE_SCANLINE_NONE)
+            return;
+        CopyBytes(BattleAnimationScanlineOverrides(), BattleAnimationScanlineScratch(), SCREEN_HEIGHT_PX);
+        return;
+    }
     // LDH_A_addr(hLCDCPointer);
     // AND_A_A;
     // RET_Z ;
@@ -240,10 +246,6 @@ void PushLYOverrides(void){
 
     // LD_A((wLYOverridesEnd - wLYOverrides) / LEN_2BPP_TILE);
     // LD_addr_A(wRequested2bppSize);
-    if(BattleAnimationPresentationActive()) {
-        CopyBytes(BattleAnimationScanlineOverrides(), BattleAnimationScanlineScratch(), SCREEN_HEIGHT_PX);
-        return;
-    }
     CopyBytes(wram->wLYOverrides, wram->wLYOverridesBackup, wLYOverridesEnd - wLYOverrides);
     // RET;
 }

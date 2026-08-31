@@ -138,10 +138,9 @@ static void BattleIntroSlidingPics_subfunction5(uint8_t d, uint8_t e);
 static void BattleIntroSlidingPics_subfunction1(void) {
     // CALL(aBattleIntroSlidingPics_subfunction4);
     // BattleIntroSlidingPics_subfunction4();
-    ByteFill(wram->wLYOverrides, SCREEN_HEIGHT_PX, 0x90);
-    // LD_A(0x90);
-    // LDH_addr_A(hSCX);
-    hram.hSCX = 0x90;
+    ByteFill(BattleAnimationScanlineOverrides(), SCREEN_HEIGHT_PX, 0x90);
+    BattleSceneCameraSet(0x90, 0);
+    BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET, 0, 0x5e);
     // LD_A(0b11100100);
     // CALL(aDmgToCgbBGPals);
     DmgToCgbBGPals(0b11100100);
@@ -159,7 +158,7 @@ static void BattleIntroSlidingPics_subfunction5(uint8_t d, uint8_t e) {
     // LD_HL(wLYOverrides);
     // LD_A_D;
     // LD_C(0x3e);  // 62
-    uint8_t* hl = wram->wLYOverrides;
+    uint8_t* hl = BattleAnimationScanlineOverrides();
     uint8_t c = 0x3e; // 62
 
     do {
@@ -206,9 +205,7 @@ static void BattleIntroSlidingPics_subfunction2(void) {
     //     CP_A(0x60);
     //     IF_C goto loop2;
         // NOP;
-        // LD_A_D;
-        // LDH_addr_A(hSCX);
-        hram.hSCX = d;
+        BattleSceneCameraSet(d, 0);
         // CALL(aBattleIntroSlidingPics_subfunction5);
         BattleIntroSlidingPics_subfunction5(d, e);
         // INC_E;
@@ -245,14 +242,10 @@ void BattleIntroSlidingPics(void){
     // LDH_addr_A(rSVBK);
     // CALL(aBattleIntroSlidingPics_subfunction1);
     BattleIntroSlidingPics_subfunction1();
-    // LD_A(LOW(rSCX));
-    // LDH_addr_A(hLCDCPointer);
-    hram.hLCDCPointer = LOW(rSCX);
     // CALL(aBattleIntroSlidingPics_subfunction2);
     BattleIntroSlidingPics_subfunction2();
-    // XOR_A_A;
-    // LDH_addr_A(hLCDCPointer);
-    hram.hLCDCPointer = 0;
+    BattleSceneScanlineEffectClear();
+    BattleSceneCameraSet(0, 0);
     // POP_AF;
     // LDH_addr_A(rSVBK);
     // RET;

@@ -104,6 +104,12 @@ enum BattleSceneLayer {
     BATTLE_SCENE_LAYER_COUNT,
 };
 
+enum BattleSceneScanlineEffect {
+    BATTLE_SCENE_SCANLINE_NONE,
+    BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET,
+    BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET,
+};
+
 enum BattleSceneBattlerId {
     BATTLE_SCENE_BATTLER_PLAYER,
     BATTLE_SCENE_BATTLER_OPPONENT,
@@ -163,7 +169,7 @@ void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
     const uint8_t* imageTiles);
 const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler);
-bool BattleSceneBattlerForTilemap(const uint8_t* tilemap, enum BattleSceneBattlerId* battler);
+void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlers(void);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
@@ -176,6 +182,21 @@ void BattleAnimationIdSetLowByte(uint8_t id);
 void BeginBattleAnimationPresentation(void);
 void EndBattleAnimationPresentation(void);
 bool BattleAnimationPresentationActive(void);
+void BeginBattleSceneDisplay(void);
+void EndBattleSceneDisplay(void);
+bool BattleSceneDisplayActive(void);
+void BattleSceneCameraSet(int16_t x, int16_t y);
+void BattleSceneCameraTranslate(int16_t xDelta, int16_t yDelta);
+int16_t BattleSceneCameraX(void);
+int16_t BattleSceneCameraY(void);
+void BattleSceneScanlineEffectSet(enum BattleSceneScanlineEffect effect,
+    uint8_t startLine, uint8_t endLine);
+void BattleSceneScanlineEffectClear(void);
+enum BattleSceneScanlineEffect BattleSceneScanlineEffectGet(void);
+uint8_t BattleSceneScanlineEffectStart(void);
+uint8_t BattleSceneScanlineEffectEnd(void);
+int16_t BattleSceneHorizontalOffsetForLine(uint8_t line);
+int16_t BattleSceneVerticalOffsetForLine(uint8_t line);
 uint8_t* BattleAnimationScanlineOverrides(void);
 uint8_t* BattleAnimationScanlineScratch(void);
 uint8_t* BattleAnimationPaletteOutput(bool objectPalette);

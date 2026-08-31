@@ -121,7 +121,6 @@ static bool IsMobileBattle(void);
 static void LostBattle(void);
 static void EnemyMonFaintedAnimation(void);
 static void PlayerMonFaintedAnimation(void);
-static void MonFaintedAnimation(tile_t* de, tile_t* hl);
 static void SlideBattlePicOut(uint8_t* hl, uint8_t a);
 
 static u8_flag_s CheckWhetherSwitchmonIsPredetermined(void);
@@ -4790,93 +4789,25 @@ static void LostBattle(void){
 }
 
 static void EnemyMonFaintedAnimation(void){
-    // hlcoord(12, 5, wTilemap);
-    // decoord(12, 6, wTilemap);
-    // JP(mMonFaintedAnimation);
-    MonFaintedAnimation(coord(12, 6, wram->wTilemap), coord(12, 5, wram->wTilemap));
+    uint8_t disable = wram->wJoypadDisable;
+    bit_set(wram->wJoypadDisable, JOYPAD_DISABLE_MON_FAINT_F);
+    for(uint8_t row = 0; row < 7; row++) {
+        TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_OPPONENT, 0, TILE_WIDTH);
+        DelayFrames(2);
+    }
+    wram->wJoypadDisable = disable;
     SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_OPPONENT, false);
 }
 
 static void PlayerMonFaintedAnimation(void){
-    // hlcoord(1, 10, wTilemap);
-    // decoord(1, 11, wTilemap);
-    // JP(mMonFaintedAnimation);
-    MonFaintedAnimation(coord(1, 11, wram->wTilemap), coord(1, 10, wram->wTilemap));
-    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
-}
-
-static void MonFaintedAnimation(tile_t* de, tile_t* hl){
-    static const char Spaces[] = "       @";
-    uint8_t buf[16];
-    // LD_A_addr(wJoypadDisable);
-    // PUSH_AF;
     uint8_t disable = wram->wJoypadDisable;
-    // SET_A(JOYPAD_DISABLE_MON_FAINT_F);
-    // LD_addr_A(wJoypadDisable);
     bit_set(wram->wJoypadDisable, JOYPAD_DISABLE_MON_FAINT_F);
-
-    U82CA(buf, Spaces);
-
-    // LD_B(7);
-    uint8_t b = 7;
-
-    do {
-    // OuterLoop:
-        // PUSH_BC;
-        // PUSH_DE;
-        tile_t* de2 = de;
-        // PUSH_HL;
-        tile_t* hl2 = hl;
-        // LD_B(6);
-        uint8_t b2 = 6;
-
-        do {
-        // InnerLoop:
-            // PUSH_BC;
-            // PUSH_HL;
-            // PUSH_DE;
-            // LD_BC(7);
-            // CALL(aCopyBytes);
-            CopyBytes(de, hl, 7);
-            // POP_DE;
-            // POP_HL;
-            // LD_BC(-SCREEN_WIDTH);
-            // ADD_HL_BC;
-            // PUSH_HL;
-            hl -= SCREEN_WIDTH;
-            // LD_H_D;
-            // LD_L_E;
-            // ADD_HL_BC;
-            // LD_D_H;
-            // LD_E_L;
-            de -= SCREEN_WIDTH;
-            // POP_HL;
-            // POP_BC;
-            // DEC_B;
-            // IF_NZ goto InnerLoop;
-        } while(--b2 != 0);
-
-        // LD_BC(20);
-        // ADD_HL_BC;
-        // LD_DE(mMonFaintedAnimation_Spaces);
-        // CALL(aPlaceString);
-        PlaceStringSimple(buf, hl + 20);
-        // LD_C(2);
-        // CALL(aDelayFrames);
+    for(uint8_t row = 0; row < 7; row++) {
+        TranslateBattleSceneBattler(BATTLE_SCENE_BATTLER_PLAYER, 0, TILE_WIDTH);
         DelayFrames(2);
-        // POP_HL;
-        hl = hl2;
-        // POP_DE;
-        de = de2;
-        // POP_BC;
-        // DEC_B;
-        // IF_NZ goto OuterLoop;
-    } while(--b != 0);
-
-    // POP_AF;
-    // LD_addr_A(wJoypadDisable);
+    }
     wram->wJoypadDisable = disable;
-    // RET;
+    SetBattleSceneBattlerVisible(BATTLE_SCENE_BATTLER_PLAYER, false);
 }
 
 static void SlideBattlePicOut_DoFrame(uint8_t* hl) {
@@ -5682,7 +5613,7 @@ void ShowSetEnemyMonAndSendOutAnimation(void){
             // LD_D(0x0);
             // LD_E(ANIM_MON_SLOW);
             // PREDEF(pAnimateFrontpic);
-            AnimateFrontpic(coord(12, 0, wram->wTilemap), 0x0, ANIM_MON_SLOW);
+            AnimateBattleSceneFrontpic(BATTLE_SCENE_BATTLER_OPPONENT, ANIM_MON_SLOW);
             // goto skip_cry;
         }
         else {
@@ -12734,6 +12665,7 @@ static void ExitBattle_HandleEndOfBattle(void){
 }
 
 void ExitBattle(void){
+    EndBattleSceneDisplay();
     ClearBattleSceneBattlers();
     ClearBattleAnimationHudSprites();
     // CALL(aExitBattle_HandleEndOfBattle);
@@ -13675,6 +13607,7 @@ static void InitBattleDisplay_BlankBGMap(void) {
 }
 
 static void InitBattleDisplay(void){
+    BeginBattleSceneDisplay();
     // CALL(aInitBattleDisplay_InitBackPic);
     InitBattleDisplay_InitBackPic();
     // hlcoord(0, 12, wTilemap);
@@ -13924,7 +13857,7 @@ static void BattleStartMessage(void){
                 // LD_D(0x0);
                 // LD_E(ANIM_MON_NORMAL);
                 // PREDEF(pAnimateFrontpic);
-                AnimateFrontpic(coord(12, 0, wram->wTilemap), 0x0, ANIM_MON_NORMAL);
+                AnimateBattleSceneFrontpic(BATTLE_SCENE_BATTLER_OPPONENT, ANIM_MON_NORMAL);
                 // goto skip_cry;  // cry is played during the animation
             }
             else {

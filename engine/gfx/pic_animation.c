@@ -87,6 +87,9 @@ static void PokeAnim_PlaceGraphic(void);
 static void PokeAnim_SetVBank1(void);
 static void PokeAnim_SetVBank0(void);
 static uint8_t* PokeAnim_GetAttrmapCoord(void);
+
+static bool sBattleScenePictureAnimationActive;
+static enum BattleSceneBattlerId sBattleScenePictureAnimationBattler;
 static void GetMonAnimPointer(void);
 static uint8_t PokeAnim_GetFrontpicDims(void);
 static uint8_t PokeAnim_GetSpeciesOrUnown(species_t a);
@@ -280,6 +283,18 @@ void AnimateFrontpic(uint8_t* hl, uint8_t d, uint8_t e){
         // IF_NC goto loop;
     } while(!done);
     // RET;
+}
+
+void AnimateBattleSceneFrontpic(enum BattleSceneBattlerId battler, uint8_t animation){
+    if(battler >= BATTLE_SCENE_BATTLER_COUNT)
+        return;
+    sBattleScenePictureAnimationActive = true;
+    sBattleScenePictureAnimationBattler = battler;
+    // The generic animation interpreter still requires an internal working
+    // tilemap coordinate. Battler identity itself is explicitly semantic.
+    AnimateFrontpic(battler == BATTLE_SCENE_BATTLER_PLAYER
+        ? coord(2, 6, wram->wTilemap) : coord(12, 0, wram->wTilemap), 0, animation);
+    sBattleScenePictureAnimationActive = false;
 }
 
 void LoadMonAnimation(uint8_t* hl, uint8_t d, uint8_t e){
@@ -1140,16 +1155,16 @@ static void PokeAnim_PlaceGraphic_ClearBox(void) {
 }
 
 static bool PokeAnim_BattleSceneBattler(enum BattleSceneBattlerId* battler){
-    return wram->wBattleMode != 0 && BattleSceneBattlerForTilemap(lPokeAnimCoord, battler);
+    if(!sBattleScenePictureAnimationActive || battler == NULL)
+        return false;
+    *battler = sBattleScenePictureAnimationBattler;
+    return true;
 }
 
 static void PokeAnim_PlaceGraphic(void){
     enum BattleSceneBattlerId battler;
     if(PokeAnim_BattleSceneBattler(&battler)) {
-        uint8_t imageTiles[7 * 7];
-        for(size_t i = 0; i < lengthof(imageTiles); i++)
-            imageTiles[i] = i;
-        PlaceBattleSceneBattlerPattern(battler, 12 * TILE_WIDTH, 0, 7, 7, imageTiles);
+        RestoreBattleSceneBattlerPlacement(battler);
         return;
     }
     // CALL(aPokeAnim_PlaceGraphic_ClearBox);

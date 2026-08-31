@@ -21,6 +21,14 @@ void Function547(void) {
 }
 
 void LCD(void) {  // called from the rendering function, once per line
+    if(BattleSceneDisplayActive()) {
+        uint8_t line = gb.gb_reg.LY;
+        // This is a one-way projection for the generic background plane.
+        // Native battle resources consume the same semantic offsets directly.
+        gb_write(rSCX, (uint8_t)BattleSceneHorizontalOffsetForLine(line));
+        gb_write(rSCY, (uint8_t)BattleSceneVerticalOffsetForLine(line));
+        return;
+    }
     if (hram.hLCDCPointer) {
         const uint8_t* overrides = BattleAnimationPresentationActive()
             ? BattleAnimationScanlineOverrides() : wram->wLYOverrides;
