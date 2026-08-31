@@ -361,27 +361,8 @@ void BattleAnim_ClearOAM(void){
     // BIT_A(BATTLEANIM_KEEPSPRITES_F);
     // IF_Z goto delete;
     if(bit_test(sBattleAnim.flags, BATTLEANIM_KEEPSPRITES_F)) {
-    // Instead of deleting the sprites, make them all use PAL_BATTLE_OB_ENEMY
-        // LD_HL(wVirtualOAMSprite00Attributes);
-        struct SpriteOAM* hl = wram->wVirtualOAMSprite;
-        // LD_C(NUM_SPRITE_OAM_STRUCTS);
-        uint8_t c = NUM_SPRITE_OAM_STRUCTS;
-
-        do {
-        // loop:
-            // LD_A_hl;
-            uint8_t attr = hl->attributes;
-            // AND_A(~(PALETTE_MASK | VRAM_BANK_1));  // zeros out the palette bits
-            //assert ['PAL_BATTLE_OB_ENEMY == 0'];
-            // LD_hli_A;
-            hl->attributes = attr & ~(PALETTE_MASK | VRAM_BANK_1);
-            // for(int rept = 0; rept < SPRITEOAMSTRUCT_LENGTH - 1; rept++){
-            // INC_HL;
-            // }
-            hl++;
-            // DEC_C;
-            // IF_NZ goto loop;
-        } while(--c != 0);
+        // Keep only temporary effect sprites and retint that semantic layer.
+        // Persistent battler and HUD scene elements retain their own palettes.
         SetBattleAnimationRenderSpritePalette(~(PALETTE_MASK | VRAM_BANK_1));
         // RET;
         return;
@@ -396,7 +377,6 @@ void BattleAnim_ClearOAM(void){
         // LD_hli_A;
         // DEC_C;
         // IF_NZ goto loop2;
-        ByteFill(wram->wVirtualOAMSprite, sizeof(wram->wVirtualOAMSprite), 0);
         ClearBattleAnimationRenderSprites();
         // RET;
         return;
@@ -1978,18 +1958,22 @@ void BattleAnim_SetOBPals(uint8_t obp0){
 }
 
 void BattleAnim_UpdateOAM_All(void){
-    // Battle animation sprites submit directly to the native render queue.
-    // The legacy OAM span is still cleared here because the original command
-    // owns the complete battle sprite layer for the duration of an animation.
+    // Rebuild only the temporary effect layer. Baseline battler and HUD scene
+    // elements survive an animation frame reset.
     BeginBattleAnimationRenderFrame();
-    ByteFill(wram->wVirtualOAMSprite, sizeof(wram->wVirtualOAMSprite), 0);
-    struct BattleAnim* objects = BattleAnimationObjects();
     size_t objectCount = BattleAnimationObjectCount();
     for(size_t i = 0; i < objectCount; i++) {
-        struct BattleAnim* object = &objects[i];
+        struct BattleAnim* object = BattleAnimationObjectAt(i);
+        if(object == NULL)
+            break;
         if(object->index == 0)
             continue;
         DoBattleAnimFrame(object);
+        // A callback may queue another object and grow the native pool.
+        // Reacquire by index before the next operation.
+        object = BattleAnimationObjectAt(i);
+        if(object == NULL || object->index == 0)
+            continue;
         BattleAnimOAMUpdate(object);
     }
 }

@@ -17,16 +17,15 @@ struct NativeBattleAnimationState {
     size_t tilePixelCapacity;
     uint8_t* hudTilePixels;
     size_t hudTilePixelCapacity;
+    uint8_t* battlerTilePixels;
+    size_t battlerTilePixelCapacity;
     struct BattleAnimationCommandState command;
     struct BattleAnimationRenderState render;
     struct BattleAnimationEffectScratchState effectScratch;
     uint8_t surfWaveSamples[BATTLE_ANIMATION_SURF_WAVE_SAMPLE_COUNT];
-    struct BattleAnimationSprite* renderSprites;
-    size_t renderSpriteCount;
-    size_t renderSpriteCapacity;
-    struct BattleAnimationSprite* hudSprites;
-    size_t hudSpriteCount;
-    size_t hudSpriteCapacity;
+    struct BattleAnimationSprite* sceneSprites;
+    size_t sceneSpriteCount;
+    size_t sceneSpriteCapacity;
     struct BattleAnim* objects;
     size_t objectCount;
     size_t objectCapacity;
@@ -67,6 +66,12 @@ size_t BattleAnimationObjectCount(void){
     return sBattleAnimationState.objectCount;
 }
 
+struct BattleAnim* BattleAnimationObjectAt(size_t index){
+    if(index >= sBattleAnimationState.objectCount)
+        return NULL;
+    return &sBattleAnimationState.objects[index];
+}
+
 struct BattleAnim* BattleAnimationFirstObject(void){
     if(sBattleAnimationState.objectCount == 0)
         return NULL;
@@ -79,6 +84,12 @@ struct BattleBGEffect* BattleAnimationBGEffects(void){
 
 size_t BattleAnimationBGEffectCount(void){
     return sBattleAnimationState.bgEffectCount;
+}
+
+struct BattleBGEffect* BattleAnimationBGEffectAt(size_t index){
+    if(index >= sBattleAnimationState.bgEffectCount)
+        return NULL;
+    return &sBattleAnimationState.bgEffects[index];
 }
 
 struct BattleBGEffect* AllocateBattleAnimationBGEffect(void){
@@ -168,12 +179,25 @@ uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount){
         &sBattleAnimationState.hudTilePixelCapacity, tileId, tileCount);
 }
 
+uint8_t* BattleSceneBattlerTileWritePointer(uint16_t tileId, size_t tileCount){
+    return BattleRenderTileWritePointer(&sBattleAnimationState.battlerTilePixels,
+        &sBattleAnimationState.battlerTilePixelCapacity, tileId, tileCount);
+}
+
+const uint8_t* BattleSceneBattlerPixels(void){
+    return sBattleAnimationState.battlerTilePixels;
+}
+
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite){
     const uint8_t* pixels;
     size_t capacity;
     if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_HUD) {
         pixels = sBattleAnimationState.hudTilePixels;
         capacity = sBattleAnimationState.hudTilePixelCapacity;
+    }
+    else if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_BATTLER) {
+        pixels = sBattleAnimationState.battlerTilePixels;
+        capacity = sBattleAnimationState.battlerTilePixelCapacity;
     }
     else {
         pixels = sBattleAnimationState.tilePixels;
@@ -287,95 +311,143 @@ uint8_t* BattleAnimationSurfWaveSamples(void){
     return sBattleAnimationState.surfWaveSamples;
 }
 
-const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count){
-    *count = sBattleAnimationState.renderSpriteCount;
-    return sBattleAnimationState.renderSprites;
+const struct BattleAnimationSprite* BattleSceneSprites(size_t* count){
+    *count = sBattleAnimationState.sceneSpriteCount;
+    return sBattleAnimationState.sceneSprites;
 }
 
-const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count){
-    *count = sBattleAnimationState.hudSpriteCount;
-    return sBattleAnimationState.hudSprites;
+static void RemoveBattleSceneSprites(uint8_t category){
+    size_t writeIndex = 0;
+    for(size_t readIndex = 0; readIndex < sBattleAnimationState.sceneSpriteCount; readIndex++) {
+        struct BattleAnimationSprite sprite = sBattleAnimationState.sceneSprites[readIndex];
+        if(sprite.category != category)
+            sBattleAnimationState.sceneSprites[writeIndex++] = sprite;
+    }
+    sBattleAnimationState.sceneSpriteCount = writeIndex;
+}
+
+static struct BattleAnimationSprite* AppendBattleSceneSprite(uint8_t category, uint8_t layer){
+    if(sBattleAnimationState.sceneSpriteCount == sBattleAnimationState.sceneSpriteCapacity) {
+        size_t newCapacity = sBattleAnimationState.sceneSpriteCapacity == 0 ? 64 : sBattleAnimationState.sceneSpriteCapacity;
+        if(newCapacity > SIZE_MAX / 2 || newCapacity * 2 > SIZE_MAX / sizeof(*sBattleAnimationState.sceneSprites))
+            abort();
+        newCapacity *= 2;
+        struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.sceneSprites,
+            newCapacity * sizeof(*sprites));
+        if(sprites == NULL)
+            abort();
+        sBattleAnimationState.sceneSprites = sprites;
+        sBattleAnimationState.sceneSpriteCapacity = newCapacity;
+    }
+    struct BattleAnimationSprite* sprite = &sBattleAnimationState.sceneSprites[sBattleAnimationState.sceneSpriteCount++];
+    memset(sprite, 0, sizeof(*sprite));
+    sprite->category = category;
+    sprite->layer = layer;
+    return sprite;
+}
+
+void ClearBattleSceneBaselineSprites(void){
+    RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_BASELINE);
+}
+
+void SetBattleScenePlayerTrainerBackpic(void){
+    ClearBattleSceneBaselineSprites();
+    for(uint8_t column = 0; column < 6; column++) {
+        for(uint8_t row = 0; row < 3; row++) {
+            struct BattleAnimationSprite* sprite = AppendBattleSceneSprite(
+                BATTLE_SCENE_SPRITE_BASELINE, BATTLE_SCENE_LAYER_BASELINE);
+            sprite->yCoord = 8 * TILE_WIDTH + row * 2 * TILE_WIDTH;
+            sprite->xCoord = (SCREEN_WIDTH + 1) * TILE_WIDTH + column * TILE_WIDTH;
+            sprite->tileId = column * 6 + row;
+            sprite->attributes = PAL_BATTLE_OB_PLAYER;
+            sprite->resourceKind = BATTLE_RENDER_RESOURCE_BATTLER;
+        }
+    }
+}
+
+void TranslateBattleSceneBaselineSprites(int16_t xDelta, int16_t yDelta){
+    for(size_t i = 0; i < sBattleAnimationState.sceneSpriteCount; i++) {
+        struct BattleAnimationSprite* sprite = &sBattleAnimationState.sceneSprites[i];
+        if(sprite->category != BATTLE_SCENE_SPRITE_BASELINE)
+            continue;
+        sprite->xCoord += xDelta;
+        sprite->yCoord += yDelta;
+    }
 }
 
 void ClearBattleAnimationHudSprites(void){
     free(sBattleAnimationState.hudTilePixels);
-    free(sBattleAnimationState.hudSprites);
     sBattleAnimationState.hudTilePixels = NULL;
     sBattleAnimationState.hudTilePixelCapacity = 0;
-    sBattleAnimationState.hudSprites = NULL;
-    sBattleAnimationState.hudSpriteCount = 0;
-    sBattleAnimationState.hudSpriteCapacity = 0;
+    RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_HUD);
+}
+
+static struct BattleAnimationSprite* BattleSceneHudSpriteAt(size_t index){
+    size_t hudIndex = 0;
+    for(size_t sceneIndex = 0; sceneIndex < sBattleAnimationState.sceneSpriteCount; sceneIndex++) {
+        struct BattleAnimationSprite* sprite = &sBattleAnimationState.sceneSprites[sceneIndex];
+        if(sprite->category != BATTLE_SCENE_SPRITE_HUD)
+            continue;
+        if(hudIndex == index)
+            return sprite;
+        hudIndex++;
+    }
+    while(hudIndex <= index) {
+        struct BattleAnimationSprite* sprite = AppendBattleSceneSprite(
+            BATTLE_SCENE_SPRITE_HUD, BATTLE_SCENE_LAYER_HUD);
+        if(hudIndex == index)
+            return sprite;
+        hudIndex++;
+    }
+    abort();
 }
 
 void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
     const uint16_t* tileIds, size_t tileCount){
-    if(tileCount > SIZE_MAX - firstSprite)
-        abort();
-    size_t requiredCapacity = firstSprite + tileCount;
-    if(requiredCapacity > sBattleAnimationState.hudSpriteCapacity) {
-        size_t newCapacity = sBattleAnimationState.hudSpriteCapacity == 0 ? 8 : sBattleAnimationState.hudSpriteCapacity;
-        while(newCapacity < requiredCapacity) {
-            if(newCapacity > SIZE_MAX / 2)
-                abort();
-            newCapacity *= 2;
-        }
-        if(newCapacity > SIZE_MAX / sizeof(*sBattleAnimationState.hudSprites))
-            abort();
-        struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.hudSprites,
-            newCapacity * sizeof(*sprites));
-        if(sprites == NULL)
-            abort();
-        sBattleAnimationState.hudSprites = sprites;
-        sBattleAnimationState.hudSpriteCapacity = newCapacity;
-    }
     for(size_t i = 0; i < tileCount; i++) {
-        struct BattleAnimationSprite* sprite = &sBattleAnimationState.hudSprites[firstSprite + i];
+        if(i > SIZE_MAX - firstSprite)
+            abort();
+        struct BattleAnimationSprite* sprite = BattleSceneHudSpriteAt(firstSprite + i);
         sprite->yCoord = y;
         sprite->xCoord = x;
         sprite->tileId = tileIds[i];
         sprite->attributes = PAL_BATTLE_OB_YELLOW;
         sprite->resourceKind = BATTLE_RENDER_RESOURCE_HUD;
+        sprite->category = BATTLE_SCENE_SPRITE_HUD;
         x += direction;
     }
-    if(sBattleAnimationState.hudSpriteCount < requiredCapacity)
-        sBattleAnimationState.hudSpriteCount = requiredCapacity;
 }
 
 void BeginBattleAnimationRenderFrame(void){
-    sBattleAnimationState.renderSpriteCount = 0;
+    RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_EFFECT);
 }
 
 void ClearBattleAnimationRenderSprites(void){
-    sBattleAnimationState.renderSpriteCount = 0;
+    RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_EFFECT);
 }
 
 void SetBattleAnimationRenderSpritePalette(uint8_t paletteMask){
-    for(size_t i = 0; i < sBattleAnimationState.renderSpriteCount; i++)
-        sBattleAnimationState.renderSprites[i].attributes &= paletteMask;
+    for(size_t i = 0; i < sBattleAnimationState.sceneSpriteCount; i++) {
+        struct BattleAnimationSprite* sprite = &sBattleAnimationState.sceneSprites[i];
+        if(sprite->category == BATTLE_SCENE_SPRITE_EFFECT)
+            sprite->attributes &= paletteMask;
+    }
 }
 
 static struct BattleAnimationSprite* AppendBattleAnimationRenderSprite(void){
-    if(sBattleAnimationState.renderSpriteCount == sBattleAnimationState.renderSpriteCapacity) {
-        size_t newCapacity = sBattleAnimationState.renderSpriteCapacity == 0 ? 64 : sBattleAnimationState.renderSpriteCapacity * 2;
-        if(newCapacity < sBattleAnimationState.renderSpriteCapacity || newCapacity > SIZE_MAX / sizeof(*sBattleAnimationState.renderSprites))
-            abort();
-        struct BattleAnimationSprite* sprites = realloc(sBattleAnimationState.renderSprites, newCapacity * sizeof(*sprites));
-        if(sprites == NULL)
-            abort();
-        sBattleAnimationState.renderSprites = sprites;
-        sBattleAnimationState.renderSpriteCapacity = newCapacity;
-    }
-    return &sBattleAnimationState.renderSprites[sBattleAnimationState.renderSpriteCount++];
+    return AppendBattleSceneSprite(BATTLE_SCENE_SPRITE_EFFECT, BATTLE_SCENE_LAYER_EFFECT);
 }
 
 void ResetNativeBattleAnimationState(void){
+    RemoveBattleSceneSprites(BATTLE_SCENE_SPRITE_EFFECT);
     uint8_t* hudTilePixels = sBattleAnimationState.hudTilePixels;
     size_t hudTilePixelCapacity = sBattleAnimationState.hudTilePixelCapacity;
-    struct BattleAnimationSprite* hudSprites = sBattleAnimationState.hudSprites;
-    size_t hudSpriteCount = sBattleAnimationState.hudSpriteCount;
-    size_t hudSpriteCapacity = sBattleAnimationState.hudSpriteCapacity;
+    uint8_t* battlerTilePixels = sBattleAnimationState.battlerTilePixels;
+    size_t battlerTilePixelCapacity = sBattleAnimationState.battlerTilePixelCapacity;
+    struct BattleAnimationSprite* sceneSprites = sBattleAnimationState.sceneSprites;
+    size_t sceneSpriteCount = sBattleAnimationState.sceneSpriteCount;
+    size_t sceneSpriteCapacity = sBattleAnimationState.sceneSpriteCapacity;
 
-    free(sBattleAnimationState.renderSprites);
     free(sBattleAnimationState.tileBindings);
     free(sBattleAnimationState.tilePixels);
     free(sBattleAnimationState.objects);
@@ -385,9 +457,11 @@ void ResetNativeBattleAnimationState(void){
     // state. Animation setup clears must not erase them mid-battle.
     sBattleAnimationState.hudTilePixels = hudTilePixels;
     sBattleAnimationState.hudTilePixelCapacity = hudTilePixelCapacity;
-    sBattleAnimationState.hudSprites = hudSprites;
-    sBattleAnimationState.hudSpriteCount = hudSpriteCount;
-    sBattleAnimationState.hudSpriteCapacity = hudSpriteCapacity;
+    sBattleAnimationState.battlerTilePixels = battlerTilePixels;
+    sBattleAnimationState.battlerTilePixelCapacity = battlerTilePixelCapacity;
+    sBattleAnimationState.sceneSprites = sceneSprites;
+    sBattleAnimationState.sceneSpriteCount = sceneSpriteCount;
+    sBattleAnimationState.sceneSpriteCapacity = sceneSpriteCapacity;
 }
 
 void ClearNativeBattleAnimationObjects(void){

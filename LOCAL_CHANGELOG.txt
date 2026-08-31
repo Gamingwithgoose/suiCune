@@ -5590,3 +5590,74 @@ Validation and next task
 - Next recommended task: retain the shared tilemap until a complete native
   battle-scene compositor can own baseline tiles, attributes, sprites, and
   update scheduling together with focused runtime coverage.
+
+2026-08-31 — Native battle-scene sprite compositor boundary
+=============================================================
+
+Subsystem ownership transferred
+-------------------------------
+- `NativeBattleAnimationState` now owns one growable semantic battle-scene
+  sprite collection. Every migrated scene element carries a native image
+  resource kind, position, attributes, semantic category, and compositor
+  layer; the collection has no OAM-sized capacity.
+- The baseline player-trainer back-picture, trainer HUD markers, and temporary
+  battle-animation objects now feed this single scene collection. Frame resets
+  remove only the temporary effect category, preserving baseline and HUD
+  elements unless their own lifecycle explicitly clears them.
+- The SDL pixel renderer consumes the scene collection in explicit baseline,
+  HUD, then effect layer order. Its existing `gb.oam` loop remains a separate
+  compatibility path for unmigrated non-battle producers.
+
+Battler image and compatibility boundaries
+------------------------------------------
+- The player-trainer back-picture is staged into native battle-scene image
+  storage before it is submitted as 18 persistent baseline sprites. The former
+  active `wVirtualOAMSprite` producer was retired from the battle-intro path.
+- The historical tilemap copy remains a downstream compatibility projection
+  for the existing battle background renderer. The native scene image, rather
+  than its VRAM tile address, is authoritative for the trainer sprite path.
+- Player and opponent Pokémon pictures remain background/tilemap-owned rather
+  than scene-sprite-owned. They are not represented as duplicate scene sprites;
+  migrating their picture composition requires the next complete native
+  battle-tilemap and attribute-map dependency closure.
+
+Regression-related findings
+---------------------------
+- Baseline trainer, HUD, and temporary animation effects previously had
+  unrelated clear paths. `BattleAnim_ClearOAM` and per-frame animation updates
+  now operate only on temporary native effect sprites, preventing an attack
+  animation from erasing persistent native scene elements.
+- Multi-segment effects such as Leer submit into the growable effect category;
+  the native scene model has no 40-sprite or scanline capacity limit.
+- Reallocatable animation-object and background-effect pools now expose
+  bounds-checked index access. Per-frame object and effect loops reacquire an
+  element by index after calls that may grow a pool, preventing outer-loop
+  pointers from surviving a `realloc`.
+- Runtime validation remains required for disappearing battlers, the complete
+  Leer beam, and opponent Tackle. No move-specific exception was added.
+
+Files modified
+--------------
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/anim_commands.c`
+- `engine/battle_anims/bg_effects.c`
+- `engine/battle/core.c`
+- `engine/battle/sliding_intro.c`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and remaining boundary
+---------------------------------
+- Static inspection confirms the active battle-animation, HUD, trainer-intro,
+  and SDL scene paths no longer submit or clear battle sprites through
+  `wVirtualOAMSprite`. Legacy OAM remains in the generic emulator/LCD backend
+  and in excluded historical reference code.
+- Static inspection confirms battle animation image effects still import some
+  battler pixels from `vram->vTiles*`; these are the remaining battle-specific
+  VRAM compatibility boundaries. Scanline scheduling remains on the existing
+  working path and was not independently migrated.
+- Build/runtime validation: not performed.
+- Next dependency closure: migrate persistent player/opponent Pokémon picture
+  resources, tilemap placement, visibility, and attribute ownership into the
+  battle scene before replacing the remaining battle-specific VRAM imports.

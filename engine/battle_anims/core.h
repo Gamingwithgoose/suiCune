@@ -71,6 +71,8 @@ struct BattleAnimationSprite {
     uint16_t tileId;
     uint8_t attributes;
     uint8_t resourceKind;
+    uint8_t category;
+    uint8_t layer;
 };
 
 enum {
@@ -86,6 +88,20 @@ enum {
 enum BattleRenderResourceKind {
     BATTLE_RENDER_RESOURCE_ANIMATION,
     BATTLE_RENDER_RESOURCE_HUD,
+    BATTLE_RENDER_RESOURCE_BATTLER,
+};
+
+enum BattleSceneSpriteCategory {
+    BATTLE_SCENE_SPRITE_BASELINE,
+    BATTLE_SCENE_SPRITE_EFFECT,
+    BATTLE_SCENE_SPRITE_HUD,
+};
+
+enum BattleSceneLayer {
+    BATTLE_SCENE_LAYER_BASELINE,
+    BATTLE_SCENE_LAYER_HUD,
+    BATTLE_SCENE_LAYER_EFFECT,
+    BATTLE_SCENE_LAYER_COUNT,
 };
 
 struct BattleAnimationTileBinding {
@@ -97,15 +113,19 @@ bool QueueBattleAnimation(void);
 void DeinitBattleAnimation(struct BattleAnim* bc);
 struct BattleAnim* BattleAnimationObjects(void);
 size_t BattleAnimationObjectCount(void);
+struct BattleAnim* BattleAnimationObjectAt(size_t index);
 struct BattleAnim* BattleAnimationFirstObject(void);
 struct BattleBGEffect* BattleAnimationBGEffects(void);
 size_t BattleAnimationBGEffectCount(void);
+struct BattleBGEffect* BattleAnimationBGEffectAt(size_t index);
 struct BattleBGEffect* AllocateBattleAnimationBGEffect(void);
 void SetBattleAnimationTileBinding(size_t index, uint8_t graphicsId, uint16_t tileOffset);
 void AppendBattleAnimationTileBinding(uint8_t graphicsId, uint16_t tileOffset);
 uint16_t BattleAnimationTileOffset(uint8_t graphicsId);
 uint8_t* BattleAnimationTileWritePointer(uint16_t tileId, size_t tileCount);
 uint8_t* BattleAnimationHudTileWritePointer(uint16_t tileId, size_t tileCount);
+uint8_t* BattleSceneBattlerTileWritePointer(uint16_t tileId, size_t tileCount);
+const uint8_t* BattleSceneBattlerPixels(void);
 const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 uint8_t BattleAnimationParameterGet(void);
@@ -130,8 +150,10 @@ void BattleAnimationDMGObjectPalette1Set(uint8_t palette);
 struct BattleAnimationRenderState* BattleAnimationRenderState(void);
 struct BattleAnimationEffectScratchState* BattleAnimationEffectScratchState(void);
 uint8_t* BattleAnimationSurfWaveSamples(void);
-const struct BattleAnimationSprite* BattleAnimationRenderSprites(size_t* count);
-const struct BattleAnimationSprite* BattleAnimationHudSprites(size_t* count);
+const struct BattleAnimationSprite* BattleSceneSprites(size_t* count);
+void ClearBattleSceneBaselineSprites(void);
+void SetBattleScenePlayerTrainerBackpic(void);
+void TranslateBattleSceneBaselineSprites(int16_t xDelta, int16_t yDelta);
 void ClearBattleAnimationHudSprites(void);
 void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
     const uint16_t* tileIds, size_t tileCount);

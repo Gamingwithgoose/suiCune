@@ -4,6 +4,7 @@
 #include "../../home/copy.h"
 #include "../../home/palettes.h"
 #include "../../home/delay.h"
+#include "../battle_anims/core.h"
 
 // void BattleIntroSlidingPics_GBC(void){
 //     LDH_A_addr(rSVBK);
@@ -151,22 +152,7 @@ static void BattleIntroSlidingPics_subfunction1(void) {
 }
 
 static void BattleIntroSlidingPics_subfunction3(void) {
-    // LD_HL(wVirtualOAMSprite00XCoord);
-    // LD_C(0x12);  // 18
-    // LD_DE(SPRITEOAMSTRUCT_LENGTH);
-    struct SpriteOAM* hl = wram->wVirtualOAMSprite;
-    uint8_t i = 0x12;
-
-    do {
-        // DEC_hl;
-        // DEC_hl;
-        hl->xCoord -= 2;
-        // ADD_HL_DE;
-        hl++;
-        // DEC_C;
-        // IF_NZ goto loop3;
-    } while(--i != 0);
-    // RET;
+    TranslateBattleSceneBaselineSprites(-2, 0);
 }
 
 static void BattleIntroSlidingPics_subfunction5(uint8_t d, uint8_t e) {

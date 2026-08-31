@@ -122,11 +122,13 @@ static bool BattleBGEffects_CheckSGB(void);
 //  BG effects for use in battle animations.
 
 void ExecuteBGEffects(void) {
-    struct BattleBGEffect* effects = BattleAnimationBGEffects();
     size_t effectCount = BattleAnimationBGEffectCount();
     for(size_t i = 0; i < effectCount; i++) {
-        if(effects[i].function != 0)
-            DoBattleBGEffectFunction(&effects[i]);
+        struct BattleBGEffect* effect = BattleAnimationBGEffectAt(i);
+        if(effect == NULL)
+            break;
+        if(effect->function != 0)
+            DoBattleBGEffectFunction(effect);
     }
 }
 

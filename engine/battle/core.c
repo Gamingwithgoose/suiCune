@@ -13723,6 +13723,7 @@ static void InitBattleDisplay(void){
     WaitBGMap();
     // CALL(aHideSprites);
     HideSprites();
+    ClearBattleSceneBaselineSprites();
     // LD_B(SCGB_BATTLE_COLORS);
     // CALL(aGetSGBLayout);
     GetSGBLayout(SCGB_BATTLE_COLORS);
@@ -13784,6 +13785,9 @@ void GetTrainerBackpic(void){
 
 }
 
+// Retained only as a source-reference record for the original sprite layout.
+// The active battle path owns this image through the native scene compositor.
+#if 0
 static void CopyBackpic_LoadTrainerBackpicAsOAM(void) {
     // LD_HL(wVirtualOAMSprite00);
     struct SpriteOAM* hl = wram->wVirtualOAMSprite;
@@ -13838,6 +13842,7 @@ static void CopyBackpic_LoadTrainerBackpicAsOAM(void) {
     } while(--b != 0);
     // RET;
 }
+#endif
 
 static void CopyBackpic(void){
     // LDH_A_addr(rSVBK);
@@ -13850,11 +13855,14 @@ static void CopyBackpic(void){
     // LD_B_A;
     // LD_C(7 * 7);
     // CALL(aGet2bpp);
-    CopyBytes(vram->vTiles0, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 7 * 7 * LEN_2BPP_TILE);
+    uint8_t* backpicPixels = BattleSceneBattlerTileWritePointer(0, 7 * 7);
+    CopyBytes(backpicPixels, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 7 * 7 * LEN_2BPP_TILE);
+    // The tilemap path still consumes its historical tile location. It is a
+    // downstream compatibility projection; the scene image is authoritative.
+    CopyBytes(vram->vTiles0, backpicPixels, 7 * 7 * LEN_2BPP_TILE);
     // POP_AF;
     // LDH_addr_A(rSVBK);
-    // CALL(aCopyBackpic_LoadTrainerBackpicAsOAM);
-    CopyBackpic_LoadTrainerBackpicAsOAM();
+    SetBattleScenePlayerTrainerBackpic();
     // LD_A(0x31);
     // hlcoord(2, 6, wTilemap);
     // LD_BC((6 << 8) | 6);
