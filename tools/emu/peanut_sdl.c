@@ -931,7 +931,10 @@ static void DrawObjectSprite(uint8_t pixels[LCD_WIDTH], const uint8_t pixelsPrio
 static void DrawNativeBattleSceneSprite(void* context, uint8_t* pixels, uint8_t* priority,
     int16_t y, int16_t x, uint16_t tile, uint8_t attributes, const uint8_t* tilePixels) {
     (void)context;
-    DrawObjectSprite(pixels, priority, y, x, tile, attributes, tilePixels);
+    // The transitional object host still expects Game Boy OAM origins. Native
+    // scene sprites retain ordinary framebuffer coordinates and project here.
+    DrawObjectSprite(pixels, priority, y + 2 * TILE_WIDTH, x + TILE_WIDTH,
+        tile, attributes, tilePixels);
 }
 
 void gb_draw_line(void) {

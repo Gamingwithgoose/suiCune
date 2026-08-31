@@ -19,7 +19,7 @@ static void RenderBattler(const struct BattleSceneRenderLine* line,
         uint8_t high = source[py * 2 + 1];
         for(uint8_t bit = 0; bit < TILE_WIDTH; bit++) {
             int displayX = x + (TILE_WIDTH - 1 - bit);
-            if(displayX >= 0 && displayX < SCREEN_WIDTH) {
+            if(displayX >= 0 && displayX < SCREEN_WIDTH_PX) {
                 uint8_t color = (low & 1) | ((high & 1) << 1);
                 line->pixels[displayX] = line->colorMode
                     ? (battler->palette << 2) + color
@@ -54,8 +54,11 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
             if(sprite->layer != layer)
                 continue;
             struct BattleAnimationSprite pixelSource = *sprite;
-            if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_ANIMATION)
-                pixelSource.tileId &= largeSprites ? 0xfffe : 0xffff;
+            // Native tile resources preserve the original 8x16 image-pair
+            // selection rule explicitly. The host renderer must not infer the
+            // source pair from a VRAM/OAM tile number after this boundary.
+            if(largeSprites)
+                pixelSource.tileId &= 0xfffe;
             drawSprite(context, line->pixels, line->priority, sprite->yCoord,
                 sprite->xCoord, sprite->tileId, sprite->attributes,
                 BattleAnimationSpritePixels(&pixelSource));

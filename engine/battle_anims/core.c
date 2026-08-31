@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define LEGACY_OBJECT_X_ORIGIN TILE_WIDTH
+#define LEGACY_OBJECT_Y_ORIGIN (2 * TILE_WIDTH)
+
 static void InitBattleAnimation(struct BattleAnim* bc);
 static void InitBattleAnimBuffer(struct BattleAnim* bc);
 
@@ -500,21 +503,19 @@ uint8_t BattleSceneScanlineEffectEnd(void){
 }
 
 int16_t BattleSceneHorizontalOffsetForLine(uint8_t line){
-    int16_t offset = sBattleSceneDisplay.cameraX;
     if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET &&
         line >= sBattleSceneDisplay.scanlineStart && line <= sBattleSceneDisplay.scanlineEnd) {
-        offset += (int8_t)BattleAnimationScanlineOverrides()[line];
+        return BattleAnimationScanlineOverrides()[line];
     }
-    return offset;
+    return sBattleSceneDisplay.cameraX;
 }
 
 int16_t BattleSceneVerticalOffsetForLine(uint8_t line){
-    int16_t offset = sBattleSceneDisplay.cameraY;
     if(sBattleSceneDisplay.scanlineEffect == BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET &&
         line >= sBattleSceneDisplay.scanlineStart && line <= sBattleSceneDisplay.scanlineEnd) {
-        offset += (int8_t)BattleAnimationScanlineOverrides()[line];
+        return BattleAnimationScanlineOverrides()[line];
     }
-    return offset;
+    return sBattleSceneDisplay.cameraY;
 }
 
 uint8_t* BattleAnimationScanlineOverrides(void){
@@ -616,8 +617,8 @@ void SetBattleScenePlayerTrainerBackpic(void){
         for(uint8_t row = 0; row < 3; row++) {
             struct BattleAnimationSprite* sprite = AppendBattleSceneSprite(
                 BATTLE_SCENE_SPRITE_BASELINE, BATTLE_SCENE_LAYER_BASELINE);
-            sprite->yCoord = 8 * TILE_WIDTH + row * 2 * TILE_WIDTH;
-            sprite->xCoord = (SCREEN_WIDTH + 1) * TILE_WIDTH + column * TILE_WIDTH;
+            sprite->yCoord = 6 * TILE_WIDTH + row * 2 * TILE_WIDTH;
+            sprite->xCoord = SCREEN_WIDTH * TILE_WIDTH + column * TILE_WIDTH;
             sprite->tileId = column * 6 + row;
             sprite->attributes = PAL_BATTLE_OB_PLAYER;
             sprite->resourceKind = BATTLE_RENDER_RESOURCE_BATTLER;
@@ -664,17 +665,18 @@ static struct BattleAnimationSprite* BattleSceneHudSpriteAt(size_t index){
 
 void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8_t direction,
     const uint16_t* tileIds, size_t tileCount){
+    int16_t positionX = x;
     for(size_t i = 0; i < tileCount; i++) {
         if(i > SIZE_MAX - firstSprite)
             abort();
         struct BattleAnimationSprite* sprite = BattleSceneHudSpriteAt(firstSprite + i);
-        sprite->yCoord = y;
-        sprite->xCoord = x;
+        sprite->yCoord = (int16_t)y - LEGACY_OBJECT_Y_ORIGIN;
+        sprite->xCoord = positionX - LEGACY_OBJECT_X_ORIGIN;
         sprite->tileId = tileIds[i];
         sprite->attributes = PAL_BATTLE_OB_YELLOW;
         sprite->resourceKind = BATTLE_RENDER_RESOURCE_HUD;
         sprite->category = BATTLE_SCENE_SPRITE_HUD;
-        x += direction;
+        positionX += direction;
     }
 }
 
@@ -904,10 +906,11 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
         // LD_A_addr(wBattleAnimTempYOffset);
         // ADD_A_B;
         // LD_B_A;
-        uint8_t b = BattleAnimationRenderState()->yCoord + BattleAnimationRenderState()->yOffset;
+        int16_t b = (int16_t)BattleAnimationRenderState()->yCoord +
+            BattleAnimationRenderState()->yOffset;
         // PUSH_HL;
         // LD_A_hl;
-        uint8_t y = *(hl++);
+        int16_t y = *(hl++);
         // LD_HL(wBattleAnimTempOAMFlags);
         // BIT_hl(OAM_Y_FLIP);
         // IF_Z goto no_yflip;
@@ -915,7 +918,7 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
             // ADD_A(0x8);
             // XOR_A(0xff);
             // INC_A;
-            y = -(y + 0x8);
+            y = -(y + TILE_WIDTH);
         }
 
     // no_yflip:
@@ -923,7 +926,7 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
         // ADD_A_B;
         // LD_de_A;
         struct BattleAnimationSprite* sprite = AppendBattleAnimationRenderSprite();
-        sprite->yCoord = y + b;
+        sprite->yCoord = y + b - LEGACY_OBJECT_Y_ORIGIN;
 
     // X Coord
         // INC_HL;
@@ -933,10 +936,11 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
         // LD_A_addr(wBattleAnimTempXOffset);
         // ADD_A_B;
         // LD_B_A;
-        b = BattleAnimationRenderState()->xCoord + BattleAnimationRenderState()->xOffset;
+        b = (int16_t)BattleAnimationRenderState()->xCoord +
+            BattleAnimationRenderState()->xOffset;
         // PUSH_HL;
         // LD_A_hl;
-        uint8_t x = *(hl++);
+        int16_t x = *(hl++);
         // LD_HL(wBattleAnimTempOAMFlags);
         // BIT_hl(OAM_X_FLIP);
         // IF_Z goto no_xflip;
@@ -944,14 +948,14 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
             // ADD_A(0x8);
             // XOR_A(0xff);
             // INC_A;
-            x = -(x + 0x8);
+            x = -(x + TILE_WIDTH);
         }
 
     // no_xflip:
         // POP_HL;
         // ADD_A_B;
         // LD_de_A;
-        sprite->xCoord = x + b;
+        sprite->xCoord = x + b - LEGACY_OBJECT_X_ORIGIN;
 
     // Tile ID
         // INC_HL;

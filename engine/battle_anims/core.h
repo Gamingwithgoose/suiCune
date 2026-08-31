@@ -66,6 +66,8 @@ struct BattleAnimationEffectScratchState {
 };
 
 struct BattleAnimationSprite {
+    // Framebuffer-pixel origin, not legacy OAM's (+8, +16) coordinate space.
+    // Signed positions allow effect sprites to move safely off-screen.
     int16_t yCoord;
     int16_t xCoord;
     uint16_t tileId;
@@ -106,6 +108,8 @@ enum BattleSceneLayer {
 
 enum BattleSceneScanlineEffect {
     BATTLE_SCENE_SCANLINE_NONE,
+    // Scanline samples are unsigned, absolute scroll-register values in
+    // pixels. They are not signed deltas from BattleSceneCamera*().
     BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET,
     BATTLE_SCENE_SCANLINE_VERTICAL_OFFSET,
 };
@@ -117,7 +121,8 @@ enum BattleSceneBattlerId {
 };
 
 // A battler picture is a native image plus an explicit tile placement list.
-// Tile coordinates describe game content layout; they do not identify VRAM.
+// x/y are framebuffer pixels; imageTile indexes decoded native tiles and does
+// not identify VRAM.
 struct BattleSceneBattlerTile {
     int16_t x;
     int16_t y;
@@ -195,6 +200,10 @@ void BattleSceneScanlineEffectClear(void);
 enum BattleSceneScanlineEffect BattleSceneScanlineEffectGet(void);
 uint8_t BattleSceneScanlineEffectStart(void);
 uint8_t BattleSceneScanlineEffectEnd(void);
+// Return the framebuffer-pixel scroll offset for a display scanline. An active
+// scanline effect supplies the committed absolute value; otherwise the scene
+// camera does. Producers write next-frame samples through ScanlineScratch(),
+// which PushLYOverrides commits to ScanlineOverrides().
 int16_t BattleSceneHorizontalOffsetForLine(uint8_t line);
 int16_t BattleSceneVerticalOffsetForLine(uint8_t line);
 uint8_t* BattleAnimationScanlineOverrides(void);

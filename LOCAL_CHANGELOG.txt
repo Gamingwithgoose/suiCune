@@ -5802,11 +5802,85 @@ Validation and next closure
   `gb.oam` ownership. Remaining battle `hBGMap*`, palette, LCDC, and register
   references belong to legacy UI/background transfer paths, generic renderer
   hosting, or historical/reference code.
-- Windows Release build: in progress at the time of this entry; result is
-  recorded with the session handoff.
-- Runtime validation: not performed. Known battle cases requiring execution
-  remain player-battler persistence during attacks, complete Leer rendering,
-  and opponent Tackle stability.
+- Build/runtime validation: not performed.
+- Known battle cases requiring execution remain player-battler persistence
+  during attacks, complete Leer rendering, and opponent Tackle stability.
 - Next dependency closure: move the remaining battle UI/background tile and
   window planes into an explicit native battle frame model, then retire the
   LCD compatibility projection from migrated battle presentation.
+
+2026-08-31 — Native battle scene renderer regression stabilization
+====================================================================
+
+Completed repairs
+-----------------
+- Corrected the native battler compositor's horizontal clip bound from the
+  tile count (`SCREEN_WIDTH`, 20) to the framebuffer width
+  (`SCREEN_WIDTH_PX`, 160). Battler placement, scanline positions, and the
+  target line pixel buffer all use framebuffer-pixel units.
+- Defined scanline samples as unsigned absolute SCX/SCY register values. The
+  active scanline effect now replaces the scene camera for its lines instead
+  of adding a signed reinterpretation of the sample to the camera. The
+  sliding intro activates its complete 144-line authored sample frame, so its
+  zero-valued tail remains an explicit zero scroll rather than a camera
+  fallback.
+- Clarified the scanline producer/consumer boundary: background effects write
+  next-frame samples to scratch, `PushLYOverrides` commits them to the
+  displayed absolute-sample array, and both the native battler compositor and
+  retained generic background projection consume that committed array. Surf
+  continues to author unsigned SCY samples through this path.
+- Normalized native scene-sprite coordinates to signed framebuffer pixels.
+  The remaining object renderer receives the required legacy (+8, +16)
+  coordinate projection only at its host boundary. Trainer baseline, HUD,
+  and animation-effect sprite creation now preserve off-screen coordinates
+  without unsigned wrapping in the native scene representation.
+- Applied the 8x16 low-tile-bit pairing rule consistently when selecting a
+  native pixel resource for BATTLER, HUD, and ANIMATION scene sprites. The
+  output tile metadata remains unchanged for the generic object host.
+
+Renderer behavior audit
+-----------------------
+- Native battler pixels remain background-plane content: color index zero is
+  rendered, CGB palette selection uses the battler palette, monochrome output
+  retains the background palette mask, and battlers clear background priority
+  before generic and native sprite layers render above them.
+- The trainer backpic's six-column by three-row baseline matches the original
+  8x8 sprite layout. Its 8x16 source-pair selection is now conditional on the
+  active sprite-size mode rather than inferred inconsistently by resource
+  kind.
+- Persistent battler placement, pixels, visibility, and trainer/HUD resource
+  storage remain native scene state. Frame cleanup still removes only the
+  temporary effect layer; no persistent battler state was returned to VRAM,
+  tilemap, or OAM ownership.
+
+Files modified
+--------------
+- `engine/battle/sliding_intro.c`
+- `engine/battle_anims/core.c`
+- `engine/battle_anims/core.h`
+- `engine/battle_anims/render.c`
+- `engine/battle_anims/render.h`
+- `home/battle.c`
+- `tools/emu/peanut_sdl.c`
+- `LOCAL_CHANGELOG.txt`
+
+Validation and remaining work
+-----------------------------
+- Static validation checked framebuffer/tile constants across the native
+  battle renderer, scanline sample casts and producers, scanline/camera
+  application, 8x16 source selection for every native sprite resource kind,
+  signed off-screen scene coordinates, persistent resource lifetime, and the
+  previous compositor implementation at
+  `4e3eede97e164f16b0af6fbf5ddeeed7d2c0263c`.
+- Build/runtime validation: not performed.
+- Runtime verification remains required for normal player/opponent visibility,
+  wild-battle opponent visibility, sliding trainer intro geometry, player
+  persistence during attacks, full Leer beam rendering, and opponent Tackle
+  stability. The source-level clipping, scanline, coordinate, and 8x16
+  defects are expected to repair the confirmed visual failures.
+- No further battle UI/background migration was started. The remaining
+  generic background/window plane and object host are explicit transition
+  boundaries outside this stabilization closure.
+- Next dependency closure: execute the battle visual regression matrix above;
+  resume the battle UI/background migration only after the native scene
+  renderer is verified stable.

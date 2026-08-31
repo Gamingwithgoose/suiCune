@@ -225,6 +225,9 @@ void PushLYOverrides(void){
     if(BattleSceneDisplayActive()) {
         if(BattleSceneScanlineEffectGet() == BATTLE_SCENE_SCANLINE_NONE)
             return;
+        // Background effects author the next scanline frame in scratch. This
+        // commit makes the absolute samples visible to both native battlers
+        // and the remaining generic background-plane projection.
         CopyBytes(BattleAnimationScanlineOverrides(), BattleAnimationScanlineScratch(), SCREEN_HEIGHT_PX);
         return;
     }

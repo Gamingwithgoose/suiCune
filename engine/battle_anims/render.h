@@ -5,6 +5,8 @@
 #include <stdint.h>
 
 struct BattleSceneRenderLine {
+    // pixels and priority contain SCREEN_WIDTH_PX entries for one framebuffer
+    // scanline; line is a framebuffer-pixel Y coordinate.
     uint8_t* pixels;
     uint8_t* priority;
     uint8_t line;
@@ -14,6 +16,8 @@ struct BattleSceneRenderLine {
 };
 
 typedef void (*BattleSceneSpriteDrawFn)(void* context, uint8_t* pixels,
+    // x/y are native scene sprite positions in framebuffer pixels. tile is
+    // retained as content metadata for the transition host.
     uint8_t* priority, int16_t y, int16_t x, uint16_t tile, uint8_t attributes,
     const uint8_t* tilePixels);
 

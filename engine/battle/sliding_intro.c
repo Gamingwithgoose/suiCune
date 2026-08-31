@@ -139,8 +139,11 @@ static void BattleIntroSlidingPics_subfunction1(void) {
     // CALL(aBattleIntroSlidingPics_subfunction4);
     // BattleIntroSlidingPics_subfunction4();
     ByteFill(BattleAnimationScanlineOverrides(), SCREEN_HEIGHT_PX, 0x90);
-    BattleSceneCameraSet(0x90, 0);
-    BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET, 0, 0x5e);
+    // Every visible line receives an authored absolute SCX value. The final
+    // zero-filled segment must remain active instead of falling back to a
+    // camera value after line 0x5e.
+    BattleSceneScanlineEffectSet(BATTLE_SCENE_SCANLINE_HORIZONTAL_OFFSET,
+        0, SCREEN_HEIGHT_PX - 1);
     // LD_A(0b11100100);
     // CALL(aDmgToCgbBGPals);
     DmgToCgbBGPals(0b11100100);
@@ -205,7 +208,6 @@ static void BattleIntroSlidingPics_subfunction2(void) {
     //     CP_A(0x60);
     //     IF_C goto loop2;
         // NOP;
-        BattleSceneCameraSet(d, 0);
         // CALL(aBattleIntroSlidingPics_subfunction5);
         BattleIntroSlidingPics_subfunction5(d, e);
         // INC_E;
