@@ -6,6 +6,7 @@
 #include "../../home/lcd.h"
 #include "../../home/copy.h"
 #include "../../home/audio.h"
+#include <stdlib.h>
 
 static const char TitleSuicuneGFX[] = "gfx/title/suicune.png";
 static const char TitleLogoGFX[] = "gfx/title/logo.png";
@@ -214,7 +215,11 @@ void v_TitleScreen(void){
     // LD_HL(mTitleCrystalGFX);
     // LD_DE(vTiles0);
     // CALL(aDecompress);
-    LoadPNG2bppAssetToVRAMByColumn(vram->vTiles0, TitleCrystalGFX);
+    if(!LoadPNG2bppColumnTiles(vram->vTiles0, sizeof(vram->vTiles0),
+        TitleCrystalGFX, 0, 0)) {
+        log_runtime_mark_fatal("title crystal image decode failed");
+        exit(EXIT_FAILURE);
+    }
 
 //  Clear screen tiles
     // hlbgcoord(0, 0, vBGMap0);

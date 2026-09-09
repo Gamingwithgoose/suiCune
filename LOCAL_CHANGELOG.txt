@@ -6505,3 +6505,52 @@ Validation and next closure
   that baseline: retire trainer legacy object-host projections, then separate
   persistent PC storage from SRAM so widened native records can be saved
   without legacy content ceilings.
+
+2026-09-09 — Complete bounded column-image loader adoption
+=========================================================
+
+Completed changes
+-----------------
+- Baseline: 300bc4e6. Migrated the remaining title-crystal and nonbattle Kris
+  backpic callers to LoadPNG2bppColumnTiles with actual destination capacities.
+  Removed LoadPNG2bppAssetToVRAMByColumn and its SIZE_MAX capacity bypass.
+  All column-image callers now use one ordinary C decoder with explicit bounds.
+- Validate header dimensions and destination capacity before allocating the
+  decoded image; verify decoded dimensions still match before writing tiles.
+  Invalid headers, oversized images, and decode failures release their buffers
+  and return failure. Callers log fatal resource failures rather than continue
+  with incomplete graphics. Normal column order and palette conversion remain
+  unchanged.
+- Title crystal capacity is the vTiles0 array size (2048 bytes). Its shipped
+  48x80 asset uses 960 bytes. The retained Kris destination has 1264 bytes after
+  its historical offset; the required 48x48 image uses 576 bytes. Native battle
+  trainer decoding continues to supply its own 576-byte C buffer.
+- No title/intro layout, gameplay timing, trainer selection, sprite placement,
+  save format, or content identifier changed. No new compatibility bridge was
+  added. The previous unbounded column-loader bridge is fully removed.
+
+Files modified
+--------------
+- util/assets.c: remove unchecked entry and validate before image allocation.
+- util/assets.h: retire the obsolete entry declaration.
+- engine/movie/title.c: bounded crystal-image loading and explicit failure.
+- engine/gfx/player_gfx.c: bounded Kris loading and explicit failure.
+- LOCAL_CHANGELOG.txt: completion and remaining dependencies.
+- Files created/deleted: none. Existing lib/libmobile modifications preserved.
+
+Validation and remaining work
+-----------------------------
+- Source inspection covered every column-loader caller, destination array
+  sizes, offsets, declared interfaces, allocation cleanup, and build/dispatch
+  references. PNG header inspection confirmed title dimensions. Actual diffs
+  and final Git status/stat/name checks were reviewed; no stale column-loader
+  callers remain in C source or headers.
+- Build/runtime validation: not performed.
+- Title and nonbattle player rendering still own legacy VRAM destinations;
+  bounded decoding does not convert those renderers. Trainer vTiles0/vTiles2
+  output projections and the shared palette decoder also remain. Their removal
+  conditions from the preceding entry are unchanged.
+- Next acceptance task remains Chris/Kris/Dude battle presentation and tutorial
+  pack return, plus title and nonbattle backpic loading. Next native ownership
+  work is trainer object-host projection retirement after establishing that
+  baseline; SRAM-independent PC persistence remains a larger subsequent task.

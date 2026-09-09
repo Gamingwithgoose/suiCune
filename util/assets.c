@@ -405,12 +405,6 @@ void LoadPNG2bppAssetToVRAM(void* dest, const char* filename) {
     stbi_image_free(pix);
 }
 
-// Retained entry for legacy graphics callers with externally sized storage.
-void LoadPNG2bppAssetToVRAMByColumn(void* dest, const char* filename) {
-    if(!LoadPNG2bppColumnTiles(dest, SIZE_MAX, filename, 0, 0))
-        exit(-1);
-}
-
 bool LoadPNG2bppColumnTiles(void* dest, size_t capacity, const char* filename,
     int expectedWidth, int expectedHeight) {
     if(dest == NULL || filename == NULL || expectedWidth < 0 || expectedHeight < 0)
@@ -425,10 +419,11 @@ bool LoadPNG2bppColumnTiles(void* dest, size_t capacity, const char* filename,
         return false;
     }
     int x, y, n;
-    uint8_t* pix = stbi_load_from_memory(a.ptr, (int)a.size, &x, &y, &n, 0);
-    FreeAsset(a);
-    if(!pix) {
-        log_err("Load error on image %s. Reason: %s\n", filename, stbi_failure_reason());
+    // Check the immutable asset header before allocating decoded pixel storage.
+    // Destination capacity is part of the resource contract, not VRAM identity.
+    if(!stbi_info_from_memory(a.ptr, (int)a.size, &x, &y, &n)) {
+        log_err("Invalid image header %s: %s", filename, stbi_failure_reason());
+        FreeAsset(a);
         return false;
     }
     if(x <= 0 || y <= 0 || x % TILE_WIDTH != 0 || y % TILE_WIDTH != 0 ||
@@ -437,6 +432,19 @@ bool LoadPNG2bppColumnTiles(void* dest, size_t capacity, const char* filename,
         (size_t)(x / TILE_WIDTH) > capacity / LEN_2BPP_TILE / (size_t)(y / TILE_WIDTH)) {
         log_err("Invalid column-tile image %s: %dx%d expected=%dx%d capacity=%zu",
             filename, x, y, expectedWidth, expectedHeight, capacity);
+        FreeAsset(a);
+        return false;
+    }
+    int decodedWidth, decodedHeight;
+    uint8_t* pix = stbi_load_from_memory(a.ptr, (int)a.size,
+        &decodedWidth, &decodedHeight, &n, 0);
+    FreeAsset(a);
+    if(pix == NULL) {
+        log_err("Load error on image %s. Reason: %s", filename, stbi_failure_reason());
+        return false;
+    }
+    if(decodedWidth != x || decodedHeight != y) {
+        log_err("Decoded image dimensions differ from header: %s", filename);
         stbi_image_free(pix);
         return false;
     }

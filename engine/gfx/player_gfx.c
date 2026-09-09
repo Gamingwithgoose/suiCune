@@ -8,6 +8,7 @@
 #include "../../gfx/sprites.h"
 #include "../../gfx/misc.h"
 #include "../../data/player_names.h"
+#include <stdlib.h>
 
 // void ChrisPic(void){
 // INCBIN "gfx/player/chris.2bpp"
@@ -294,6 +295,10 @@ void GetKrisBackpic(void){
     // LD_HL(vTiles2 + LEN_2BPP_TILE * 0x31);
     // LD_BC((BANK(aKrisBackpic) << 8) | 7 * 7);  // dimensions
     // CALL(aGet2bpp);
-    LoadPNG2bppAssetToVRAMByColumn(vram->vTiles2 + LEN_2BPP_TILE * 0x31, KrisBackpic);
+    if(!LoadPNG2bppColumnTiles(vram->vTiles2 + LEN_2BPP_TILE * 0x31,
+        sizeof(vram->vTiles2) - LEN_2BPP_TILE * 0x31, KrisBackpic, 48, 48)) {
+        log_runtime_mark_fatal("Kris backpic decode failed");
+        exit(EXIT_FAILURE);
+    }
     // RET;
 }
