@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 int64_t fsize(FILE* file) {
     fseek(file, 0, SEEK_END);
@@ -404,29 +405,45 @@ void LoadPNG2bppAssetToVRAM(void* dest, const char* filename) {
     stbi_image_free(pix);
 }
 
-// Loads a 2bpp PNG asset from an archive, converts it to GB pixel format,
-// and writes the result to dest, assumedly a vram destination.
-// Tiles are loaded by column instead of by row.
+// Retained entry for legacy graphics callers with externally sized storage.
 void LoadPNG2bppAssetToVRAMByColumn(void* dest, const char* filename) {
+    if(!LoadPNG2bppColumnTiles(dest, SIZE_MAX, filename, 0, 0))
+        exit(-1);
+}
+
+bool LoadPNG2bppColumnTiles(void* dest, size_t capacity, const char* filename,
+    int expectedWidth, int expectedHeight) {
+    if(dest == NULL || filename == NULL || expectedWidth < 0 || expectedHeight < 0)
+        return false;
     uint8_t* d = dest;
     asset_s a = LoadAsset(filename);
-    // printf("Loaded asset %s (%lld bytes)\n", filename, a.size);
-    if(!a.ptr) {
-        exit(-1);
+    if(a.ptr == NULL)
+        return false;
+    if(a.size > INT_MAX) {
+        FreeAsset(a);
+        log_err("PNG asset exceeds decoder input range: %s", filename);
+        return false;
     }
     int x, y, n;
     uint8_t* pix = stbi_load_from_memory(a.ptr, (int)a.size, &x, &y, &n, 0);
+    FreeAsset(a);
     if(!pix) {
         log_err("Load error on image %s. Reason: %s\n", filename, stbi_failure_reason());
-        exit(-1);
+        return false;
     }
-    // printf("2bpp %d-channel %dx%d image (%s)\n", n, x, y, filename);
-    FreeAsset(a);
-    int numTiles = (y / 8) * (x / 8);
-    int tilesPerColumn = (y / 8);
-    // printf("%d tiles to write.\n", numTiles);
+    if(x <= 0 || y <= 0 || x % TILE_WIDTH != 0 || y % TILE_WIDTH != 0 ||
+        (expectedWidth != 0 && x != expectedWidth) ||
+        (expectedHeight != 0 && y != expectedHeight) ||
+        (size_t)(x / TILE_WIDTH) > capacity / LEN_2BPP_TILE / (size_t)(y / TILE_WIDTH)) {
+        log_err("Invalid column-tile image %s: %dx%d expected=%dx%d capacity=%zu",
+            filename, x, y, expectedWidth, expectedHeight, capacity);
+        stbi_image_free(pix);
+        return false;
+    }
+    size_t numTiles = (size_t)(y / TILE_WIDTH) * (size_t)(x / TILE_WIDTH);
+    size_t tilesPerColumn = (size_t)(y / TILE_WIDTH);
     if(n == 1) {
-        for(int i = 0; i < numTiles; ++i) {
+        for(size_t i = 0; i < numTiles; ++i) {
             CopyPNG2bppGrayTileToGB(&d[i * LEN_2BPP_TILE], &pix[((i/tilesPerColumn)*8) + (((i%tilesPerColumn)*8)*x)], x);
         }
     }
@@ -436,11 +453,12 @@ void LoadPNG2bppAssetToVRAMByColumn(void* dest, const char* filename) {
         // for(int i = 0; i < 4; ++i) {
         //     printf("Color %d: r=%d, g=%d, b=%d\n", i, palette[i] & 0xff, (palette[i] & 0xff00) >> 8, (palette[i] & 0xff0000) >> 16);
         // }
-        for(int i = 0; i < numTiles; ++i) {
+        for(size_t i = 0; i < numTiles; ++i) {
             CopyPNG2bppColorTileToGB(&d[i * LEN_2BPP_TILE], &pix[((((i/tilesPerColumn)*8)) + ((i%tilesPerColumn)*8)*x)*n], x, n, palette);
         }
     }
     stbi_image_free(pix);
+    return true;
 }
 
 // Loads a 1bpp PNG asset section from an archive, converts it to GB pixel format,

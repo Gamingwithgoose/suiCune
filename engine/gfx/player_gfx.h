@@ -16,6 +16,7 @@ void DrawIntroPlayerPic(void);
 // void ChrisPic(void);
 // void KrisPic(void);
 void GetKrisBackpic(void);
+extern const char KrisBackpic[];
 // void KrisBackpic(void);
 //#include "data/player_names.h"
 //#include "gfx/trainer_card/chris_card.2bpp"

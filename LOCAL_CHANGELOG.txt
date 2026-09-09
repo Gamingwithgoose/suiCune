@@ -6417,3 +6417,91 @@ Validation and next closure
   player send-out; run a wild battle through Scratch, move selection, and
   faint; inspect `logs/suiCune_runtime.log` for temporary-placement hashes,
   identity checks, native trainer retirement, presentation offsets, and clips.
+
+2026-09-09 — Native trainer image acquisition and finalization review
+====================================================================
+
+Current architecture and completion status
+-----------------------------------------
+- Baseline: d870614d. Native logical/physical input APIs, OS-backed RTC APIs,
+  widened semantic content IDs, native party/box records, and native battle
+  resources/scene composition are present. These are implemented portions,
+  not evidence of complete Crystal gameplay parity or completed expansion.
+- Major unfinished dependencies remain: SRAM-targeted persistence and box
+  capacity, legacy species fields in unmigrated records, fixed overworld object
+  pools, LCD/BG tilemap composition, frame scheduling through gb_finish_frame,
+  APU register audio, and link/mobile dispatch compatibility. The port is not
+  ready to be described as fully native or unrestricted.
+- Battle foreground UI and trainer/animation stabilization have source changes
+  but no newly observed runtime acceptance result. Full gameplay parity still
+  requires repeatable runtime comparison, including battle transitions and
+  save/load, before further large ownership changes are accepted.
+
+Completed changes
+-----------------
+- Trainer backpic acquisition now decodes Chris, Kris, or Dude PNG data into
+  ordinary C memory and installs it directly into the native scene resource.
+  Native trainer sprites no longer obtain their source by reading vTiles2.
+  Tutorial selection and gender/override selection retain their existing rules.
+- Added a bounded column-tile PNG decoder with explicit destination capacity
+  and expected dimensions. It rejects oversized decoder input, non-tile-aligned
+  dimensions, mismatched assets, and insufficient capacity before destination
+  writes. Asset and decoded-image allocations are freed on error paths.
+- Preserved existing grayscale/palette conversion and column tile order. All
+  three shipped trainer PNG headers are 48x48; the source is exactly 36 tiles.
+  Removed the native resource copy of 49 VRAM tiles, which included 13 tiles
+  outside the decoded trainer asset. Sprite pairing, position, palette, and
+  slide timing are unchanged. A failed trainer decode is logged and fatal;
+  it does not install a blank or partially decoded fallback.
+- Shared the existing Kris asset identifier with the battle loader without
+  changing nonbattle player graphics behavior.
+
+Compatibility boundaries and removal conditions
+-----------------------------------------------
+- GetTrainerBackpic remains a tutorial-return/converted-dispatch adapter that
+  projects the native pixels to the historical vTiles2 destination. Remove this
+  projection after tutorial pack return and the remaining dispatch consumer no
+  longer require that tile destination. Battle initialization bypasses it.
+- CopyBackpic retains its vTiles0 output for the still-legacy object host; this
+  projection is never read to initialize native trainer resources. Remove it
+  after the object-host consumer closure is retired and trainer/tutorial paths
+  have been validated. Both projections now copy only the authored 36 tiles.
+- The old column-loader entry remains for title and nonbattle player graphics,
+  delegating to the shared decoder with legacy caller-owned sizing. Replace it
+  when those callers supply their actual destination capacities. Native trainer
+  decoding always supplies its real buffer size and expected dimensions.
+- Two-bit tile encoding and the current 48x48 trainer layout remain resource
+  format/presentation choices. This change does not complete a resolution-
+  independent renderer, remove all VRAM use, or expand trainer sprite geometry.
+- No save schema, serialized structure, content ID, gameplay rule, or network
+  protocol changed. No ASM removal or broader subsystem migration was made.
+
+Files modified
+--------------
+- engine/battle/core.c: direct native trainer acquisition, checked failure,
+  and downstream-only compatibility copies.
+- engine/gfx/player_gfx.c and engine/gfx/player_gfx.h: shared Kris asset symbol.
+- util/assets.c and util/assets.h: bounded decoder and retained legacy entry.
+- LOCAL_CHANGELOG.txt: architecture status, implementation, and removal paths.
+- Files created/deleted: none. lib/libmobile remains untouched.
+
+Validation and next closure
+--------------------------
+- Source inspection traced all GetTrainerBackpic callers and its converted
+  registration, initial scene construction, tutorial return, PNG conversion,
+  native resource allocation, trainer sprite indexes 0..35, and slide motion.
+- Compared grayscale/color source offsets with the previous column loader;
+  checked capacity arithmetic, early error cleanup, declaration propagation,
+  and that no retained resource pointer crosses a growth of its own allocation.
+- Inspected PNG headers and reviewed all actual changes with non-destructive
+  Git status/stat/name/diff inspection. No build or test commands executed.
+- Build/runtime validation: not performed.
+- Remaining source risk: shared PNG palette interpretation and legacy callers
+  without destination capacities remain outside this completed resource slice.
+  Gameplay and visual equivalence are not established by source review alone.
+- Next acceptance task: validate Chris/Kris/Dude entrance, settlement, exit,
+  tutorial ball/pack return, player send-out, move selection, fainting, and
+  Scratch/Leer/Tackle with the runtime log. Next architectural closure after
+  that baseline: retire trainer legacy object-host projections, then separate
+  persistent PC storage from SRAM so widened native records can be saved
+  without legacy content ceilings.

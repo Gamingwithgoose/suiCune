@@ -28,7 +28,7 @@
 
 static const char ChrisPic[] = "gfx/player/chris.png";
 static const char KrisPic[] = "gfx/player/kris.png";
-static const char KrisBackpic[] = "gfx/player/kris_back.png";
+const char KrisBackpic[] = "gfx/player/kris_back.png";
 
 void BetaLoadPlayerTrainerClass(void){
 //  //  unreferenced

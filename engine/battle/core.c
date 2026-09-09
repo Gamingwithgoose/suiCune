@@ -88,6 +88,7 @@
 #include "../events/pokerus/pokerus.h"
 #include "../../charmap.h"
 #include <stddef.h>
+#include <stdlib.h>
 
 static bool CheckContestBattleOver(void);
 static bool CheckPlayerLockedIn(void);
@@ -177,6 +178,7 @@ static SpeciesId* GetRoamMonSpecies(SpeciesId a);
 
 static void InitBattleDisplay(void);
 static void CopyBackpic(void);
+static const uint8_t* LoadTrainerBackpicResource(void);
 static void BattleStartMessage(void);
 
 //  Core components of the battle engine.
@@ -13626,11 +13628,7 @@ done:
 }
 
 static void InitBattleDisplay_InitBackPic(void) {
-    // CALL(aGetTrainerBackpic);
-    GetTrainerBackpic();
-    // CALL(aCopyBackpic);
     CopyBackpic();
-    // RET;
 }
 
 static void InitBattleDisplay_BlankBGMap(void) {
@@ -13733,49 +13731,33 @@ static void InitBattleDisplay(void){
 
 }
 
+static const uint8_t* LoadTrainerBackpicResource(void){
+    const char* asset = ChrisBackpic;
+    if(wram->wBattleType == BATTLETYPE_TUTORIAL)
+        asset = DudeBackpic;
+    else if(!bit_test(wram->wPlayerSpriteSetupFlags, PLAYERSPRITESETUP_FEMALE_TO_MALE_F) &&
+        bit_test(gCrystal.playerGender, PLAYERGENDER_FEMALE_F))
+        asset = KrisBackpic;
+
+    // The authored trainer image is 48x48. Decode before changing the scene
+    // resource so a failed load cannot install a partially decoded picture.
+    uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
+    if(!LoadPNG2bppColumnTiles(pixels, sizeof(pixels), asset, 48, 48)) {
+        log_runtime_event("ERROR", "trainer backpic decode failed asset=%s", asset);
+        log_runtime_mark_fatal("trainer backpic decode failed");
+        abort();
+    }
+    uint8_t* resource = BattleSceneBattlerTileWritePointer(0, 6 * 6);
+    CopyBytes(resource, pixels, sizeof(pixels));
+    log_runtime_event("TRAINER_SCENE", "resource loaded asset=%s tiles=36 order=column source=native-png", asset);
+    return resource;
+}
+
 void GetTrainerBackpic(void){
-//  Load the player character's backpic (6x6) into VRAM starting from vTiles2 tile $31.
-
-//  Special exception for Dude.
-    // LD_B(BANK(aDudeBackpic));
-    // LD_HL(mDudeBackpic);
-    // LD_A_addr(wBattleType);
-    // CP_A(BATTLETYPE_TUTORIAL);
-    // IF_Z goto Decompress;
-    if(wram->wBattleType == BATTLETYPE_TUTORIAL) {
-        // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
-        // LD_C(7 * 7);
-        // PREDEF(pDecompressGet2bpp);
-        // RET;
-        return LoadPNG2bppAssetToVRAMByColumn(vram->vTiles2 + LEN_2BPP_TILE * 0x31, DudeBackpic);
-    }
-
-//  What gender are we?
-    // LD_A_addr(wPlayerSpriteSetupFlags);
-    // BIT_A(PLAYERSPRITESETUP_FEMALE_TO_MALE_F);
-    // IF_NZ goto Chris;
-    // LD_A_addr(wPlayerGender);
-    // BIT_A(PLAYERGENDER_FEMALE_F);
-    // IF_Z goto Chris;
-    if(!bit_test(wram->wPlayerSpriteSetupFlags, PLAYERSPRITESETUP_FEMALE_TO_MALE_F) && bit_test(gCrystal.playerGender, PLAYERGENDER_FEMALE_F)) {
-    //  It's a girl.
-        // FARCALL(aGetKrisBackpic);
-        // RET;
-        return GetKrisBackpic();
-    }
-
-// Chris:
-//  It's a boy.
-    // LD_B(BANK(aChrisBackpic));
-    // LD_HL(mChrisBackpic);
-
-// Decompress:
-    // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
-    // LD_C(7 * 7);
-    // PREDEF(pDecompressGet2bpp);
-    // RET;
-    return LoadPNG2bppAssetToVRAMByColumn(vram->vTiles2 + LEN_2BPP_TILE * 0x31, ChrisBackpic);
-
+    // Retained tutorial-return/dispatch boundary. VRAM is an output only;
+    // native trainer sprites never acquire their pixels from this projection.
+    const uint8_t* pixels = LoadTrainerBackpicResource();
+    CopyBytes(vram->vTiles2 + LEN_2BPP_TILE * 0x31, pixels, 6 * 6 * LEN_2BPP_TILE);
 }
 
 // Retained only as a source-reference record for the original sprite layout.
@@ -13838,23 +13820,10 @@ static void CopyBackpic_LoadTrainerBackpicAsOAM(void) {
 #endif
 
 static void CopyBackpic(void){
-    // LDH_A_addr(rSVBK);
-    // PUSH_AF;
-    // LD_A(MBANK(awDecompressScratch));
-    // LDH_addr_A(rSVBK);
-    // LD_HL(vTiles0);
-    // LD_DE(vTiles2 + LEN_2BPP_TILE * 0x31);
-    // LDH_A_addr(hROMBank);
-    // LD_B_A;
-    // LD_C(7 * 7);
-    // CALL(aGet2bpp);
-    uint8_t* backpicPixels = BattleSceneBattlerTileWritePointer(0, 7 * 7);
-    CopyBytes(backpicPixels, vram->vTiles2 + LEN_2BPP_TILE * 0x31, 7 * 7 * LEN_2BPP_TILE);
-    // The tilemap path still consumes its historical tile location. It is a
-    // downstream compatibility projection; the scene image is authoritative.
-    CopyBytes(vram->vTiles0, backpicPixels, 7 * 7 * LEN_2BPP_TILE);
-    // POP_AF;
-    // LDH_addr_A(rSVBK);
+    const uint8_t* backpicPixels = LoadTrainerBackpicResource();
+    // Retain the legacy object-tile output during scene-host migration. Only
+    // the 36 authored tiles belong to the trainer; no adjacent VRAM is copied.
+    CopyBytes(vram->vTiles0, backpicPixels, 6 * 6 * LEN_2BPP_TILE);
     SetBattleScenePlayerTrainerBackpic();
     // The retained tile data supports unmigrated compatibility consumers, but
     // projecting it to the visible background would duplicate the native
