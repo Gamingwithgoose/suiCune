@@ -35,8 +35,8 @@ struct NativeBattleSceneBattler {
     bool presentationClipEnabled;
     int16_t presentationClipX;
     int16_t presentationClipY;
-    uint8_t presentationClipWidth;
-    uint8_t presentationClipHeight;
+    uint16_t presentationClipWidth;
+    uint16_t presentationClipHeight;
     int16_t defaultX;
     int16_t defaultY;
     uint8_t defaultWidth;
@@ -478,37 +478,47 @@ void ClearBattleSceneBattlerPresentationMasks(void){
     }
 }
 
-void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
+static void BuildBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
-    const uint8_t* imageTiles){
-    if(battler >= BATTLE_SCENE_BATTLER_COUNT || imageTiles == NULL || width == 0 || height == 0)
+    bool mirrorTileColumns){
+    if((unsigned)battler >= BATTLE_SCENE_BATTLER_COUNT || width == 0 || height == 0)
         abort();
     size_t tileCount = (size_t)width * height;
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
+    if(tileCount > state->pixelTileCount ||
+        (int32_t)x + (width - 1) * TILE_WIDTH > INT16_MAX ||
+        (int32_t)y + (height - 1) * TILE_WIDTH > INT16_MAX) {
+        log_runtime_event("ERROR", "invalid native battler placement battler=%s grid=%ux%u origin=%d,%d sourceTiles=%zu",
+            BattleSceneBattlerName(battler), (unsigned)width, (unsigned)height,
+            x, y, state->pixelTileCount);
+        abort();
+    }
     BattleSceneEnsureBattlerTiles(battler, &state->tiles, &state->tileCapacity, tileCount,
         "battlerPlacement");
     state->tileCount = tileCount;
     for(uint8_t row = 0; row < height; row++) {
         for(uint8_t column = 0; column < width; column++) {
             size_t index = (size_t)row * width + column;
-            if(imageTiles[index] >= state->pixelTileCount) {
-                log_runtime_event("ERROR", "battler=%s placement sourceTile=%u validRange=0..%zu",
-                    BattleSceneBattlerName(battler), (unsigned)imageTiles[index],
-                    state->pixelTileCount == 0 ? 0 : state->pixelTileCount - 1);
-                abort();
-            }
+            // Mirror display columns only. Pixel-bit alignment is performed by
+            // the image loader; the native source tiles remain row-major.
+            size_t sourceColumn = mirrorTileColumns ? width - 1 - column : column;
             state->tiles[index].x = x + column * TILE_WIDTH;
             state->tiles[index].y = y + row * TILE_WIDTH;
-            state->tiles[index].imageTile = imageTiles[index];
+            // Width/height are at most 255, so every source index fits uint16_t.
+            state->tiles[index].imageTile = (uint16_t)((size_t)row * width + sourceColumn);
             state->tiles[index].masked = false;
         }
     }
     BattleSceneLogContent("persistent-placement", battler, state);
 }
 
-void PlaceBattleSceneBattlerPresentationLegacyPattern(enum BattleSceneBattlerId battler,
-    int16_t x, int16_t y, uint8_t width, uint8_t height, const uint8_t* imageTiles){
-    if(battler >= BATTLE_SCENE_BATTLER_COUNT || imageTiles == NULL || width == 0 || height == 0)
+void PlaceBattleSceneBattlerPresentationSamples(enum BattleSceneBattlerId battler,
+    int16_t x, int16_t y, uint8_t width, uint8_t height,
+    const uint8_t* sourceColumns, const uint8_t* sourceRows){
+    if((unsigned)battler >= BATTLE_SCENE_BATTLER_COUNT ||
+        sourceColumns == NULL || sourceRows == NULL || width == 0 || height == 0 ||
+        (int32_t)x + (width - 1) * TILE_WIDTH > INT16_MAX ||
+        (int32_t)y + (height - 1) * TILE_WIDTH > INT16_MAX)
         abort();
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
     size_t tileCount = (size_t)width * height;
@@ -517,17 +527,9 @@ void PlaceBattleSceneBattlerPresentationLegacyPattern(enum BattleSceneBattlerId 
     for(uint8_t row = 0; row < height; row++) {
         for(uint8_t column = 0; column < width; column++) {
             size_t index = (size_t)row * width + column;
-            // BGSquare data names tiles using the former column-major picture
-            // layout. Convert that compatibility identity at this boundary;
-            // the native image store remains row-major regardless of the
-            // temporary destination grid dimensions.
-            uint8_t legacyTile = imageTiles[index];
-            if(state->defaultWidth == 0 || state->defaultHeight == 0 ||
-                legacyTile >= (size_t)state->defaultWidth * state->defaultHeight)
-                abort();
-            uint8_t sourceX = legacyTile / state->defaultHeight;
-            uint8_t sourceY = legacyTile % state->defaultHeight;
-            if(sourceX >= state->defaultWidth)
+            uint8_t sourceX = sourceColumns[column];
+            uint8_t sourceY = sourceRows[row];
+            if(sourceX >= state->defaultWidth || sourceY >= state->defaultHeight)
                 abort();
             uint8_t sourceColumn = state->defaultMirrorTileColumns
                 ? state->defaultWidth - 1 - sourceX : sourceX;
@@ -543,7 +545,7 @@ void PlaceBattleSceneBattlerPresentationLegacyPattern(enum BattleSceneBattlerId 
     state->presentationTileCount = tileCount;
     state->presentationPlacementActive = true;
     uint32_t presentationHash = BattleSceneHashPlacement(state->presentationTiles, state->presentationTileCount);
-    log_runtime_event("BATTLE_SCENE", "temporary placement battler=%s grid=%ux%u destination=%d,%d persistentPlacementHash=%08x presentationPlacementHash=%08x sourceLayout=legacy-column-major",
+    log_runtime_event("BATTLE_SCENE", "temporary placement battler=%s grid=%ux%u destination=%d,%d persistentPlacementHash=%08x presentationPlacementHash=%08x sourceLayout=native-axis-samples",
         BattleSceneBattlerName(battler), (unsigned)width, (unsigned)height, x, y,
         (unsigned)BattleSceneHashPlacement(state->tiles, state->tileCount), (unsigned)presentationHash);
     for(uint8_t row = 0; row < height; row++) {
@@ -615,21 +617,7 @@ void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
     state->generation++;
     if(state->generation == 0)
         state->generation = 1;
-    uint8_t imageTiles[7 * 7];
-    if((size_t)width * height > lengthof(imageTiles))
-        abort();
-    for(uint8_t row = 0; row < height; row++) {
-        for(uint8_t column = 0; column < width; column++) {
-            // Native PNG loaders decode tiles left-to-right then top-to-bottom.
-            // The scene compositor consumes this explicit placement list in
-            // that same row-major order. Alignment mirrors display columns
-            // only; FixBackpicAlignment already mirrors bits in each tile.
-            uint8_t sourceColumn = mirrorTileColumns ? width - 1 - column : column;
-            imageTiles[(size_t)row * width + column] =
-                (uint8_t)((size_t)row * width + sourceColumn);
-        }
-    }
-    PlaceBattleSceneBattlerPattern(battler, x, y, width, height, imageTiles);
+    BuildBattleSceneBattlerPlacement(battler, x, y, width, height, mirrorTileColumns);
     state->presentationTileCount = 0;
     state->presentationPlacementActive = false;
     state->presentationOffsetX = 0;
@@ -643,14 +631,14 @@ void SetBattleSceneBattlerImageAligned(enum BattleSceneBattlerId battler,
         BattleSceneBattlerName(battler), state->generation, tileCount,
         state->basePixelTileCount, LEN_2BPP_TILE, tileCount * LEN_2BPP_TILE,
         (unsigned)width, (unsigned)height, x, y,
-        (unsigned)palette, (unsigned)mirrorTileColumns, (unsigned)imageTiles[0],
-        (unsigned)imageTiles[(size_t)width * height - 1]);
+        (unsigned)palette, (unsigned)mirrorTileColumns, (unsigned)state->tiles[0].imageTile,
+        (unsigned)state->tiles[state->tileCount - 1].imageTile);
     for(uint8_t row = 0; row < height; row++) {
         char mapping[96] = "";
         size_t offset = 0;
         for(uint8_t column = 0; column < width; column++) {
             int written = snprintf(mapping + offset, sizeof(mapping) - offset,
-                "%s%u", column == 0 ? "" : ",", (unsigned)imageTiles[(size_t)row * width + column]);
+                "%s%u", column == 0 ? "" : ",", (unsigned)state->tiles[(size_t)row * width + column].imageTile);
             if(written < 0 || (size_t)written >= sizeof(mapping) - offset)
                 break;
             offset += (size_t)written;
@@ -787,20 +775,8 @@ void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler){
     struct NativeBattleSceneBattler* state = &sBattleAnimationState.battlers[battler];
     if(state->defaultWidth == 0 || state->defaultHeight == 0)
         return;
-    uint8_t imageTiles[7 * 7];
-    size_t count = (size_t)state->defaultWidth * state->defaultHeight;
-    if(count > lengthof(imageTiles))
-        abort();
-    for(uint8_t row = 0; row < state->defaultHeight; row++) {
-        for(uint8_t column = 0; column < state->defaultWidth; column++) {
-            uint8_t sourceColumn = state->defaultMirrorTileColumns
-                ? state->defaultWidth - 1 - column : column;
-            imageTiles[(size_t)row * state->defaultWidth + column] =
-                (uint8_t)((size_t)row * state->defaultWidth + sourceColumn);
-        }
-    }
-    PlaceBattleSceneBattlerPattern(battler, state->defaultX, state->defaultY,
-        state->defaultWidth, state->defaultHeight, imageTiles);
+    BuildBattleSceneBattlerPlacement(battler, state->defaultX, state->defaultY,
+        state->defaultWidth, state->defaultHeight, state->defaultMirrorTileColumns);
     log_runtime_event("PICTURE", "restore placement battler=%s generation=%u grid=%ux%u order=row-major mirrorColumns=%u",
         BattleSceneBattlerName(battler), state->generation, (unsigned)state->defaultWidth,
         (unsigned)state->defaultHeight, (unsigned)state->defaultMirrorTileColumns);
@@ -832,10 +808,11 @@ void ClearBattleSceneBattlers(void){
     log_runtime_event("BATTLE_SCENE", "clear all battler resources");
 }
 
-const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
-    size_t tileSpan){
-    if(sprite == NULL || tileSpan == 0)
+const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite){
+    if(sprite == NULL || sprite->tileSpan == 0)
         return NULL;
+    size_t tileSpan = sprite->tileSpan;
+    uint16_t resourceTile = sprite->resourceTileId;
     const uint8_t* pixels;
     size_t capacity;
     if(sprite->resourceKind == BATTLE_RENDER_RESOURCE_HUD) {
@@ -852,18 +829,17 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
     }
     else {
         log_runtime_event("ERROR", "native sprite resource rejected invalidKind=%u tile=%u span=%zu",
-            (unsigned)sprite->resourceKind, (unsigned)sprite->tileId, tileSpan);
+            (unsigned)sprite->resourceKind, (unsigned)resourceTile, tileSpan);
         return NULL;
     }
-    // In 8x16 mode the draw host reads two complete native tiles, including
-    // when Y-flipped. Validate the span before exposing a source pointer.
-    if(pixels == NULL || sprite->tileId > capacity || tileSpan > capacity - sprite->tileId) {
+    // Validate the entire authored vertical span, including flipped drawing.
+    if(pixels == NULL || resourceTile > capacity || tileSpan > capacity - resourceTile) {
         BattleAnimationId animationId = BattleAnimationIdGet();
         struct NativeSpriteValidationRepeat* available = NULL;
         for(size_t index = 0; index < lengthof(sNativeSpriteValidationRepeats); index++) {
             struct NativeSpriteValidationRepeat* repeat = &sNativeSpriteValidationRepeats[index];
             if(repeat->active && repeat->resourceKind == sprite->resourceKind &&
-                repeat->tileId == sprite->tileId && repeat->tileSpan == tileSpan &&
+                repeat->tileId == resourceTile && repeat->tileSpan == tileSpan &&
                 repeat->capacity == capacity && repeat->animationId == animationId) {
                 if(repeat->repeats != SIZE_MAX)
                     repeat->repeats++;
@@ -879,17 +855,17 @@ const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* s
         struct NativeSpriteValidationRepeat* repeat = available;
         repeat->active = true;
         repeat->resourceKind = sprite->resourceKind;
-        repeat->tileId = sprite->tileId;
+        repeat->tileId = resourceTile;
         repeat->tileSpan = tileSpan;
         repeat->capacity = capacity;
         repeat->animationId = animationId;
         repeat->repeats = 0;
         log_runtime_event("ERROR", "native sprite resource rejected kind=%u tile=%u span=%zu capacity=%zu animation=%u",
-            (unsigned)sprite->resourceKind, (unsigned)sprite->tileId, tileSpan, capacity,
+            (unsigned)sprite->resourceKind, (unsigned)resourceTile, tileSpan, capacity,
             (unsigned)animationId);
         return NULL;
     }
-    return pixels + (size_t)sprite->tileId * LEN_2BPP_TILE;
+    return pixels + (size_t)resourceTile * LEN_2BPP_TILE;
 }
 
 struct BattleAnimationCommandState* BattleAnimationCommandState(void){
@@ -1248,6 +1224,7 @@ void SetBattleAnimationHudSprites(size_t firstSprite, uint8_t y, uint8_t x, int8
         sprite->resourceTileId = sprite->tileId;
         sprite->attributes = PAL_BATTLE_OB_YELLOW;
         sprite->resourceKind = BATTLE_RENDER_RESOURCE_HUD;
+        sprite->tileSpan = 1; // Each ball icon is one authored 8x8 image.
         sprite->category = BATTLE_SCENE_SPRITE_HUD;
         positionX += direction;
     }
@@ -1542,9 +1519,16 @@ void BattleAnimOAMUpdate(struct BattleAnim* bc){
         // ADD_A(BATTLEANIM_BASE_TILE);
         // ADD_A_hl;
         // LD_de_A;
-        sprite->tileId = BattleAnimationRenderState()->tileId + BATTLEANIM_BASE_TILE + tileID;
+        uint32_t resourceTile = (uint32_t)BattleAnimationRenderState()->tileId
+            + BATTLEANIM_BASE_TILE + tileID;
+        if(resourceTile > UINT16_MAX) {
+            log_runtime_event("ERROR", "animation frame tile exceeds native ID range tile=%u",
+                (unsigned)resourceTile);
+            abort();
+        }
+        sprite->tileId = (uint16_t)resourceTile;
         sprite->resourceTileId = sprite->tileId;
-        sprite->legacyOamTilePair = true;
+        sprite->tileSpan = 1; // Animation frame pieces use 8x8 offsets/flips.
 
     // Attributes
         // INC_HL;

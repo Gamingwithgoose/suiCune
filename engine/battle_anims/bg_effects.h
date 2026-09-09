@@ -25,7 +25,6 @@ void v_QueueBattleAnimation(void);
 // void BattleBGEffect_RemoveMon(struct BattleBGEffect* bc);
 // void BattleBGEffect_EnterMon(struct BattleBGEffect* bc);
 // void BattleBGEffect_ReturnMon(struct BattleBGEffect* bc);
-// void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const uint8_t* de);
 // void BattleBGEffect_Surf(struct BattleBGEffect* bc);
 // void BattleBGEffect_Whirlpool(struct BattleBGEffect* bc);
 // void BattleBGEffect_StartWater(struct BattleBGEffect* bc);

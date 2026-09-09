@@ -6554,3 +6554,267 @@ Validation and remaining work
   pack return, plus title and nonbattle backpic loading. Next native ownership
   work is trainer object-host projection retirement after establishing that
   baseline; SRAM-independent PC persistence remains a larger subsequent task.
+
+2026-09-09 — Remove fixed persistent battler placement staging
+=============================================================
+
+Completed changes
+-----------------
+- Baseline: a1d218b2. Replaced persistent picture installation/restoration's
+  fixed 49-byte tile-index staging arrays with direct construction of the
+  dynamically allocated native placement records. Both paths now use one
+  private grid builder. Removed the unused public byte-pattern interface.
+- Row-major source selection and mirrored display-column selection retain the
+  same formulas for Crystal's 6x6 and 7x7 pictures. Native source indexes remain
+  16-bit throughout construction instead of passing through byte values.
+  Persistent placements can now exceed 49 tiles, including indexes above 255.
+- Validate source tile count and signed placement-coordinate range before
+  writing placements. Widened native faint clip dimensions to 16 bits so the
+  full pixel extent of larger accepted grids is preserved. Compositor offset
+  arithmetic now uses 32-bit intermediates to avoid narrowing translated
+  off-screen coordinates before clipping.
+- Existing native image/base ownership, palette, masks, temporary placement,
+  foreground UI occlusion, and faint lifetimes are retained. Diagnostics read
+  the authoritative native placement instead of a second staging array.
+
+Scope and compatibility
+-----------------------
+- This completes removal of the persistent 7x7 staging ceiling only. Image
+  grid dimensions still use uint8_t, tile IDs use uint16_t, and placement
+  origins use int16_t. Current loaders/content still supply Crystal-sized
+  images. Expanded artwork is not implemented or runtime-validated.
+- Authored temporary BGSquare patterns remain byte-oriented compatibility
+  content with separate presentation ownership. Their existing 7x7 scratch
+  and source-stride conversion were not widened or treated as native content.
+- No new bridge, save-format change, serialized field change, ASM deletion,
+  or gameplay rule change. No claim of full renderer or gameplay completion.
+
+Files modified
+--------------
+- engine/battle_anims/core.c: shared direct placement builder, install/restore
+  migration, native clip dimensions, and placement-based diagnostics.
+- engine/battle_anims/core.h: matching clip field types and retired API.
+- engine/battle_anims/render.c: wider transformed coordinate intermediates.
+- LOCAL_CHANGELOG.txt: implementation, bounds, and remaining dependencies.
+- Files created/deleted: none. lib/libmobile remains untouched.
+
+Validation and next closure
+---------------------------
+- Source review traced all old placement callers, dynamic allocation, image
+  installation/restoration, native view export, renderer, faint clipping, and
+  placement hash consumers. No callers of the removed byte-pattern API remain.
+- Formula review: unmirrored source=row*width+column; mirrored source=
+  row*width+(width-1-column). Maximum accepted dimension product is 65025,
+  whose last index fits uint16_t; maximum clip extent is 2040 pixels.
+- Actual file diffs and Git status/stat/name inspection reviewed. No executable
+  validation or build commands executed.
+- Build/runtime validation: not performed.
+- Next acceptance task: compare native placement hashes and visible Crystal
+  pictures through send-out, hit/show, move menus, and fainting. Subsequent
+  ownership work remains trainer compatibility projection retirement and
+  SRAM-independent PC persistence; larger image content/effect adaptation is
+  a separate renderer expansion closure.
+
+2026-09-09 — Native battler resize stages and image sampling
+==========================================================
+
+Completed implementation
+------------------------
+- Migrated send-out, recall, and hit/show picture placement from three-byte
+  scripts to bounded native stages with explicit place, clear, and wait actions.
+  Removed terminator opcodes, packed dimensions, VRAM base-tile operands,
+  tilemap-coordinate identities, and the unused picResizeBaseTileId scratch.
+- Replaced BGSquare column-major tile identities with explicit source-axis
+  samples. The native scene directly produces row-major image references,
+  including mirrored player columns. Removed the legacy-pattern API and its
+  fixed 49-byte staging buffer; dynamic presentation placement remains owner.
+- Preserved four-update display stages, immediate clear-and-advance behavior,
+  the final empty recall wait, Fly/Dig show suppression, placement diagnostics,
+  and persistent-versus-temporary lifetime separation. Source coordinate and
+  destination narrowing checks reject invalid placement rather than wrapping.
+- Existing persistent placement, wider clip extents, and renderer arithmetic
+  changes remain intact. No ASM files or assets deleted.
+
+Files modified
+--------------
+- engine/battle_anims/bg_effects.c: all three resize producers, native stage
+  sequencing, authored image-axis samples, and direct pixel destinations.
+- engine/battle_anims/bg_effects.h: removed stale resize-script declaration.
+- engine/battle_anims/core.c: native axis-sample placement API and bounds.
+- engine/battle_anims/core.h: matching API and removed unused resize scratch.
+- LOCAL_CHANGELOG.txt: conversion scope and outstanding acceptance work.
+- Files created/deleted: none. Existing render.c changes and lib/libmobile
+  modifications were not altered by this closure.
+
+Source review and compatibility
+-------------------------------
+- All resize callers now use the native stages; targeted C/header searches
+  found no remaining old resize-script, legacy-pattern, or scratch-field users.
+- Inspected image producers: player images are 6x6; opponent images are padded
+  7x7. Sample axes reproduce all six prior matrices: player full=0..5,
+  medium=0,2,3,5, small=0,5; opponent full=0..6, medium=0,1,3,5,6,
+  small=0,3,6. Source index is row*sourceWidth+mirroredColumn as before.
+- Stages retain the prior parameter indexes, including immediate clear entries.
+  Explicit stage counts replace unchecked sentinel access. Resize scratch is
+  transient animation state, not serialized save or link data.
+- No new migration bridge, parallel owner, save-format change, or build-system
+  change. No executable build/test commands executed. Git status, diff stat,
+  names, and actual changed-file diffs inspected for unintended changes.
+- Build/runtime validation: not performed.
+
+Remaining work and stopping point
+---------------------------------
+- Resize-path implementation is complete at source level; visual/timing parity
+  is not runtime-verified. No new regression established through source review.
+- Crystal-sized sample art and destinations remain intentional content, not a
+  generalized larger-art scaling policy. Grid APIs still use byte dimensions;
+  the shared effect scheduler still uses existing parameter/phase fields.
+- Trainer compatibility projection, other effect families, save ownership,
+  overworld systems, and overall native-runtime completion remain unfinished.
+- Next acceptance task: compare send-out, recall, hit/show, Fly/Dig suppression,
+  and mirrored player placement against Crystal, including placement hashes.
+  Next conversion closure after acceptance: retire trainer-picture compatibility
+  projections only after tracing every remaining downstream consumer.
+
+2026-09-09 — Explicit native experience-growth calculation
+=========================================================
+
+Completed implementation
+------------------------
+- Growth curves now use native polynomial coefficients, not four-byte ROM
+  records, nibble bitfields, or signed-magnitude encodings. One table replaces
+  compiler-specific definitions. The former MSVC medium-slow initializer
+  encoded -113 instead of -15; the common table now uses the intended -15.
+- Experience calculation now takes an explicit growth rate or SpeciesId and
+  returns a native value without writing HRAM arithmetic scratch. Removed the
+  API that implicitly consumed wBaseGrowthRate. Signed 64-bit intermediates
+  preserve cubic-term division order and check the native result range.
+- Migrated every live implicit-growth caller: battle reward cap, animated
+  experience cap, current/next bar thresholds, Rare Candy, and summary next-level
+  display. Species inputs come from the actual Pokemon record, not a previously
+  loaded global base-data record.
+- Experience-bar interfaces now receive species, level, and numeric experience
+  directly. Removed reverse-pointer decoding from the calculation; retained
+  decoding explicitly at the existing packed-party callers. Zero-width growth
+  intervals are rejected before division. Display arithmetic and timing remain
+  otherwise unchanged, including Crystal's 64-step bar.
+
+Files modified
+--------------
+- data/growth_rates.c: common native coefficient table.
+- data/growth_rates.h: native coefficient structure, no packed-size contract.
+- engine/pokemon/experience.c: side-effect-free polynomial and explicit inputs.
+- engine/pokemon/experience.h: removed implicit-growth declaration.
+- engine/battle/core.c: reward and bar consumers, explicit numeric bar inputs.
+- engine/battle/core.h: matching bar declaration.
+- engine/items/item_effects.c: Rare Candy uses selected Pokemon species.
+- engine/pokemon/stats_screen.c: summary threshold and bar callers migrated.
+- LOCAL_CHANGELOG.txt: scope, compatibility, and acceptance requirements.
+- Files created/deleted: none. Existing animation/renderer changes preserved;
+  lib/libmobile remains untouched. No build dependency changes or ASM deletion.
+
+Compatibility and limits
+------------------------
+- Growth tables are compile-time content, not serialized save records. No save
+  or link format changed. Existing three-byte party experience and temporary
+  WRAM Pokemon representations remain authoritative outside this calculation.
+- CalcLevel retains its existing packed-party input adapter; removal condition:
+  all remaining callers own native numeric experience and call
+  CalcLevelForSpeciesExp directly. No new temporary bridge introduced.
+- Negative polynomial values at low levels retain Crystal's historical numeric
+  result by adding 16777216. This explicit behavior remains for 1:1 compatibility;
+  it is not applied to positive results or used as a native experience ceiling.
+- Positive polynomial results no longer wrap at 24 bits. Existing authored
+  curves at gameplay levels through 100 and display lookahead 101 fit their
+  existing storage. Larger-level/custom-curve gameplay requires migration of
+  remaining party/save writes before using values outside that boundary.
+- Byte level/growth identifiers, packed party storage, reward accumulation,
+  bar rendering, and the shared base-data cache were not broadly migrated.
+  This completes the calculation/input closure, not native Pokemon persistence.
+
+Validation and stopping point
+-----------------------------
+- Source inspection covered all C/header growth-table and calculation users,
+  their species inputs, coefficient representation, result consumers, and
+  registry references. No live C caller of CalcExpAtLevel remains. Historical
+  ASM/address metadata remains outside this migrated direct-C path.
+- Formula inspection preserves existing GCC thresholds throughout normal
+  gameplay and low-level negative cases; compiler-specific divergence removed.
+  No new runtime regression confirmed; battle rewards, Rare Candy, daycare,
+  summaries, and growth-curve parity still require runtime acceptance.
+- Actual diffs, status, names, and whitespace inspection reviewed. No build,
+  compile, launch, runtime, or test commands executed.
+- Build/runtime validation: not performed.
+- Next coherent dependency closure: migrate reward/level-up temporary Pokemon
+  experience from packed PartyMon bytes to the existing native Pokemon model,
+  tracing party synchronization and save projection before changing ownership.
+  Renderer acceptance and trainer compatibility retirement remain outstanding.
+
+2026-09-09 — Native sprite sizing and numeric level consumers
+============================================================
+
+Completed graphics closure
+--------------------------
+- Native sprite producers now specify authored vertical spans: animation frame
+  pieces and ball icons use one 8x8 tile; trainer pieces retain explicit 8x16
+  pairs. The renderer no longer accepts the emulated LCDC sprite-size flag,
+  guesses a missing span, or applies OAM's low-bit pairing rule to resource IDs.
+- Pixel lookup consumes the record's exact resourceTileId and tileSpan directly.
+  Removed the temporary copied sprite used solely to translate resource identity
+  into the legacy tile field. Full-span bounds and repeat diagnostics remain.
+- Animation frame resource offsets are added in 32 bits and checked before
+  narrowing to the current 16-bit native ID, preventing silent wraparound.
+- Preserved native layer order, trainer/HUD lifetimes, priority, transparency,
+  clipping, and dynamic scene allocations. No return to VRAM/OAM ownership.
+
+Completed gameplay closure
+--------------------------
+- Battle reward and bar level decisions consume their existing numeric bcExp
+  and bExp values directly with the actual Pokemon species.
+- PC/daycare withdrawal calculates level from the native source record before
+  party insertion. The checked legacy transfer remains solely for the packed
+  party destination, not as an input to level calculation.
+- Removed the last three packed-party CalcLevel callers and the adapter itself.
+  All level derivation now enters CalcLevelForSpeciesExp with explicit values.
+  This satisfies the preceding adapter-removal condition; no new bridge added.
+
+Files modified
+--------------
+- engine/battle_anims/core.c: sprite spans, exact resource lookup, offset bounds.
+- engine/battle_anims/core.h: removed pairing flag and independent lookup span.
+- engine/battle_anims/render.c: record-driven lookup/drawing, no size fallback.
+- engine/battle_anims/render.h: removed hardware-size parameter.
+- tools/emu/peanut_sdl.c: host invocation no longer supplies LCDC sprite size.
+- engine/battle/core.c: reward/animation level calculations use numeric values.
+- engine/pokemon/move_mon.c: native withdrawal level derivation.
+- engine/pokemon/experience.c and experience.h: deleted packed-party adapter.
+- LOCAL_CHANGELOG.txt: scope, remaining boundaries, and validation status.
+- Files created/deleted: none. All other existing changes and lib/libmobile
+  modifications preserved. No save format or build dependency changes.
+
+Source review and remaining work
+--------------------------------
+- Inspected all sprite producers, lookup consumers, scene allocation/reset,
+  host draw callback, and declared APIs. Authored animation flips use an 8-pixel
+  piece extent; HUD assets contain four independent ball-icon tiles. The trainer
+  is explicitly built from vertical tile pairs. No pairing-flag users remain.
+- Inspected all level callers and withdrawal transfer paths. Historical ASM
+  metadata remains, but no live C call or definition of CalcLevel remains.
+- Graphics sizing/resource selection is native; the outer frame host still
+  owns scanline scheduling, palette modes, and display enable. Trainer VRAM
+  projections were investigated but not removed: tutorial/menu-return consumers
+  require a separate ownership and lifetime audit.
+- Level calculation no longer consumes packed party records, but reward state,
+  party saves, and temporary UI Pokemon storage remain transitional. Existing
+  CopyMonToTempMon calls are retained for their broader UI/state consumers;
+  removing them is not implied by removing the level adapter.
+- No runtime regressions confirmed or ruled out. Required acceptance includes
+  odd-numbered animation tiles, flips, trainer entrance, party balls, reward
+  levels, PC withdrawal, and daycare withdrawal. Existing sprite lookup failures
+  still log and omit invalid records; no new fallback path introduced.
+- Git status/stat/names, actual diffs, and whitespace inspection reviewed.
+- Build/runtime validation: not performed. No build/run/test commands executed.
+- Next graphics closure: separate the native draw callback's scanline/palette
+  inputs from global emulator state. Next gameplay closure: migrate reward and
+  temporary party experience ownership, tracing UI consumers and serialization.
+  Overall native PC conversion remains partial; no ASM files deleted.

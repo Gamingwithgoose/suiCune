@@ -1009,7 +1009,8 @@ void LoadPinkPage_CalcExpToNextLevel(void) {
     // REG_D = wram->wTempMon.mon.level + 1;
     // FARCALL(aCalcExpAtLevel);
     // RESTORE_REGS;
-    uint32_t xp = CalcExpAtLevel(wram->wTempMon.mon.level + 1);
+    uint32_t xp = CalcExpAtLevelForSpecies(wram->wTempMon.mon.species,
+        wram->wTempMon.mon.level + 1);
     uint32_t cur_xp = (uint32_t)wram->wTempMon.mon.exp[2] + 
         ((uint32_t)wram->wTempMon.mon.exp[1] << 8) +
         ((uint32_t)wram->wTempMon.mon.exp[0] << 16);
@@ -1143,7 +1144,9 @@ static void LoadPinkPage(void){
     // LD_B_A;
     // LD_DE(wTempMonExp + 2);
     // PREDEF(pFillInExpBar);
-    FillInExpBar(coord(11, 16, wram->wTilemap), wram->wTempMon.mon.level, wram->wTempMon.mon.exp + 2);
+    FillInExpBar(coord(11, 16, wram->wTilemap), wram->wTempMon.mon.species,
+        wram->wTempMon.mon.level, ((uint32_t)wram->wTempMon.mon.exp[0] << 16)
+        | ((uint32_t)wram->wTempMon.mon.exp[1] << 8) | wram->wTempMon.mon.exp[2]);
     // hlcoord(10, 16, wTilemap);
     // LD_hl(0x40);  // left exp bar end cap
     *coord(10, 16, wram->wTilemap) = 0x40;

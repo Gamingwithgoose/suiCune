@@ -9,30 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// static int8_t* lBattlePicResizeTempPointer;
-
-// const_def ['?']
-// const ['BGSQUARE_SIX']
-// const ['BGSQUARE_FOUR']
-// const ['BGSQUARE_TWO']
-// const ['BGSQUARE_SEVEN']
-// const ['BGSQUARE_FIVE']
-// const ['BGSQUARE_THREE']
-enum {
-    BGSQUARE_SIX,
-    BGSQUARE_FOUR,
-    BGSQUARE_TWO,
-    BGSQUARE_SEVEN,
-    BGSQUARE_FIVE,
-    BGSQUARE_THREE,
-};
-
-
-struct BGSquare
-{
-    uint8_t w: 4;
-    uint8_t h: 4;
-    const uint8_t* const ptr;
+enum BattlePictureResizeMode {
+    BATTLE_PICTURE_SHOW,
+    BATTLE_PICTURE_ENTER,
+    BATTLE_PICTURE_RETURN,
 };
 
 static void EndBattleBGEffect(struct BattleBGEffect* bc);
@@ -57,7 +37,8 @@ static void BattleBGEffect_BattlerObj_2Row(struct BattleBGEffect* bc);
 static void BattleBGEffect_RemoveMon(struct BattleBGEffect* bc);
 static void BattleBGEffect_EnterMon(struct BattleBGEffect* bc);
 static void BattleBGEffect_ReturnMon(struct BattleBGEffect* bc);
-static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const uint8_t* de);
+static void BattleBGEffect_ResizePicture(struct BattleBGEffect* effect,
+    enum BattleSceneBattlerId battler, enum BattlePictureResizeMode mode);
 static void BattleBGEffect_Surf(struct BattleBGEffect* bc);
 static void BattleBGEffect_Whirlpool(struct BattleBGEffect* bc);
 static void BattleBGEffect_StartWater(struct BattleBGEffect* bc);
@@ -620,49 +601,16 @@ static void BattleBGEffect_HideMon(struct BattleBGEffect* bc) {
 }
 
 static void BattleBGEffect_ShowMon(struct BattleBGEffect* bc) {
-    PEEK("");
-    static const uint8_t PlayerData[] = {
-        0, 0x31, 0,
-        (uint8_t)-1,
-    };
-
-    static const uint8_t EnemyData[] = {
-        3, 0x00, 3,
-        (uint8_t)-1,
-    };
-    // SET_PC(aBattleBGEffect_ShowMon);
-    // CALL(aBGEffect_CheckFlyDigStatus);
-    // IF_Z goto not_flying;
     if(BGEffect_CheckFlyDigStatus(bc)) {
-        // CALL(aEndBattleBGEffect);
         EndBattleBGEffect(bc);
-        // RET;
         return;
     }
-
-// not_flying:
-    // CALL(aBGEffect_CheckBattleTurn);
-    // IF_NZ goto player_side;
-    // LD_DE(mBattleBGEffect_ShowMon_EnemyData);
-    // goto got_pointer;
-
-// player_side:
-    // LD_DE(mBattleBGEffect_ShowMon_PlayerData);
-
-// got_pointer:
-    // LD_A_E;
-    // LD_addr_A(wBattlePicResizeTempPointer);
-    // LD_A_D;
-    // LD_addr_A(wBattlePicResizeTempPointer + 1);
     enum BattleSceneBattlerId battler = BGEffect_CheckBattleTurn(bc) == 0
         ? BATTLE_SCENE_BATTLER_OPPONENT : BATTLE_SCENE_BATTLER_PLAYER;
-    const uint8_t* de = battler == BATTLE_SCENE_BATTLER_OPPONENT ? EnemyData : PlayerData;
     log_runtime_event("ANIMATION", "named boundary=hit-presentation-show battler=%s",
         battler == BATTLE_SCENE_BATTLER_OPPONENT ? "opponent" : "player");
     SetBattleSceneBattlerPresentationVisible(battler, true);
-    // CALL(aBattleBGEffect_RunPicResizeScript);
-    BattleBGEffect_RunPicResizeScript(bc, de);
-    // RET;
+    BattleBGEffect_ResizePicture(bc, battler, BATTLE_PICTURE_SHOW);
 }
 
 static void BattleBGEffect_BattlerObj_1Row(struct BattleBGEffect* bc) {
@@ -949,322 +897,101 @@ anon_dw:
 }
 
 static void BattleBGEffect_EnterMon(struct BattleBGEffect* bc) {
-    static const uint8_t PlayerData[] = {
-        2, 0x31, 2,
-        1, 0x31, 1,
-        0, 0x31, 0,
-        (uint8_t)-1,
-    };
-
-    static const uint8_t EnemyData[] = {
-        5, 0x00, 5,
-        4, 0x00, 4,
-        3, 0x00, 3,
-        (uint8_t)-1,
-    };
-    // SET_PC(aBattleBGEffect_EnterMon);
-    // CALL(aBGEffect_CheckBattleTurn);
-    // IF_NZ goto player_turn;
-    // LD_DE(mBattleBGEffect_EnterMon_EnemyData);
-    // goto okay;
-
-// player_turn:
-    // LD_DE(mBattleBGEffect_EnterMon_PlayerData);
-
-// okay:
-    // LD_A_E;
-    // LD_addr_A(wBattlePicResizeTempPointer);
-    // LD_A_D;
-    // LD_addr_A(wBattlePicResizeTempPointer + 1);
-    bool opponentTurn = BGEffect_CheckBattleTurn(bc) == 0;
-    const uint8_t* de = opponentTurn ? EnemyData : PlayerData;
+    enum BattleSceneBattlerId battler = BGEffect_CheckBattleTurn(bc) == 0
+        ? BATTLE_SCENE_BATTLER_OPPONENT : BATTLE_SCENE_BATTLER_PLAYER;
     log_runtime_event("ANIMATION", "named boundary=send-out-enter-mon battler=%s",
-        opponentTurn ? "opponent" : "player");
-    // CALL(aBattleBGEffect_RunPicResizeScript);
-    BattleBGEffect_RunPicResizeScript(bc, de);
-    // RET;
+        battler == BATTLE_SCENE_BATTLER_OPPONENT ? "opponent" : "player");
+    BattleBGEffect_ResizePicture(bc, battler, BATTLE_PICTURE_ENTER);
 }
 
 static void BattleBGEffect_ReturnMon(struct BattleBGEffect* bc) {
-// PlayerData:
-    static const uint8_t PlayerData[] = {
-        0, 0x31, 0,
-        -2, 0x66, 0,
-        1, 0x31, 1,
-        -2, 0x44, 1,
-        2, 0x31, 2,
-        -2, 0x22, 2,
-        -3, 0x00, 0,
-        -1,
-    };
-
-// EnemyData:
-    static const uint8_t EnemyData[] = {
-        3, 0x00, 3,
-        -2, 0x77, 3,
-        4, 0x00, 4,
-        -2, 0x55, 4,
-        5, 0x00, 5,
-        -2, 0x33, 5,
-        -3, 0x00, 0,
-        -1,
-    };
-
-    // SET_PC(aBattleBGEffect_ReturnMon);
-    // CALL(aBGEffect_CheckBattleTurn);
-    // IF_NZ goto player_turn;
-    // LD_DE(mBattleBGEffect_ReturnMon_EnemyData);
-    // goto okay;
-
-// player_turn:
-    // LD_DE(mBattleBGEffect_ReturnMon_PlayerData);
-
-// okay:
-    // LD_A_E;
-    // LD_addr_A(wBattlePicResizeTempPointer);
-    // LD_A_D;
-    // LD_addr_A(wBattlePicResizeTempPointer + 1);
-    const uint8_t* de = (BGEffect_CheckBattleTurn(bc) == 0)? EnemyData: PlayerData;
-    // CALL(aBattleBGEffect_RunPicResizeScript);
-    BattleBGEffect_RunPicResizeScript(bc, de);
-    // RET;
+    enum BattleSceneBattlerId battler = BGEffect_CheckBattleTurn(bc) == 0
+        ? BATTLE_SCENE_BATTLER_OPPONENT : BATTLE_SCENE_BATTLER_PLAYER;
+    BattleBGEffect_ResizePicture(bc, battler, BATTLE_PICTURE_RETURN);
 }
 
-static void BattleBGEffect_RunPicResizeScript(struct BattleBGEffect* bc, const uint8_t* de) {
-// BGSquares:
+static void BattleBGEffect_ResizePicture(struct BattleBGEffect* effect,
+    enum BattleSceneBattlerId battler, enum BattlePictureResizeMode mode) {
+    // Crystal's resize art samples these rows and columns; it does not scale
+    // individual tiles. The same samples apply to both source axes.
+    static const uint8_t PlayerFull[] = {0, 1, 2, 3, 4, 5};
+    static const uint8_t PlayerMedium[] = {0, 2, 3, 5};
+    static const uint8_t PlayerSmall[] = {0, 5};
+    static const uint8_t OpponentFull[] = {0, 1, 2, 3, 4, 5, 6};
+    static const uint8_t OpponentMedium[] = {0, 1, 3, 5, 6};
+    static const uint8_t OpponentSmall[] = {0, 3, 6};
+    static const struct {
+        const uint8_t* samples;
+        uint8_t size;
+        int16_t x, y;
+    } Patterns[BATTLE_SCENE_BATTLER_COUNT][3] = {
+        [BATTLE_SCENE_BATTLER_PLAYER] = {
+            {PlayerFull, lengthof(PlayerFull), 16, 48},
+            {PlayerMedium, lengthof(PlayerMedium), 24, 64},
+            {PlayerSmall, lengthof(PlayerSmall), 32, 80},
+        },
+        [BATTLE_SCENE_BATTLER_OPPONENT] = {
+            {OpponentFull, lengthof(OpponentFull), 96, 0},
+            {OpponentMedium, lengthof(OpponentMedium), 104, 16},
+            {OpponentSmall, lengthof(OpponentSmall), 112, 32},
+        },
+    };
+    enum ResizeAction { RESIZE_PLACE, RESIZE_CLEAR, RESIZE_WAIT };
+    struct ResizeStage { enum ResizeAction action; uint8_t pattern; };
+    static const struct ResizeStage Show[] = {{RESIZE_PLACE, 0}};
+    static const struct ResizeStage Enter[] = {
+        {RESIZE_PLACE, 2}, {RESIZE_PLACE, 1}, {RESIZE_PLACE, 0},
+    };
+    static const struct ResizeStage Return[] = {
+        {RESIZE_PLACE, 0}, {RESIZE_CLEAR, 0},
+        {RESIZE_PLACE, 1}, {RESIZE_CLEAR, 0},
+        {RESIZE_PLACE, 2}, {RESIZE_CLEAR, 0}, {RESIZE_WAIT, 0},
+    };
+    const struct ResizeStage* stages;
+    size_t stageCount;
+    switch(mode) {
+        case BATTLE_PICTURE_SHOW: stages = Show; stageCount = lengthof(Show); break;
+        case BATTLE_PICTURE_ENTER: stages = Enter; stageCount = lengthof(Enter); break;
+        case BATTLE_PICTURE_RETURN: stages = Return; stageCount = lengthof(Return); break;
+        default: abort();
+    }
+    if((unsigned)battler >= BATTLE_SCENE_BATTLER_COUNT)
+        abort();
 
-    // bgsquare: MACRO
-    //     dn \1, \2
-    //     dw \3
-    // ENDM
-    // bgsquare ['6', '6', '.SixBySix']
-    // bgsquare ['4', '4', '.FourByFour']
-    // bgsquare ['2', '2', '.TwoByTwo']
-    // bgsquare ['7', '7', '.SevenBySeven']
-    // bgsquare ['5', '5', '.FiveByFive']
-    // bgsquare ['3', '3', '.ThreeByThree']
-    static const uint8_t SixBySix[] = {
-        0x00, 0x06, 0x0c, 0x12, 0x18, 0x1e,
-        0x01, 0x07, 0x0d, 0x13, 0x19, 0x1f,
-        0x02, 0x08, 0x0e, 0x14, 0x1a, 0x20,
-        0x03, 0x09, 0x0f, 0x15, 0x1b, 0x21,
-        0x04, 0x0a, 0x10, 0x16, 0x1c, 0x22,
-        0x05, 0x0b, 0x11, 0x17, 0x1d, 0x23,
-    };
-    static const uint8_t FourByFour[] = {
-        0x00, 0x0c, 0x12, 0x1e,
-        0x02, 0x0e, 0x14, 0x20,
-        0x03, 0x0f, 0x15, 0x21,
-        0x05, 0x11, 0x17, 0x23,
-    };
-    static const uint8_t TwoByTwo[] = {
-        0x00, 0x1e,
-        0x05, 0x23,
-    };
-    static const uint8_t SevenBySeven[] = {
-        0x00, 0x07, 0x0e, 0x15, 0x1c, 0x23, 0x2a,
-        0x01, 0x08, 0x0f, 0x16, 0x1d, 0x24, 0x2b,
-        0x02, 0x09, 0x10, 0x17, 0x1e, 0x25, 0x2c,
-        0x03, 0x0a, 0x11, 0x18, 0x1f, 0x26, 0x2d,
-        0x04, 0x0b, 0x12, 0x19, 0x20, 0x27, 0x2e,
-        0x05, 0x0c, 0x13, 0x1a, 0x21, 0x28, 0x2f,
-        0x06, 0x0d, 0x14, 0x1b, 0x22, 0x29, 0x30,
-    };
-    static const uint8_t FiveByFive[] = {
-        0x00, 0x07, 0x15, 0x23, 0x2a,
-        0x01, 0x08, 0x16, 0x24, 0x2b,
-        0x03, 0x0a, 0x18, 0x26, 0x2d,
-        0x05, 0x0c, 0x1a, 0x28, 0x2f,
-        0x06, 0x0d, 0x1b, 0x29, 0x30,
-    };
-    
-    static const uint8_t ThreeByThree[] = {
-        0x00, 0x15, 0x2a,
-        0x03, 0x18, 0x2d,
-        0x06, 0x1b, 0x30,
-    };
-
-    static const struct BGSquare BGSquares[] = {
-        [BGSQUARE_SIX]   = {.w = 6, .h = 6, .ptr=SixBySix},
-        [BGSQUARE_FOUR]  = {.w = 4, .h = 4, .ptr=FourByFour},
-        [BGSQUARE_TWO]   = {.w = 2, .h = 2, .ptr=TwoByTwo},
-        [BGSQUARE_SEVEN] = {.w = 7, .h = 7, .ptr=SevenBySeven},
-        [BGSQUARE_FIVE]  = {.w = 5, .h = 5, .ptr=FiveByFive},
-        [BGSQUARE_THREE] = {.w = 3, .h = 3, .ptr=ThreeByThree},
-    };
-
-// Coords:
-
-    // dwcoord ['2', '6'];
-    // dwcoord ['3', '8'];
-    // dwcoord ['4', '10'];
-    // dwcoord ['12', '0'];
-    // dwcoord ['13', '2'];
-    // dwcoord ['14', '4'];
-    static const uint16_t Coords[] = {
-        coord(2, 6, 0),
-        coord(3, 8, 0),
-        coord(4, 10, 0),
-        coord(12, 0, 0),
-        coord(13, 2, 0),
-        coord(14, 4, 0),
-    };
-
-    // SET_PC(aBattleBGEffect_RunPicResizeScript);
-    // CALL(aBattleBGEffects_AnonJumptable);
-    // uint8_t index = gb_read(REG_BC + BG_EFFECT_STRUCT_JT_INDEX);
-
-// anon_dw:
-    switch(bc->jumptableIndex){
-        // if (index == 0) goto zero;
-        case 0: {
-        zero:
-            // LD_HL(BG_EFFECT_STRUCT_PARAM);
-            // ADD_HL_BC;
-            // LD_E_hl;
-            // LD_D(0x0);
-            // INC_hl;
-            // LD_A_addr(wBattlePicResizeTempPointer);
-            // LD_L_A;
-            // LD_A_addr(wBattlePicResizeTempPointer + 1);
-            // LD_H_A;
-            // ADD_HL_DE;
-            // ADD_HL_DE;
-            // ADD_HL_DE;
-            const uint8_t* hl2 = de + (3 * bc->param++);
-            // LD_A_hl;
-            // CP_A(0xff);
-            // IF_Z goto end;
-            if(*hl2 == 0xff){
-                goto end;
+    // Each displayed stage lasts four effect updates. Clearing advances
+    // immediately in the same update; the final empty recall stage still waits.
+    switch(effect->jumptableIndex) {
+        case 0:
+            while((size_t)effect->param < stageCount) {
+                const struct ResizeStage* stage = &stages[effect->param++];
+                if(stage->action == RESIZE_CLEAR) {
+                    ClearBattleSceneBattlerPresentationTiles(battler);
+                    continue;
+                }
+                if(stage->action == RESIZE_PLACE) {
+                    size_t pattern = stage->pattern;
+                    if(pattern >= lengthof(Patterns[0]))
+                        abort();
+                    PlaceBattleSceneBattlerPresentationSamples(battler,
+                        Patterns[battler][pattern].x, Patterns[battler][pattern].y,
+                        Patterns[battler][pattern].size, Patterns[battler][pattern].size,
+                        Patterns[battler][pattern].samples, Patterns[battler][pattern].samples);
+                }
+                BattleBGEffects_IncAnonJumptableIndex(effect);
+                return;
             }
-            // CP_A(0xfe);
-            // IF_Z goto clear;
-            if(*hl2 == 0xfe) {
-            // clear:
-                // CALL(aBattleBGEffect_RunPicResizeScript_ClearBox);
-            // ClearBox:
-                //  get dims
-                // PUSH_BC;
-                // INC_HL;
-                hl2++;
-                // LD_A_hli;
-                // LD_B_A;
-                // AND_A(0xf);
-                // LD_C_A;
-                // LD_A_B;
-                // SWAP_A;
-                // AND_A(0xf);
-                // LD_B_A;
-                hl2++;
-                //  get coords
-                // LD_E_hl;
-                // LD_D(0);
-                // LD_HL(mBattleBGEffect_RunPicResizeScript_Coords);
-                // ADD_HL_DE;
-                // ADD_HL_DE;
-                // LD_A_hli;
-                // LD_H_hl;
-                // LD_L_A;
-                // REG_HL = Coords[*hl2];
-                enum BattleSceneBattlerId battler = *hl2 < 3
-                    ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT;
-                ClearBattleSceneBattlerPresentationTiles(battler);
-                // POP_BC;
-                // RET;
-                goto zero;
-            }
-            // CP_A(0xfd);
-            // IF_Z goto skip;
-            // CALL(aBattleBGEffect_RunPicResizeScript_PlaceGraphic);
-            if(*hl2 != 0xfd)
-            {
-            // PlaceGraphic:
-
-                //  get dims
-                // PUSH_BC;
-                // PUSH_HL;
-                // LD_E_hl;
-                uint8_t e = *hl2;
-                // LD_D(0);
-                // LD_HL(mBattleBGEffect_RunPicResizeScript_BGSquares);
-                // ADD_HL_DE;
-                // ADD_HL_DE;
-                // ADD_HL_DE;
-                // LD_A_hli;
-                // LD_B_A;
-                // AND_A(0xf);
-                // LD_C_A;
-                uint8_t w = BGSquares[e].w;
-                // LD_A_B;
-                // SWAP_A;
-                // AND_A(0xf);
-                // LD_B_A;
-                uint8_t h = BGSquares[e].h;
-                //  store pointer
-                // LD_E_hl;
-                // INC_HL;
-                // LD_D_hl;
-                const uint8_t* de = BGSquares[e].ptr;
-                //  get byte
-                // POP_HL;
-                // INC_HL;
-                // LD_A_hli;
-                // LD_addr_A(wBattlePicResizeTempBaseTileID);
-                BattleAnimationEffectScratchState()->picResizeBaseTileId = hl2[1];
-                //  get coord
-                // PUSH_DE;
-                // LD_E_hl;
-                // LD_D(0);
-                // LD_HL(mBattleBGEffect_RunPicResizeScript_Coords);
-                // ADD_HL_DE;
-                // ADD_HL_DE;
-                // LD_A_hli;
-                // LD_H_hl;
-                // LD_L_A;
-                // REG_HL = Coords[hl2[2]];
-                enum BattleSceneBattlerId battler = hl2[2] < 3
-                    ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT;
-                uint8_t imageTiles[7 * 7];
-                if((size_t)w * h > lengthof(imageTiles))
-                    abort();
-                for(size_t i = 0; i < (size_t)w * h; i++)
-                    imageTiles[i] = de[i];
-                uint8_t coordIndex = hl2[2];
-                PlaceBattleSceneBattlerPresentationLegacyPattern(battler,
-                    (Coords[coordIndex] % SCREEN_WIDTH) * TILE_WIDTH,
-                    (Coords[coordIndex] / SCREEN_WIDTH) * TILE_WIDTH,
-                    w, h, imageTiles);
-                // POP_BC;
-                // RET;
-            }
-
-        // skip:
-            // CALL(aBattleBGEffects_IncAnonJumptableIndex);
-            BattleBGEffects_IncAnonJumptableIndex(bc);
-            // RET;
+            EndBattleBGEffect(effect);
             return;
-        } return;
-        // if (index == 1) return BattleBGEffects_IncAnonJumptableIndex();
-        // if (index == 2) return BattleBGEffects_IncAnonJumptableIndex();
-        case 1: return BattleBGEffects_IncAnonJumptableIndex(bc);
-        case 2: return BattleBGEffects_IncAnonJumptableIndex(bc);
-        // if (index == 3) goto restart;
-        case 3: {
-        // restart:
-            // LD_HL(BG_EFFECT_STRUCT_JT_INDEX);
-            // ADD_HL_BC;
-            // LD_hl(0x0);
-            bc->jumptableIndex = 0x0;
-            // RET;
-        } return;
-        // if (index == 4) goto end;
-        case 4: {
-        end:
-            // CALL(aEndBattleBGEffect);
-            EndBattleBGEffect(bc);
-            // RET;
-        } return;
+        case 1:
+        case 2:
+            BattleBGEffects_IncAnonJumptableIndex(effect);
+            return;
+        case 3:
+            effect->jumptableIndex = 0;
+            return;
+        case 4:
+            EndBattleBGEffect(effect);
+            return;
     }
 }
 

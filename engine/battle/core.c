@@ -157,7 +157,7 @@ static uint16_t BoostExp(uint16_t exp);
 
 static void PrepareBattleMonNicknameText(struct TextCmdState* state);
 
-static uint8_t CalcExpBar(uint8_t b, const uint8_t* de);
+static uint8_t CalcExpBar(SpeciesId species, uint8_t level, uint32_t experience);
 static void PlaceExpBar(uint8_t* hl, uint8_t b);
 static void GetBattleMonBackpic_DoAnim(void (*hl)(void));
 static void GetEnemyMonFrontpic_DoAnim(void (*hl)(void));
@@ -7191,7 +7191,9 @@ uint8_t DrawPlayerHUD(void){
     // LD_A_addr(wTempMonLevel);
     // LD_B_A;
     // CALL(aFillInExpBar);
-    FillInExpBar(coord(10, 11, wram->wTilemap), wram->wTempMon.mon.level, de->mon.exp + 2);
+    FillInExpBar(coord(10, 11, wram->wTilemap), de->mon.species,
+        wram->wTempMon.mon.level, ((uint32_t)de->mon.exp[0] << 16)
+        | ((uint32_t)de->mon.exp[1] << 8) | de->mon.exp[2]);
     // POP_DE;
     // RET;
     return e;
@@ -11157,7 +11159,7 @@ void GiveExperiencePoints(void){
         // PUSH_BC;
         // LD_D(MAX_LEVEL);
         // CALLFAR(aCalcExpAtLevel);
-        uint32_t maxExp = CalcExpAtLevel(MAX_LEVEL);
+        uint32_t maxExp = CalcExpAtLevelForSpecies(bc->mon.species, MAX_LEVEL);
         // POP_BC;
         // LD_HL(MON_EXP + 2);
         // ADD_HL_BC;
@@ -11196,7 +11198,7 @@ void GiveExperiencePoints(void){
         // PREDEF(pCopyMonToTempMon);
         CopyMonToTempMon();
         // CALLFAR(aCalcLevel);
-        uint8_t d = CalcLevel(&wram->wTempMon);
+        uint8_t d = CalcLevelForSpeciesExp(bc->mon.species, bcExp);
         // POP_BC;
         // LD_HL(MON_LEVEL);
         // ADD_HL_BC;
@@ -11597,7 +11599,9 @@ void AnimateExpBar(uint16_t exp){
     // PUSH_DE;
     // LD_DE(wTempMonExp + 2);
     // CALL(aCalcExpBar);
-    uint8_t b = CalcExpBar(wram->wTempMon.mon.level, wram->wTempMon.mon.exp + 2);
+    uint8_t b = CalcExpBar(wram->wTempMon.mon.species, wram->wTempMon.mon.level,
+        ((uint32_t)wram->wTempMon.mon.exp[0] << 16)
+        | ((uint32_t)wram->wTempMon.mon.exp[1] << 8) | wram->wTempMon.mon.exp[2]);
     // PUSH_BC;
     uint32_t bExp = (wram->wTempMon.mon.exp[0] << 16) | (wram->wTempMon.mon.exp[1] << 8) | (wram->wTempMon.mon.exp[2]);
     // LD_HL(wTempMonExp + 2);
@@ -11628,7 +11632,7 @@ void AnimateExpBar(uint16_t exp){
 // NoOverflow:
     // LD_D(MAX_LEVEL);
     // CALLFAR(aCalcExpAtLevel);
-    uint32_t maxExp = CalcExpAtLevel(MAX_LEVEL);
+    uint32_t maxExp = CalcExpAtLevelForSpecies(wram->wTempMon.mon.species, MAX_LEVEL);
     // LDH_A_addr(hProduct + 1);
     // LD_B_A;
     // LDH_A_addr(hProduct + 2);
@@ -11660,7 +11664,7 @@ void AnimateExpBar(uint16_t exp){
 // AlreadyAtMaxExp:
     // CALLFAR(aCalcLevel);
     // LD_A_D;
-    uint8_t d = CalcLevel(&wram->wTempMon);
+    uint8_t d = CalcLevelForSpeciesExp(wram->wTempMon.mon.species, bExp);
     // POP_BC;
     // POP_DE;
     // LD_D_A;
@@ -11724,7 +11728,9 @@ void AnimateExpBar(uint16_t exp){
     // LD_B_D;
     // LD_DE(wTempMonExp + 2);
     // CALL(aCalcExpBar);
-    uint8_t c = CalcExpBar(d, wram->wTempMon.mon.exp + 2);
+    uint8_t c = CalcExpBar(wram->wTempMon.mon.species, d,
+        ((uint32_t)wram->wTempMon.mon.exp[0] << 16)
+        | ((uint32_t)wram->wTempMon.mon.exp[1] << 8) | wram->wTempMon.mon.exp[2]);
     // LD_A_B;
     // POP_BC;
     // LD_C_A;
@@ -12029,121 +12035,23 @@ void HandleSafariAngerEatingStatus(void){
     }
 }
 
-void FillInExpBar(uint8_t* hl, uint8_t b, const uint8_t* de) {
-    uint8_t pct = CalcExpBar(b, de);
-    PlaceExpBar(hl + 7, pct);
+void FillInExpBar(uint8_t* tiles, SpeciesId species, uint8_t level, uint32_t experience) {
+    PlaceExpBar(tiles + 7, CalcExpBar(species, level, experience));
 }
 
-//  Calculate the percent exp between this level and the next
-static uint8_t CalcExpBar(uint8_t b, const uint8_t* de){
-//  Level in b
-    // PUSH_DE;
-    // LD_D_B;
-    // PUSH_DE;
-    // CALLFAR(aCalcExpAtLevel);
-    uint32_t exp = CalcExpAtLevel(b);
-    // POP_DE;
-//  exp at current level gets pushed to the stack
-    // LD_HL(hMultiplicand);
-    // LD_A_hli;
-    // PUSH_AF;
-    // LD_A_hli;
-    // PUSH_AF;
-    // LD_A_hl;
-    // PUSH_AF;
-//  next level
-    // INC_D;
-    // CALLFAR(aCalcExpAtLevel);
-    uint32_t next = CalcExpAtLevel(b + 1);
-//  back up the next level exp, and subtract the two levels
-    // LD_HL(hMultiplicand + 2);
-    // LD_A_hl;
-    // LDH_addr_A(hMathBuffer + 2);
-    // POP_BC;
-    // SUB_A_B;
-    // LD_hld_A;
-    // LD_A_hl;
-    // LDH_addr_A(hMathBuffer + 1);
-    // POP_BC;
-    // SBC_A_B;
-    // LD_hld_A;
-    // LD_A_hl;
-    // LDH_addr_A(hMathBuffer);
-    // POP_BC;
-    // SBC_A_B;
-    // LD_hl_A;
-    // POP_DE;
-
-    // LD_HL(hMultiplicand + 1);
-    // LD_A_hli;
-    // PUSH_AF;
-    // LD_A_hl;
-    // PUSH_AF;
-    uint32_t l = next - exp;
-
-//  get the amount of exp remaining to the next level
-    uint32_t cur_exp = (de[0])
-        + (de[-1] << 8)
-        + (de[-2] << 16);
-
-    uint32_t h = cur_exp - exp;
-    // LD_A_de;
-    // DEC_DE;
-    // LD_C_A;
-    // LDH_A_addr(hMathBuffer + 2);
-    // SUB_A_C;
-    // LD_hld_A;
-    // LD_A_de;
-    // DEC_DE;
-    // LD_B_A;
-    // LDH_A_addr(hMathBuffer + 1);
-    // SBC_A_B;
-    // LD_hld_A;
-    // LD_A_de;
-    // LD_C_A;
-    // LDH_A_addr(hMathBuffer);
-    // SBC_A_C;
-    // LD_hld_A;
-    // XOR_A_A;
-    // LD_hl_A;
-    // LD_A(64);
-    // LDH_addr_A(hMultiplier);
-    // CALL(aMultiply);
-    // POP_AF;
-    // LD_C_A;
-    // POP_AF;
-    // LD_B_A;
-
-// loop:
-    // LD_A_B;
-    // AND_A_A;
-    // IF_Z goto done;
-    // SRL_B;
-    // RR_C;
-    // LD_HL(hProduct);
-    // SRL_hl;
-    // INC_HL;
-    // RR_hl;
-    // INC_HL;
-    // RR_hl;
-    // INC_HL;
-    // RR_hl;
-    // goto loop;
-
-
-// done:
-    // LD_A_C;
-    // LDH_addr_A(hDivisor);
-    // LD_B(4);
-    // CALL(aDivide);
-    // LDH_A_addr(hQuotient + 3);
-    // LD_B_A;
-    // LD_A(0x40);
-    // SUB_A_B;
-    // LD_B_A;
-    // RET;
-
-    return (uint8_t)((64 * h) / l);
+// Crystal displays progress in 64 steps. Packed experience decoding belongs
+// to the callers that still own legacy party records, not the calculation.
+static uint8_t CalcExpBar(SpeciesId species, uint8_t level, uint32_t experience){
+    uint32_t currentThreshold = CalcExpAtLevelForSpecies(species, level);
+    uint32_t nextThreshold = CalcExpAtLevelForSpecies(species, level + 1);
+    uint32_t span = nextThreshold - currentThreshold;
+    uint32_t earned = experience - currentThreshold;
+    if(span == 0) {
+        log_runtime_event("ERROR", "invalid experience interval species=%u level=%u",
+            (unsigned)species, (unsigned)level);
+        abort();
+    }
+    return (uint8_t)((64 * earned) / span);
 }
 
 static void PlaceExpBar(uint8_t* hl, uint8_t b){

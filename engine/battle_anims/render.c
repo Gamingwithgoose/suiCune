@@ -9,8 +9,8 @@ static void RenderBattler(const struct BattleSceneRenderLine* line,
         const struct BattleSceneBattlerTile* tile = &battler->tiles[tileIndex];
         if(tile->masked || tile->imageTile >= battler->pixelTileCount)
             continue;
-        int16_t y = tile->y + battler->presentationOffsetY - BattleSceneVerticalOffsetForLine(line->line);
-        int16_t x = tile->x + battler->presentationOffsetX - BattleSceneHorizontalOffsetForLine(line->line);
+        int32_t y = (int32_t)tile->y + battler->presentationOffsetY - BattleSceneVerticalOffsetForLine(line->line);
+        int32_t x = (int32_t)tile->x + battler->presentationOffsetX - BattleSceneHorizontalOffsetForLine(line->line);
         int py = line->line - y;
         if(py < 0 || py >= TILE_WIDTH)
             continue;
@@ -51,7 +51,7 @@ void RenderBattleSceneBattlers(const struct BattleSceneRenderLine* line) {
 }
 
 void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
-    bool largeSprites, BattleSceneSpriteDrawFn drawSprite, void* context) {
+    BattleSceneSpriteDrawFn drawSprite, void* context) {
     if(line == NULL || drawSprite == NULL)
         return;
     size_t count;
@@ -61,23 +61,14 @@ void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
             const struct BattleAnimationSprite* sprite = &sprites[index - 1];
             if(sprite->layer != layer)
                 continue;
-            struct BattleAnimationSprite pixelSource = *sprite;
-            // Only records created from legacy OAM frame data use the 8x16
-            // low-bit pairing rule. HUD, trainer, and other native resource
-            // identities remain exact even while the host is in 8x16 mode.
-            pixelSource.tileId = sprite->resourceTileId;
-            if(largeSprites && sprite->legacyOamTilePair)
-                pixelSource.tileId &= 0xfffe;
-            size_t tileSpan = sprite->tileSpan != 0 ? sprite->tileSpan
-                : (largeSprites ? 2 : 1);
-            const uint8_t* tilePixels = BattleAnimationSpritePixels(&pixelSource, tileSpan);
+            const uint8_t* tilePixels = BattleAnimationSpritePixels(sprite);
             // Never let the legacy host fall back to VRAM after a failed
             // native lookup; the incomplete record is omitted for this frame.
             if(tilePixels == NULL)
                 continue;
             drawSprite(context, line->pixels, line->priority, sprite->yCoord,
                 sprite->xCoord, sprite->tileId, sprite->attributes,
-                tileSpan, tilePixels);
+                sprite->tileSpan, tilePixels);
         }
     }
 }

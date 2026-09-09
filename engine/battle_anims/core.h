@@ -62,7 +62,6 @@ struct BattleAnimationEffectScratchState {
     uint8_t sineOffset;
     uint8_t sineAmplitude;
     uint8_t sineTimer;
-    uint8_t picResizeBaseTileId;
 };
 
 struct BattleAnimationSprite {
@@ -71,18 +70,14 @@ struct BattleAnimationSprite {
     int16_t yCoord;
     int16_t xCoord;
     uint16_t tileId;
-    // Native resource identity is distinct from the legacy tile number still
-    // projected to the transitional object host. Only animation OAM records
-    // carry the old 8x16 pairing rule across that boundary.
+    // Exact native resource identity, independent of host sprite-size modes.
     uint16_t resourceTileId;
     uint8_t attributes;
     uint8_t resourceKind;
     uint8_t category;
     uint8_t layer;
-    // Zero retains the authored object-frame size selected by the transition
-    // host. Native scene resources may declare their semantic tile span.
+    // Explicit vertical tile count. Producers specify the authored size.
     uint8_t tileSpan;
-    bool legacyOamTilePair;
 };
 
 enum {
@@ -171,8 +166,8 @@ struct BattleSceneBattlerView {
     bool presentationClipEnabled;
     int16_t presentationClipX;
     int16_t presentationClipY;
-    uint8_t presentationClipWidth;
-    uint8_t presentationClipHeight;
+    uint16_t presentationClipWidth;
+    uint16_t presentationClipHeight;
 };
 
 struct BattleAnimationTileBinding {
@@ -214,20 +209,16 @@ void ClearBattleSceneBattlerPresentationTiles(enum BattleSceneBattlerId battler)
 void ClearBattleSceneBattlerRegion(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height);
 void ClearBattleSceneBattlerPresentationMasks(void);
-void PlaceBattleSceneBattlerPattern(enum BattleSceneBattlerId battler,
+void PlaceBattleSceneBattlerPresentationSamples(enum BattleSceneBattlerId battler,
     int16_t x, int16_t y, uint8_t width, uint8_t height,
-    const uint8_t* imageTiles);
-void PlaceBattleSceneBattlerPresentationLegacyPattern(enum BattleSceneBattlerId battler,
-    int16_t x, int16_t y, uint8_t width, uint8_t height,
-    const uint8_t* imageTiles);
+    const uint8_t* sourceColumns, const uint8_t* sourceRows);
 void ClearBattleSceneBattlerPresentationPlacements(void);
 const struct BattleSceneBattlerView* BattleSceneBattler(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerBaseImage(enum BattleSceneBattlerId battler);
 void RestoreBattleSceneBattlerPlacement(enum BattleSceneBattlerId battler);
 void ClearBattleSceneBattlers(void);
 void BattleSceneDiagnosticSnapshot(const char* reason);
-const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite,
-    size_t tileSpan);
+const uint8_t* BattleAnimationSpritePixels(const struct BattleAnimationSprite* sprite);
 struct BattleAnimationCommandState* BattleAnimationCommandState(void);
 uint8_t BattleAnimationParameterGet(void);
 void BattleAnimationParameterSet(uint8_t parameter);

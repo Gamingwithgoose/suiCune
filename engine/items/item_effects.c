@@ -2061,7 +2061,7 @@ void RareCandyEffect(void){
     // PUSH_DE;
     // LD_D_A;
     // FARCALL(aCalcExpAtLevel);
-    uint32_t exp = CalcExpAtLevel(wram->wCurPartyLevel);
+    uint32_t exp = CalcExpAtLevelForSpecies(hl->mon.species, wram->wCurPartyLevel);
 
     // POP_DE;
     // LD_A(MON_EXP);

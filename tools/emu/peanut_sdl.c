@@ -1227,8 +1227,7 @@ void gb_draw_line(void) {
                 gb.oam[4 * spriteIndex + 2], gb.oam[4 * spriteIndex + 3], NULL);
         }
 
-        RenderBattleSceneSprites(&battleLine, (gb.gb_reg.LCDC & LCDC_OBJ_SIZE) != 0,
-            DrawNativeBattleSceneSprite, NULL);
+        RenderBattleSceneSprites(&battleLine, DrawNativeBattleSceneSprite, NULL);
     }
 
     gb.display.lcd_draw_line(pixels, gb.gb_reg.LY);

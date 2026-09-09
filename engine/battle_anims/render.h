@@ -24,6 +24,6 @@ typedef void (*BattleSceneSpriteDrawFn)(void* context, uint8_t* pixels,
 
 void RenderBattleSceneBattlers(const struct BattleSceneRenderLine* line);
 void RenderBattleSceneSprites(const struct BattleSceneRenderLine* line,
-    bool largeSprites, BattleSceneSpriteDrawFn drawSprite, void* context);
+    BattleSceneSpriteDrawFn drawSprite, void* context);
 
 #endif

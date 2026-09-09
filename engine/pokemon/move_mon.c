@@ -698,14 +698,19 @@ bool SendGetMonIntoFromBox(uint8_t param){
     uint8_t* de_ot = NULL;
     struct BoxMon legacyTransfer;
     struct NativeBoxMon nativeTransfer;
+    uint8_t withdrawalLevel = 0;
     switch(param) {
     case PC_WITHDRAW:
         if(!ConvertNativeBoxMonToLegacy(&legacyTransfer, &box.mons[wram->wCurPartyMon]))
             return CloseSRAM_And_SetCarryFlag(&box);
+        withdrawalLevel = CalcLevelForSpeciesExp(box.mons[wram->wCurPartyMon].species,
+            box.mons[wram->wCurPartyMon].exp);
         break;
     case DAY_CARE_WITHDRAW:
         if(!ConvertNativeBoxMonToLegacy(&legacyTransfer, &gPokemon.breedMon1))
             return CloseSRAM_And_SetCarryFlag(&box);
+        withdrawalLevel = CalcLevelForSpeciesExp(gPokemon.breedMon1.species,
+            gPokemon.breedMon1.exp);
         break;
     case PC_DEPOSIT:
     case DAY_CARE_DEPOSIT:
@@ -971,7 +976,9 @@ breedmon:
         // CALLFAR(aCalcLevel);
         // LD_A_D;
         // LD_addr_A(wCurPartyLevel);
-        wram->wCurPartyLevel = CalcLevel(&wram->wTempMon);
+        // The native box/daycare record determines the level before its
+        // checked transfer into the still-packed player party.
+        wram->wCurPartyLevel = withdrawalLevel;
         // POP_HL;
 
         // LD_B_H;
