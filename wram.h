@@ -363,8 +363,8 @@ struct wram_s
                         uint8_t wEnemyPerishCount;
                         uint8_t wEnemyFuryCutterCount;
                         uint8_t wEnemyProtectCount;
-                        uint16_t wPlayerDamageTaken;
-                        uint16_t wEnemyDamageTaken;
+                        uint16_t retired_wPlayerDamageTaken;
+                        uint16_t retired_wEnemyDamageTaken;
                         uint8_t wBattleReward[3];
                         uint8_t wBattleAnimParam;
                         uint8_t wBattleScriptBuffer[40];
@@ -424,8 +424,8 @@ struct wram_s
                         uint8_t wEnemyTurnsTaken;
                         uint8_t wPlayerTurnsTaken;
                         uint8_t skip_18[1];
-                        uint8_t wPlayerSubstituteHP;
-                        uint8_t wEnemySubstituteHP;
+                        uint8_t retired_wPlayerSubstituteHP;
+                        uint8_t retired_wEnemySubstituteHP;
                         uint8_t wUnusedPlayerLockedMove;
                         uint8_t skip_19[1];
                         uint8_t wCurPlayerMove;
@@ -435,7 +435,7 @@ struct wram_s
                         uint8_t wEnemyItemState;
                         uint8_t skip_20[2];
                         uint8_t wCurEnemyMoveNum;
-                        uint16_t wEnemyHPAtTimeOfPlayerSwitch;
+                        uint16_t retired_wEnemyHPAtTimeOfPlayerSwitch;
                         uint8_t wPayDayMoney[3];
                         uint8_t wSafariMonAngerCount;
                         // unreferenced
@@ -500,14 +500,14 @@ struct wram_s
                         uint8_t wLastPlayerMon;
                         uint8_t wLastPlayerMove;
                         uint8_t wLastEnemyMove;
-                        uint8_t wPlayerFutureSightCount;
-                        uint8_t wEnemyFutureSightCount;
+                        uint8_t retired_wPlayerFutureSightCount;
+                        uint8_t retired_wEnemyFutureSightCount;
                         uint8_t wGivingExperienceToExpShareHolders;
                         uint8_t wBackupEnemyMonBaseStats[NUM_EXP_STATS];
                         uint8_t wBackupEnemyMonCatchRate;
                         uint8_t wBackupEnemyMonBaseExp;
-                        uint16_t wPlayerFutureSightDamage;
-                        uint16_t wEnemyFutureSightDamage;
+                        uint16_t retired_wPlayerFutureSightDamage;
+                        uint16_t retired_wEnemyFutureSightDamage;
                         uint8_t wPlayerRageCounter;
                         uint8_t wEnemyRageCounter;
                         uint8_t wBeatUpHitAtLeastOnce;
@@ -2715,7 +2715,7 @@ struct wram_s
                     // -
                     // wCurBaseData
                     // BASE_DATA_SIZE
-                    uint16_t wCurDamage;
+                    uint16_t retired_wCurDamage;
                     uint8_t skip_91[2];
                     uint8_t wMornEncounterRate;
                     uint8_t wDayEncounterRate;

@@ -252,7 +252,9 @@ persistent owner for the six gameplay slots, including egg state and numeric
 experience. Trace capture, party creation, PC/daycare transfer, items, evolution,
 move learning and save/load as one closure. This removes the current import/export
 boundary and native-to-packed-to-native round trips during rewards and switching.
-Then migrate remaining battle action/damage/script state. Native saves should
+The [native damage closure](battle_damage_ownership.md) now owns numeric damage,
+delayed effects and substitute health. Remaining battle action/script state
+should follow persistent-party ownership. Native saves should
 follow a native persistent party, rather than lead this migration.
 
 Recommended commit title: Move active battler state out of Game Boy memory

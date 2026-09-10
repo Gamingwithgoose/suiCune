@@ -1,4 +1,5 @@
 #include "../../constants.h"
+#include "../../home/battle.h"
 #include "misc.h"
 #include "effect_commands.h"
 #include "../gfx/place_graphic.h"
@@ -112,60 +113,8 @@ void FinishAppearDisappearUser(void){
 // }
 
 static void DoWeatherModifiers_ApplyModifier(const uint8_t* de) {
-    // XOR_A_A;
-    // LDH_addr_A(hMultiplicand + 0);
-    // LD_HL(wCurDamage);
-    // LD_A_hli;
-    // LDH_addr_A(hMultiplicand + 1);
-    // LD_A_hl;
-    // LDH_addr_A(hMultiplicand + 2);
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-
-    // INC_DE;
-    // LD_A_de;
-    // LDH_addr_A(hMultiplier);
-
-    // CALL(aMultiply);
-    uint32_t n = dmg * de[1];
-
-    // LD_A(10);
-    // LDH_addr_A(hDivisor);
-    // LD_B(4);
-    // CALL(aDivide);
-    n /= 10;
-
-    uint16_t r;
-    if((n & 0xff0000) != 0) {
-        // LDH_A_addr(hQuotient + 1);
-        // AND_A_A;
-        // LD_BC(-1);
-        // IF_NZ goto Update;
-        r = 0xffff;
-    }
-    else if((n & 0xffff) != 0) {
-        // LDH_A_addr(hQuotient + 2);
-        // LD_B_A;
-        // LDH_A_addr(hQuotient + 3);
-        // LD_C_A;
-        r = (uint16_t)n;
-        // OR_A_B;
-        // IF_NZ goto Update;
-    }
-    else {
-        // LD_BC(1);
-        r = 1;
-    }
-
-// Update:
-    // LD_A_B;
-    // LD_addr_A(wCurDamage);
-    // LD_A_C;
-    // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = NativeToBigEndian16(r);
-
-
-// done:
-    // RET;
+    uint32_t damage = BattleScaleDamage(gBattle.damage, de[1], 10);
+    gBattle.damage = damage != 0 ? damage : 1;
 }
 
 void DoWeatherModifiers(void){
@@ -295,111 +244,26 @@ void DoWeatherModifiers(void){
 }
 
 void DoBadgeTypeBoosts(void){
-    // LD_A_addr(wLinkMode);
-    // AND_A_A;
-    // RET_NZ ;
     if(wram->wLinkMode != LINK_NULL)
         return;
-
-    // LD_A_addr(wInBattleTowerBattle);
-    // AND_A_A;
-    // RET_NZ ;
     if(wram->wInBattleTowerBattle)
         return;
-
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // RET_NZ ;
     if(gBattle.turn != TURN_PLAYER)
         return;
-
-    // PUSH_DE;
-    // PUSH_BC;
-
-    // LD_HL(mBadgeTypeBoosts);
     const uint8_t* hl = BadgeTypeBoosts;
-
-    // LD_A_addr(wKantoBadges);
-    // LD_B_A;
-    // LD_A_addr(wJohtoBadges);
-    // LD_C_A;
     uint16_t bc = (gPlayer.kantoBadges[0] << 8) | gPlayer.johtoBadges[0];
-
-
     do {
-    // CheckBadge:
-        // LD_A_hl;
         uint8_t a = *hl;
-        // CP_A(-1);
-        // IF_Z goto done;
         if(a == 0xff)
             return;
-
-        // SRL_B;
-        // RR_C;
         bool carry = bc & 1;
         bc >>= 1;
-        // IF_NC goto NextBadge;
         if(!carry)
             continue; 
-
-        // LD_A_addr(wCurType);
-        // CP_A_hl;
-        // IF_Z goto ApplyBoost;
         if(wram->wCurType == *hl) {
-        // ApplyBoost:
-            // LD_A_addr(wCurDamage);
-            // LD_H_A;
-            // LD_D_A;
-            // LD_A_addr(wCurDamage + 1);
-            // LD_L_A;
-            // LD_E_A;
-            uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-
-            // SRL_D;
-            // RR_E;
-            // SRL_D;
-            // RR_E;
-            // SRL_D;
-            // RR_E;
-            uint16_t de2 = dmg >> 3;
-
-            // LD_A_E;
-            // OR_A_D;
-            // IF_NZ goto done_min;
-            // LD_E(1);
-            if(de2 == 0)
-                de2 = 1;
-
-        // done_min:
-            uint32_t temp = dmg + de2;
-            // ADD_HL_DE;
-            // IF_NC goto Update;
-            if(temp > 0xffffu) {
-                // LD_HL(0xffff);
-                temp = 0xffff;
-            }
-
-        // Update:
-            // LD_A_H;
-            // LD_addr_A(wCurDamage);
-            // LD_A_L;
-            // LD_addr_A(wCurDamage + 1);
-            wram->wCurDamage = NativeToBigEndian16((uint16_t)temp);
-
-        // done:
-            // POP_BC;
-            // POP_DE;
-            // RET;
+            uint32_t bonus = gBattle.damage / 8;
+            gBattle.damage = BattleAddDamage(gBattle.damage, bonus != 0 ? bonus : 1);
             return;
         }
-
-
-    // NextBadge:
-        // INC_HL;
-        // goto CheckBadge;
     } while(++hl, 1);
-
-// INCLUDE "data/types/badge_type_boosts.asm"
-
 }

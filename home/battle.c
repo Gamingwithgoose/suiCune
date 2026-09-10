@@ -10,22 +10,32 @@
 #include "../engine/battle/core.h"
 #include "../engine/battle_anims/core.h"
 
+uint32_t BattleScaleDamage(uint32_t damage, uint32_t numerator, uint32_t denominator){
+    assert(denominator != 0);
+    uint64_t scaled = (uint64_t)damage * numerator / denominator;
+    return scaled > UINT32_MAX ? UINT32_MAX : (uint32_t)scaled;
+}
+
+uint32_t BattleAddDamage(uint32_t damage, uint32_t amount){
+    return amount > UINT32_MAX - damage ? UINT32_MAX : damage + amount;
+}
+
 struct BattleParticipant* BattleParticipantForSide(enum BattleSide side){
     assert(side == TURN_PLAYER || side == TURN_ENEMY);
     return side == TURN_PLAYER ? &gBattle.player : &gBattle.enemy;
 }
 
-uint16_t BattleApplyDamage(struct BattlePokemon* mon, uint16_t damage){
+uint16_t BattleApplyDamage(struct BattlePokemon* mon, uint32_t damage){
     assert(mon != NULL && mon->hp <= mon->maxHP);
-    uint16_t applied = damage < mon->hp ? damage : mon->hp;
+    uint16_t applied = damage < mon->hp ? (uint16_t)damage : mon->hp;
     mon->hp -= applied;
     return applied;
 }
 
-uint16_t BattleRestoreHP(struct BattlePokemon* mon, uint16_t amount){
+uint16_t BattleRestoreHP(struct BattlePokemon* mon, uint32_t amount){
     assert(mon != NULL && mon->hp <= mon->maxHP);
     uint16_t available = mon->maxHP - mon->hp;
-    uint16_t restored = amount < available ? amount : available;
+    uint16_t restored = amount < available ? (uint16_t)amount : available;
     mon->hp += restored;
     return restored;
 }
@@ -109,7 +119,7 @@ void ResetDamage(void){
     // XOR_A_A;
     // LD_addr_A(wCurDamage);
     // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = 0;
+    gBattle.damage = 0;
 }
 
 void SetPlayerTurn(void){

@@ -1057,7 +1057,7 @@ const txt_cmd_s BlownAwayText[] = {
 const txt_cmd_s PlayerHitTimesText[] = {
     text_start("Hit @"
         )
-    text_decimal(wram_ptr(wPlayerDamageTaken), 1, 1)
+    text_decimal(&gBattle.player.hitCount, 1, 1)
     text_start(" times!"
         t_prompt )
 
@@ -1066,7 +1066,7 @@ const txt_cmd_s PlayerHitTimesText[] = {
 const txt_cmd_s EnemyHitTimesText[] = {
     text_start("Hit @"
         )
-    text_decimal(wram_ptr(wEnemyDamageTaken), 1, 1)
+    text_decimal(&gBattle.enemy.hitCount, 1, 1)
     text_start(" times!"
         t_prompt )
 

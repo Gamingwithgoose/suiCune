@@ -6847,3 +6847,27 @@ Source review and remaining work
 - Next closure: native persistent party with numeric experience/egg state across
   capture, storage transfer, items, evolution, move learning and save import/export;
   remaining action/damage/move-script state follows. Native saves remain deferred.
+
+
+2026-09-10 - Native battle damage and delayed effects
+----------------------------------------------------
+- BattleState and BattleParticipant own numeric damage, Bide accumulation,
+  Future Sight, substitute health, hit counts and the withdrawal HP snapshot.
+  Retired WRAM fields retain layout only; all selected producers and consumers,
+  including AI scoring and battle text, use the native owner.
+- Native arithmetic removes packed byte order and artificial word/byte damage
+  limits, checks overflow and clamps HP before narrowing. Triple Kick projects
+  its gameplay sequence to animation. Recoil, draining and Pain Split update
+  native HP before generating display buffers.
+- Correct doubled-damage storage, Triple Kick overflow, Substitute truncation,
+  draining health calculation and withdrawal damage-loss underflow. Preserve
+  intentional damage-formula and move-duration rules.
+- Compatibility retained: packed persistent party/save/link records, HP display
+  buffers and animation parameters. Action flags, shared move countdowns and
+  script dispatch remain legacy authority. See docs/battle_damage_ownership.md
+  for the complete changed-file inventory and boundary map.
+- Validation: eight source ownership guards pass; migrated field and numeric
+  dependency closure reviewed. Build/runtime validation: not performed.
+- Next closure: persistent party/Pokemon ownership across capture, storage,
+  daycare, rewards, moves, items, evolution and save/load; then battle action
+  and script state. Native saves follow persistent-party ownership.

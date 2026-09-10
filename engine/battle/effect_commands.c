@@ -246,6 +246,8 @@ void BattleCommand_CheckTurn(void){
     // LD_addr_A(wEffectFailed);
     wram->wEffectFailed = FALSE;
     // LD_addr_A(wBattleAnimParam);
+    BattleParticipantForSide(gBattle.turn)->kickCount = 0;
+    BattleParticipantForSide(gBattle.turn)->hitCount = 0;
     BattleAnimationParameterSet(0);
     // LD_addr_A(wAlreadyDisobeyed);
     wram->wAlreadyDisobeyed = FALSE;
@@ -1396,7 +1398,7 @@ bool IgnoreSleepOnly(void){
     if((GetBattleVar(BATTLE_VARS_STATUS) & SLP) == 0)
         return false;
 
-//  'ignored orders…sleeping!'
+//  'ignored ordersâ€¦sleeping!'
     // LD_HL(mIgnoredSleepingText);
     // CALL(aStdBattleTextbox);
     StdBattleTextbox(IgnoredSleepingText);
@@ -1815,243 +1817,59 @@ void BattleCommand_Critical(void){
 }
 
 void BattleCommand_Stab(void){
-//  STAB = Same Type Attack Bonus
     PEEK("");
-    // LD_A(BATTLE_VARS_MOVE_ANIM);
-    // CALL(aGetBattleVar);
-    // CP_A(STRUGGLE);
-    // RET_Z ;
     if(GetBattleVar(BATTLE_VARS_MOVE_ANIM) == STRUGGLE)
         return;
-
     uint8_t b, c, d, e;
     if(gBattle.turn == TURN_PLAYER) {
-        // LD_HL(wBattleMonType1);
-        // LD_A_hli;
-        // LD_B_A;
         b = gBattle.player.mon.types[0];
-        // LD_C_hl;
         c = gBattle.player.mon.types[1];
-        // LD_HL(wEnemyMonType1);
-        // LD_A_hli;
-        // LD_D_A;
         d = gBattle.enemy.mon.types[0];
-        // LD_E_hl;
         e = gBattle.enemy.mon.types[1];
-
-        // LDH_A_addr(hBattleTurn);
-        // AND_A_A;
-        // IF_Z goto go;  // Who Attacks and who Defends
     }
     else {
-        // LD_HL(wEnemyMonType1);
-        // LD_A_hli;
-        // LD_B_A;
         b = gBattle.enemy.mon.types[0];
-        // LD_C_hl;
         c = gBattle.enemy.mon.types[1];
-        // LD_HL(wBattleMonType1);
-        // LD_A_hli;
-        // LD_D_A;
         d = gBattle.player.mon.types[0];
-        // LD_E_hl;
         e = gBattle.player.mon.types[1];
     }
-
-// go:
-    // LD_A(BATTLE_VARS_MOVE_TYPE);
-    // CALL(aGetBattleVarAddr);
-    // LD_addr_A(wCurType);
     wram->wCurType = *GetBattleVarAddr(BATTLE_VARS_MOVE_TYPE);
-
-    // PUSH_HL;
-    // PUSH_DE;
-    // PUSH_BC;
-    // FARCALL(aDoWeatherModifiers);
     DoWeatherModifiers();
-    // POP_BC;
-    // POP_DE;
-    // POP_HL;
-
-    // PUSH_DE;
-    // PUSH_BC;
-    // FARCALL(aDoBadgeTypeBoosts);
     DoBadgeTypeBoosts();
-    // POP_BC;
-    // POP_DE;
-
-    // LD_A_addr(wCurType);
-    // CP_A_B;
-    // IF_Z goto stab;
-    // CP_A_C;
-    // IF_Z goto stab;
-
-    // goto SkipStab;
     if(wram->wCurType == b || wram->wCurType == c) {
-    // stab:
-        // LD_HL(wCurDamage + 1);
-        // LD_A_hld;
-        // LD_H_hl;
-        // LD_L_A;
-        uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-
-        // LD_B_H;
-        // LD_C_L;
-        // SRL_B;
-        // RR_C;
-        // ADD_HL_BC;
-        dmg += (dmg >> 1);
-
-        // LD_A_H;
-        // LD_addr_A(wCurDamage);
-        // LD_A_L;
-        // LD_addr_A(wCurDamage + 1);
-        wram->wCurDamage = NativeToBigEndian16(dmg);
-
-        // LD_HL(wTypeModifier);
-        // SET_hl(7);
+        uint32_t dmg = gBattle.damage;
+        dmg = BattleScaleDamage(dmg, 3, 2);
+        gBattle.damage = dmg;
         bit_set(wram->wTypeModifier, 7);
     }
-
-// SkipStab:
-    // LD_A(BATTLE_VARS_MOVE_TYPE);
-    // CALL(aGetBattleVar);
-    // LD_B_A;
     b = GetBattleVar(BATTLE_VARS_MOVE_TYPE);
-    // LD_HL(mTypeMatchups);
     const uint8_t* matchups = TypeMatchups;
-
     for(uint32_t i = 0; matchups[i] != 0xff; i += 3) {
     TypesLoop:
-        // LD_A_hli;
-
-        // CP_A(-1);
-        // IF_Z goto end;
-
-    // foresight
-        // CP_A(-2);
-        // IF_NZ goto SkipForesightCheck;
         if(matchups[i] != 0xfe) {
-        // SkipForesightCheck:
-            // CP_A_B;
-            // IF_NZ goto SkipType;
             if(matchups[i] != b)
                 continue;
-            // LD_A_hl;
-            // CP_A_D;
-            // IF_Z goto GotMatchup;
-            // CP_A_E;
-            // IF_Z goto GotMatchup;
-            // goto SkipType;
             if(matchups[i+1] != d && matchups[i+1] != e)
                 continue;
-
-        // GotMatchup:
-            // PUSH_HL;
-            // PUSH_BC;
-            // INC_HL;
             uint8_t n = matchups[i+2];
-            // LD_A_addr(wTypeModifier);
-            // AND_A(0b10000000);
-            // LD_B_A;
             uint8_t b2 = (wram->wTypeModifier & 0b10000000);
-        //  If the target is immune to the move, treat it as a miss and calculate the damage as 0
-            // LD_A_hl;
-            // AND_A_A;
-            // IF_NZ goto NotImmune;
             if(n == 0) {
-                // INC_A;
-                // LD_addr_A(wAttackMissed);
                 wram->wAttackMissed = TRUE;
-                // XOR_A_A;
             }
-
-        // NotImmune:
-            // LDH_addr_A(hMultiplier);
-            // ADD_A_B;
-            // LD_addr_A(wTypeModifier);
             wram->wTypeModifier = b2 + n;
-
-            // XOR_A_A;
-            // LDH_addr_A(hMultiplicand + 0);
-
-            // LD_HL(wCurDamage);
-            // LD_A_hli;
-            // LDH_addr_A(hMultiplicand + 1);
-            // LD_A_hld;
-            // LDH_addr_A(hMultiplicand + 2);
-
-            // CALL(aMultiply);
-            uint32_t n2 = (n * BigEndianToNative16(wram->wCurDamage));
-
-            // LDH_A_addr(hProduct + 1);
-            // LD_B_A;
-            // LDH_A_addr(hProduct + 2);
-            // OR_A_B;
-            // LD_B_A;
-            // LDH_A_addr(hProduct + 3);
-            // OR_A_B;
-            // IF_Z goto ok;  // This is a very convoluted way to get back that we've essentially dealt no damage.
-            if((n2 & 0xffffff) != 0) {
-            //  Take the product and divide it by 10.
-                // LD_A(10);
-                // LDH_addr_A(hDivisor);
-                // LD_B(4);
-                // CALL(aDivide);
-                n2 /= 10;
-                // LDH_A_addr(hQuotient + 2);
-                // LD_B_A;
-                // LDH_A_addr(hQuotient + 3);
-                // OR_A_B;
-                // IF_NZ goto ok;
-                if((n2 & 0xffff) == 0) {
-                    // LD_A(1);
-                    // LDH_addr_A(hMultiplicand + 2);
-                    n2 = 1;
-                }
-            }
-
-
-        // ok:
-            // LDH_A_addr(hMultiplicand + 1);
-            // LD_hli_A;
-            // LDH_A_addr(hMultiplicand + 2);
-            // LD_hl_A;
-            wram->wCurDamage = NativeToBigEndian16(n2);
-            // POP_BC;
-            // POP_HL;
+            bool nonzero = n != 0 && gBattle.damage != 0;
+            uint32_t scaled = BattleScaleDamage(gBattle.damage, n, 10);
+            gBattle.damage = nonzero && scaled == 0 ? 1 : scaled;
             continue;
         }
-        // LD_A(BATTLE_VARS_SUBSTATUS1_OPP);
-        // CALL(aGetBattleVar);
-        // BIT_A(SUBSTATUS_IDENTIFIED);
-        // IF_NZ goto end;
         if(bit_test(GetBattleVar(BATTLE_VARS_SUBSTATUS1_OPP), SUBSTATUS_IDENTIFIED))
             break;
-
-        // goto TypesLoop;
         i += 1;
         goto TypesLoop;
-
-
-    // SkipType:
-        // INC_HL;
-        // INC_HL;
-        // goto TypesLoop;
     }
-
-// end:
-    // CALL(aBattleCheckTypeMatchup);
-    // LD_A_addr(wTypeMatchup);
     uint8_t matchup = BattleCheckTypeMatchup();
-    // LD_B_A;
-    // LD_A_addr(wTypeModifier);
-    // AND_A(0b10000000);
-    // OR_A_B;
-    // LD_addr_A(wTypeModifier);
     wram->wTypeModifier = (wram->wTypeModifier & 0b10000000) | matchup;
-    // RET;
-    log_debug("Calculated stab damage: %d.\n", BigEndianToNative16(wram->wCurDamage));
+    log_debug("Calculated stab damage: %u.\n", (unsigned)gBattle.damage);
 }
 
 uint8_t BattleCheckTypeMatchup(void){
@@ -2203,71 +2021,14 @@ void BattleCommand_ResetTypeMatchup(void){
 }
 
 void BattleCommand_DamageVariation(void){
-//  damagevariation
-
-//  Modify the damage spread between 85% and 100%.
-
-//  Because of the method of division the probability distribution
-//  is not consistent. This makes the highest damage multipliers
-//  rarer than normal.
-    PEEK("");
-//  No point in reducing 1 or 0 damage.
-    // LD_HL(wCurDamage);
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-    // LD_A_hli;
-    // AND_A_A;
-    // IF_NZ goto go;
-    // LD_A_hl;
-    // CP_A(2);
-    // RET_C ;
-    if(dmg < 2)
+    if(gBattle.damage < 2)
         return;
-
-
-// go:
-//  Start with the maximum damage.
-    // XOR_A_A;
-    // LDH_addr_A(hMultiplicand + 0);
-    // DEC_HL;
-    // LD_A_hli;
-    // LDH_addr_A(hMultiplicand + 1);
-    // LD_A_hl;
-    // LDH_addr_A(hMultiplicand + 2);
-    uint32_t n = dmg;
-
-//  Multiply by 85-100%...
-
-    uint8_t a;
+    uint8_t random;
     do {
-    // loop:
-        // CALL(aBattleRandom);
-        a = v_BattleRandom();
-        // RRCA;
-        a = (a >> 1) | (a << 7);
-        // CP_A(85 percent + 1);
-        // IF_C goto loop;
-    } while(a < 85 percent + 1);
-
-    // LDH_addr_A(hMultiplier);
-    // CALL(aMultiply);
-    n *= a;
-
-//  ...divide by 100%...
-    // LD_A(100 percent);
-    // LDH_addr_A(hDivisor);
-    // LD_B(0x4);
-    // CALL(aDivide);
-    n /= 100 percent;
-
-//  ...to get .85-1.00x damage.
-    // LDH_A_addr(hQuotient + 2);
-    // LD_HL(wCurDamage);
-    // LD_hli_A;
-    // LDH_A_addr(hQuotient + 3);
-    // LD_hl_A;
-    wram->wCurDamage = NativeToBigEndian16((uint16_t)n);
-    // RET;
-    log_debug("Damage variation: %d.\n", BigEndianToNative16(wram->wCurDamage));
+        random = v_BattleRandom();
+        random = (random >> 1) | (random << 7);
+    } while(random < 85 percent + 1);
+    gBattle.damage = BattleScaleDamage(gBattle.damage, random, 100 percent);
 }
 
 static bool BattleCommand_CheckHit_DreamEater(void) {
@@ -3126,48 +2887,11 @@ void BattleCommand_FailureText(void){
 }
 
 static void BattleCommand_ApplyDamage_update_damage_taken(void) {
-    // LD_A(BATTLE_VARS_SUBSTATUS4_OPP);
-    // CALL(aGetBattleVar);
-    // BIT_A(SUBSTATUS_SUBSTITUTE);
-    // RET_NZ ;
     if(bit_test(GetBattleVar(BATTLE_VARS_SUBSTATUS4_OPP), SUBSTATUS_SUBSTITUTE))
         return;
-
-    // LD_DE(wPlayerDamageTaken + 1);
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_NZ goto got_damage_taken;
-    // LD_DE(wEnemyDamageTaken + 1);
-    uint16_t* taken = (uint16_t*)((gBattle.turn != TURN_PLAYER)? wram_ptr(wPlayerDamageTaken): wram_ptr(wEnemyDamageTaken));
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-
-// got_damage_taken:
-    // LD_A_addr(wCurDamage + 1);
-    // LD_B_A;
-    // LD_A_de;
-    // ADD_A_B;
-    // LD_de_A;
-    // DEC_DE;
-    // LD_A_addr(wCurDamage);
-    // LD_B_A;
-    // LD_A_de;
-    // ADC_A_B;
-    // LD_de_A;
-    // RET_NC ;
-    uint32_t dmg2 = dmg + BigEndianToNative16(*taken);
-    if(dmg2 > 0xffff) {
-        // LD_A(0xff);
-        // LD_de_A;
-        // INC_DE;
-        // LD_de_A;
-        *taken = NativeToBigEndian16(0xffff);
-    }
-    else {
-        *taken = NativeToBigEndian16((uint16_t)dmg2);
-    }
-    // RET;
-    log_debug("Damage taken: %d.\n", BigEndianToNative16(*taken));
-    return;
+    struct BattleParticipant* target = BattleParticipantForSide(
+        gBattle.turn == TURN_PLAYER ? TURN_ENEMY : TURN_PLAYER);
+    target->damageTaken = BattleAddDamage(target->damageTaken, gBattle.damage);
 }
 
 void BattleCommand_ApplyDamage(void){
@@ -3319,7 +3043,7 @@ void GetFailureResultText(void){
             return;
 
         // LD_HL(wCurDamage);
-        uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
+        uint32_t dmg = gBattle.damage;
         // LD_A_hli;
         // LD_B_hl;
         // for(int rept = 0; rept < 3; rept++){
@@ -3337,7 +3061,7 @@ void GetFailureResultText(void){
             // LD_hl_A;
             dmg = 1;
         }
-        wram->wCurDamage = NativeToBigEndian16(dmg);
+        gBattle.damage = dmg;
 
     // do_at_least_1_damage:
         // LD_HL(mCrashedText);
@@ -3670,51 +3394,8 @@ void BattleCommand_BuildOpponentRage(void){
 }
 
 void BattleCommand_RageDamage(void){
-//  ragedamage
-    PEEK("");
-    // LD_A_addr(wCurDamage);
-    // LD_H_A;
-    // LD_B_A;
-    // LD_A_addr(wCurDamage + 1);
-    // LD_L_A;
-    // LD_C_A;
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-    uint16_t hl = dmg;
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // LD_A_addr(wPlayerRageCounter);
-    // IF_Z goto rage_loop;
-    // LD_A_addr(wEnemyRageCounter);
-    uint8_t a = (gBattle.turn == TURN_PLAYER)? wram->wPlayerRageCounter: wram->wEnemyRageCounter;
-
-    while(a != 0) {
-    // rage_loop:
-        // AND_A_A;
-        // IF_Z goto done;
-        // DEC_A;
-        --a;
-        // ADD_HL_BC;
-        uint32_t temp = hl + dmg;
-
-        // IF_NC goto rage_loop;
-        if(temp < 0xffff) {
-            hl = (uint16_t)temp;
-            continue;
-        }
-        else {
-            // LD_HL(0xffff);
-            hl = 0xffff;
-            break;
-        }
-    }
-
-// done:
-    // LD_A_H;
-    // LD_addr_A(wCurDamage);
-    // LD_A_L;
-    // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = NativeToBigEndian16(hl);
-    // RET;
+    uint8_t counter = gBattle.turn == TURN_PLAYER ? wram->wPlayerRageCounter : wram->wEnemyRageCounter;
+    gBattle.damage = BattleScaleDamage(gBattle.damage, (uint32_t)counter + 1, 1);
 }
 
 void EndMoveEffect(void){
@@ -4328,7 +4009,7 @@ void BattleCommand_DamageCalc(void){
     uint8_t atk = gBattleCmdState.b;
 
     gBattleCmdState.a = DamageCalc(pwr, lvl, def, atk);
-    log_debug("Calculated %d damage. (pwr=%d, lvl=%d, def=%d, atk=%d)\n", BigEndianToNative16(wram->wCurDamage),
+    log_debug("Calculated %u damage. (pwr=%d, lvl=%d, def=%d, atk=%d)\n", (unsigned)gBattle.damage,
         pwr, lvl, def, atk);
 }
 
@@ -4584,17 +4265,17 @@ DoneItem:
     // LD_A_hld;
     // CP_A(LOW(DAMAGE_CAP + 1));
     // IF_C goto dont_cap_3;
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-    if(n + dmg >= DAMAGE_CAP) {
+    uint32_t dmg = gBattle.damage;
+    if((uint64_t)n + dmg >= DAMAGE_CAP) {
     // Cap:
         // LD_A(HIGH(DAMAGE_CAP));
         // LD_hli_A;
         // LD_A(LOW(DAMAGE_CAP));
         // LD_hld_A;
-        wram->wCurDamage = NativeToBigEndian16(DAMAGE_CAP);
+        gBattle.damage = DAMAGE_CAP;
     }
     else {
-        wram->wCurDamage = NativeToBigEndian16(dmg + n + MIN_DAMAGE);
+        gBattle.damage = dmg + n + MIN_DAMAGE;
     }
 
 
@@ -4642,7 +4323,7 @@ void BattleCommand_ConstantDamage(void){
         // LD_HL(wCurDamage);
         // LD_hli_A;
         // LD_hl_B;
-        wram->wCurDamage = NativeToBigEndian16(b);
+        gBattle.damage = b;
         // RET;
         return;
     }
@@ -4678,7 +4359,7 @@ void BattleCommand_ConstantDamage(void){
             // LD_HL(wCurDamage);
             // LD_hli_A;
             // LD_hl_B;
-            wram->wCurDamage = NativeToBigEndian16(b);
+            gBattle.damage = b;
             // RET;
             return;
 
@@ -4718,7 +4399,7 @@ void BattleCommand_ConstantDamage(void){
             // LD_HL(wCurDamage);
             // LD_hli_A;
             // LD_hl_B;
-            wram->wCurDamage = NativeToBigEndian16(hp);
+            gBattle.damage = hp;
             // RET;
             return;
         }
@@ -4851,7 +4532,7 @@ void BattleCommand_ConstantDamage(void){
             // LD_HL(wCurDamage);
             // LD_hli_A;
             // LD_hl_B;
-            wram->wCurDamage = NativeToBigEndian16(GetBattleVar(BATTLE_VARS_MOVE_POWER));
+            gBattle.damage = GetBattleVar(BATTLE_VARS_MOVE_POWER);
             // RET;
             return;
     }
@@ -4958,7 +4639,7 @@ void PlayFXAnimID(uint16_t de){
 }
 
 void DoEnemyDamage(bool ignoreSub){
-    uint16_t damage = BigEndianToNative16(wram->wCurDamage);
+    uint32_t damage = gBattle.damage;
     if(damage != 0) {
         if(!ignoreSub && bit_test(gBattle.enemy.conditions[3], SUBSTATUS_SUBSTITUTE))
             return DoSubstituteDamage();
@@ -4972,7 +4653,7 @@ void DoEnemyDamage(bool ignoreSub){
                 damage = oldHP;
         }
         uint16_t applied = BattleApplyDamage(mon, damage);
-        wram->wCurDamage = NativeToBigEndian16(applied);
+        gBattle.damage = applied;
         // Downstream HP-bar projection. Animation cannot choose the outcome.
         wram->wHPBuffer1 = mon->maxHP;
         wram->wHPBuffer2 = oldHP;
@@ -4983,14 +4664,14 @@ void DoEnemyDamage(bool ignoreSub){
 }
 
 void DoPlayerDamage(bool ignoreSub){
-    uint16_t damage = BigEndianToNative16(wram->wCurDamage);
+    uint32_t damage = gBattle.damage;
     if(damage != 0) {
         if(!ignoreSub && bit_test(gBattle.player.conditions[3], SUBSTATUS_SUBSTITUTE))
             return DoSubstituteDamage();
         struct BattlePokemon* mon = &gBattle.player.mon;
         uint16_t oldHP = mon->hp;
         uint16_t applied = BattleApplyDamage(mon, damage);
-        wram->wCurDamage = NativeToBigEndian16(applied);
+        gBattle.damage = applied;
         wram->wHPBuffer1 = mon->maxHP;
         wram->wHPBuffer2 = oldHP;
         wram->wHPBuffer3 = mon->hp;
@@ -5000,92 +4681,32 @@ void DoPlayerDamage(bool ignoreSub){
 }
 
 void DoSubstituteDamage(void){
-    // LD_HL(mSubTookDamageText);
-    // CALL(aStdBattleTextbox);
     StdBattleTextbox(SubTookDamageText);
-
-    // LD_DE(wEnemySubstituteHP);
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_Z goto got_hp;
-    // LD_DE(wPlayerSubstituteHP);
-    uint8_t* hp = (gBattle.turn == TURN_PLAYER)? &wram->wEnemySubstituteHP: &wram->wPlayerSubstituteHP;
-
-// got_hp:
-
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-    // LD_HL(wCurDamage);
-    // LD_A_hli;
-    // AND_A_A;
-    // IF_NZ goto broke;
-
-    if(dmg < 256) {
-        // LD_A_de;
-        // SUB_A_hl;
-        uint16_t temp = *hp - dmg;
-        // LD_de_A;
-        *hp = (temp & 0xff);
-        // IF_Z goto broke;
-        // IF_NC goto done;
-        if(temp != 0 && (temp & 0xff00) == 0) {
-            return ResetDamage();
-        }
+    struct BattleParticipant* target = BattleParticipantForSide(
+        gBattle.turn == TURN_PLAYER ? TURN_ENEMY : TURN_PLAYER);
+    if(gBattle.damage < target->substituteHP) {
+        target->substituteHP -= (uint16_t)gBattle.damage;
+        return ResetDamage();
     }
-
-// broke:
-    // LD_A(BATTLE_VARS_SUBSTATUS4_OPP);
-    // CALL(aGetBattleVarAddr);
-    // RES_hl(SUBSTATUS_SUBSTITUTE);
+    target->substituteHP = 0;
     bit_reset(*GetBattleVarAddr(BATTLE_VARS_SUBSTATUS4_OPP), SUBSTATUS_SUBSTITUTE);
-
-    // LD_HL(mSubFadedText);
-    // CALL(aStdBattleTextbox);
     StdBattleTextbox(SubFadedText);
-
-    // CALL(aBattleCommand_SwitchTurn);
     BattleCommand_SwitchTurn();
-    // CALL(aBattleCommand_LowerSubNoAnim);
     BattleCommand_LowerSubNoAnim();
-    // LD_A(BATTLE_VARS_SUBSTATUS3);
-    // CALL(aGetBattleVar);
-    // AND_A(1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND);
     if((GetBattleVar(BATTLE_VARS_SUBSTATUS3) & (1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND)) == 0)
         AppearUserLowerSub();
-    // CALL_Z (aAppearUserLowerSub);
-    // CALL(aBattleCommand_SwitchTurn);
     BattleCommand_SwitchTurn();
-
-    // LD_A(BATTLE_VARS_MOVE_EFFECT);
-    // CALL(aGetBattleVarAddr);
     uint8_t* effect = GetBattleVarAddr(BATTLE_VARS_MOVE_EFFECT);
     switch(*effect) {
         default:
-            // XOR_A_A;
-            // LD_hl_A;
             *effect = 0;
-            // fallthrough
-        // CP_A(EFFECT_MULTI_HIT);
-        // IF_Z goto ok;
         case EFFECT_MULTI_HIT:
-        // CP_A(EFFECT_DOUBLE_HIT);
-        // IF_Z goto ok;
         case EFFECT_DOUBLE_HIT:
-        // CP_A(EFFECT_POISON_MULTI_HIT);
-        // IF_Z goto ok;
         case EFFECT_POISON_HIT:
-        // CP_A(EFFECT_TRIPLE_KICK);
-        // IF_Z goto ok;
         case EFFECT_TRIPLE_KICK:
-        // CP_A(EFFECT_BEAT_UP);
-        // IF_Z goto ok;
         case EFFECT_BEAT_UP:
-        // ok:
-            // CALL(aRefreshBattleHuds);
             RefreshBattleHuds();
     }
-
-// done:
-    // JP(mResetDamage);
     return ResetDamage();
 }
 
@@ -5568,127 +5189,25 @@ void BattleCommand_EatDream(void){
 }
 
 void SapHealth(void){
-// Divide damage by 2, store it in hDividend
-    // LD_HL(wCurDamage);
-    // LD_A_hli;
-    // SRL_A;
-    // LDH_addr_A(hDividend);
-    // LD_B_A;
-    // LD_A_hl;
-    // RR_A;
-    // LDH_addr_A(hDividend + 1);
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage) >> 1;
-    // OR_A_B;
-    // IF_NZ goto at_least_one;
-    if(dmg == 0) {
-        // LD_A(1);
-        // LDH_addr_A(hDividend + 1);
-        dmg = 1;
-    }
-
-// at_least_one:
-
-    // LD_HL(wBattleMonHP);
-    // LD_DE(wBattleMonMaxHP);
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_Z goto battlemonhp;
-    // LD_HL(wEnemyMonHP);
-    // LD_DE(wEnemyMonMaxHP);
-    uint16_t* maxhp = (uint16_t*)((gBattle.turn != TURN_PLAYER)? &gBattle.enemy.mon.maxHP: &gBattle.player.mon.maxHP);
-    uint16_t*    hp = (uint16_t*)((gBattle.turn != TURN_PLAYER)? &gBattle.enemy.mon.hp: &gBattle.player.mon.hp);
-
-// battlemonhp:
-
-// Store current HP in little endian wHPBuffer2
-    // LD_BC(wHPBuffer2 + 1);
-    // LD_A_hli;
-    // LD_bc_A;
-    // LD_A_hl;
-    // DEC_BC;
-    // LD_bc_A;
-    wram->wHPBuffer2 = *hp;
-
-// Store max HP in little endian wHPBuffer1
-    // LD_A_de;
-    // DEC_BC;
-    // LD_bc_A;
-    // INC_DE;
-    // LD_A_de;
-    // DEC_BC;
-    // LD_bc_A;
-    wram->wHPBuffer1 = *maxhp;
-
-// Add hDividend to current HP and copy it to little endian wHPBuffer3
-    // LDH_A_addr(hDividend + 1);
-    // LD_B_hl;
-    // ADD_A_B;
-    // LD_hld_A;
-    // LD_addr_A(wHPBuffer3);
-    // LDH_A_addr(hDividend);
-    // LD_B_hl;
-    // ADC_A_B;
-    // LD_hli_A;
-    // LD_addr_A(wHPBuffer3 + 1);
-    wram->wHPBuffer3 = dmg + wram->wHPBuffer2;
-    *hp = wram->wHPBuffer3;
-    // IF_C goto max_hp;
-    if(dmg + wram->wHPBuffer2 <= 0xffff) {
-    // Subtract current HP from max HP (to see if we have more than max HP)
-        // LD_A_hld;
-        // LD_B_A;
-        // LD_A_de;
-        // DEC_DE;
-        // SUB_A_B;
-        // LD_A_hli;
-        // LD_B_A;
-        // LD_A_de;
-        // INC_DE;
-        // SBC_A_B;
-        // IF_NC goto finish;
-        if(wram->wHPBuffer2 >= wram->wHPBuffer1) 
-            goto finish;
-    }
-
-
-// max_hp:
-// Load max HP into current HP and copy it to little endian wHPBuffer3
-    // LD_A_de;
-    // LD_hld_A;
-    // LD_addr_A(wHPBuffer3);
-    // DEC_DE;
-    // LD_A_de;
-    // LD_hli_A;
-    // LD_addr_A(wHPBuffer3 + 1);
-    // INC_DE;
-    *hp = *maxhp;
-    wram->wHPBuffer3 = *maxhp;
-
-finish:;
+    struct BattlePokemon* mon = &BattleParticipantForSide(gBattle.turn)->mon;
+    uint16_t oldHP = mon->hp;
+    uint32_t amount = gBattle.damage / 2;
+    BattleRestoreHP(mon, amount != 0 ? amount : 1);
+    wram->wHPBuffer1 = mon->maxHP;
+    wram->wHPBuffer2 = oldHP;
+    wram->wHPBuffer3 = mon->hp;
     tile_t* hl;
     uint8_t which;
     if(gBattle.turn == TURN_PLAYER) {
-        // LDH_A_addr(hBattleTurn);
-        // AND_A_A;
-        // hlcoord(10, 9, wTilemap);
-        // LD_A(0x1);
-        // IF_Z goto hp_bar;
         hl = coord(10, 9, wram->wTilemap);
         which = 0x1;
     }
     else {
-        // hlcoord(2, 2, wTilemap);
-        // XOR_A_A;
         hl = coord(2, 2, wram->wTilemap);
         which = 0;
     }
-// hp_bar:
-    // LD_addr_A(wWhichHPBar);
-    // PREDEF(pAnimateHPBar);
     AnimateHPBar(hl, which);
-    // CALL(aRefreshBattleHuds);
     RefreshBattleHuds();
-    // JP(mUpdateBattleMonInParty);
     return UpdateBattleMonInParty();
 }
 
@@ -7623,7 +7142,7 @@ void BattleCommand_EndLoop(void){
         // LD_DE(wPlayerRolloutCount);
         de = &wram->wPlayerRolloutCount;
         // LD_BC(wPlayerDamageTaken);
-        bc = wram_ptr(wPlayerDamageTaken);
+        bc = &gBattle.player.hitCount;
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_Z goto got_addrs;
@@ -7632,7 +7151,7 @@ void BattleCommand_EndLoop(void){
         // LD_DE(wEnemyRolloutCount);
         de = &wram->wEnemyRolloutCount;
         // LD_BC(wEnemyDamageTaken);
-        bc = wram_ptr(wEnemyDamageTaken);
+        bc = &gBattle.enemy.hitCount;
     }
 
 // got_addrs:
@@ -8001,7 +7520,12 @@ void BattleCommand_OHKO(void){
     // LD_A(0xff);
     // LD_hli_A;
     // LD_hl_A;
-    wram->wCurDamage = NativeToBigEndian16(0xffff);
+    struct BattleParticipant* target = BattleParticipantForSide(
+        gBattle.turn == TURN_PLAYER ? TURN_ENEMY : TURN_PLAYER);
+    gBattle.damage = target->mon.hp;
+    if(bit_test(target->conditions[3], SUBSTATUS_SUBSTITUTE)
+    && target->substituteHP > gBattle.damage)
+        gBattle.damage = target->substituteHP;
     // LD_A(0x2);
     // LD_addr_A(wCriticalHit);
     wram->wCriticalHit = 0x2;
@@ -8334,103 +7858,28 @@ void BattleCommand_TrapTarget(void){
 }
 
 void BattleCommand_Recoil(void){
-//  recoil
     PEEK("");
-    // LD_HL(wBattleMonMaxHP);
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_Z goto got_hp;
-    // LD_HL(wEnemyMonMaxHP);
-    uint16_t* hp = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon.hp: &gBattle.enemy.mon.hp;
-    uint16_t* maxHP = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon.maxHP: &gBattle.enemy.mon.maxHP;
-
-// got_hp:
-    // LD_A(BATTLE_VARS_MOVE_ANIM);
-    // CALL(aGetBattleVar);
-    // LD_D_A;
+    struct BattlePokemon* mon = &BattleParticipantForSide(gBattle.turn)->mon;
     gBattleCmdState.d = GetBattleVar(BATTLE_VARS_MOVE_ANIM);
-//  get 1/4 damage or 1 HP, whichever is higher
-    // LD_A_addr(wCurDamage);
-    // LD_B_A;
-    // LD_A_addr(wCurDamage + 1);
-    // LD_C_A;
-    uint16_t bc = BigEndianToNative16(wram->wCurDamage);
-    // SRL_B;
-    // RR_C;
-    // SRL_B;
-    // RR_C;
-    bc >>= 2;
-    // LD_A_B;
-    // OR_A_C;
-    // IF_NZ goto min_damage;
-    if(bc == 0) {
-        // INC_C;
-        bc = 1;
-    }
-
-// min_damage:
-    // LD_A_hli;
-    // LD_addr_A(wHPBuffer1 + 1);
-    // LD_A_hl;
-    // LD_addr_A(wHPBuffer1);
-    wram->wHPBuffer1 = *maxHP;
-    // DEC_HL;
-    // DEC_HL;
-    // LD_A_hl;
-    // LD_addr_A(wHPBuffer2);
-    // SUB_A_C;
-    // LD_hld_A;
-    // LD_addr_A(wHPBuffer3);
-    // LD_A_hl;
-    // LD_addr_A(wHPBuffer2 + 1);
-    // SBC_A_B;
-    // LD_hl_A;
-    // LD_addr_A(wHPBuffer3 + 1);
-    wram->wHPBuffer2 = *hp;
-    // IF_NC goto dont_ko;
-    if(wram->wHPBuffer2 < bc) {
-        // XOR_A_A;
-        // LD_hli_A;
-        // LD_hl_A;
-        *hp = 0;
-        // LD_HL(wHPBuffer3);
-        // LD_hli_A;
-        // LD_hl_A;
-        wram->wHPBuffer3 = 0;
-    }
-    else {
-        *hp = wram->wHPBuffer2 - bc;
-        wram->wHPBuffer3 = wram->wHPBuffer2 - bc;
-    }
-
-// dont_ko:
+    uint16_t oldHP = mon->hp;
+    uint32_t damage = gBattle.damage / 4;
+    BattleApplyDamage(mon, damage != 0 ? damage : 1);
+    wram->wHPBuffer1 = mon->maxHP;
+    wram->wHPBuffer2 = oldHP;
+    wram->wHPBuffer3 = mon->hp;
     tile_t* hl;
     uint8_t which;
     if(gBattle.turn == TURN_PLAYER) {
-        // hlcoord(10, 9, wTilemap);
         hl = coord(10, 9, wram->wTilemap);
-        // LDH_A_addr(hBattleTurn);
-        // AND_A_A;
-        // LD_A(1);
         which = 1;
-        // IF_Z goto animate_hp_bar;
     }
     else {
-        // hlcoord(2, 2, wTilemap);
         hl = coord(2, 2, wram->wTilemap);
-        // XOR_A_A;
         which = 0;
     }
-// animate_hp_bar:
-    // LD_addr_A(wWhichHPBar);
-    // PREDEF(pAnimateHPBar);
     AnimateHPBar(hl, which);
-    // CALL(aRefreshBattleHuds);
     RefreshBattleHuds();
-    // LD_HL(mRecoilText);
-    // JP(mStdBattleTextbox);
     return StdBattleTextbox(RecoilText);
-
 }
 
 void BattleCommand_ConfuseTarget(void){
@@ -8796,37 +8245,7 @@ void BattleCommand_DoubleUndergroundDamage(void){
 }
 
 void DoubleDamage(void){
-    // LD_HL(wCurDamage + 1);
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-    // SLA_hl;
-    // DEC_HL;
-    // RL_hl;
-    // IF_NC goto quit;
-    if((uint32_t)dmg << 1 > 0xffffu) {
-        // LD_A(0xff);
-        // LD_hli_A;
-        // LD_hl_A;
-        wram->wCurDamage = NativeToBigEndian16(0xffff);
-    }
-    else {
-        dmg <<= 1;
-        wram->wCurDamage = NativeToBigEndian16(wram->wCurDamage);
-    }
-// quit:
-    // RET;
-
-// INCLUDE "engine/battle/move_effects/mimic.asm"
-
-// INCLUDE "engine/battle/move_effects/leech_seed.asm"
-
-// INCLUDE "engine/battle/move_effects/splash.asm"
-
-// INCLUDE "engine/battle/move_effects/disable.asm"
-
-// INCLUDE "engine/battle/move_effects/pay_day.asm"
-
-// INCLUDE "engine/battle/move_effects/conversion.asm"
-
+    gBattle.damage = BattleScaleDamage(gBattle.damage, 2, 1);
 }
 
 static void BattleCommand_ResetStats_Fill(uint8_t* hl, uint8_t a) {
@@ -9582,36 +9001,9 @@ void BattleCommand_TimeBasedHealContinue(uint8_t b){
 }
 
 void BattleCommand_DoubleMinimizeDamage(void){
-//  doubleminimizedamage
-    PEEK("");
-    // LD_HL(wEnemyMinimized);
-    // LDH_A_addr(hBattleTurn);
-    // AND_A_A;
-    // IF_Z goto ok;
-    // LD_HL(wPlayerMinimized);
-    uint8_t minimized = (gBattle.turn == TURN_PLAYER)? wram->wEnemyMinimized: wram->wPlayerMinimized;
-
-// ok:
-    // LD_A_hl;
-    // AND_A_A;
-    // RET_Z ;
-    if(minimized) {
-        // LD_HL(wCurDamage + 1);
-        // SLA_hl;
-        // DEC_HL;
-        // RL_hl;
-        // RET_NC ;
-        if((BigEndianToNative16(wram->wCurDamage) << 1) > 0xffff) {
-            // LD_A(0xff);
-            // LD_hli_A;
-            // LD_hl_A;
-            wram->wCurDamage = NativeToBigEndian16(0xffff);
-        }
-        else {
-            wram->wCurDamage = NativeToBigEndian16(BigEndianToNative16(wram->wCurDamage) << 1);
-        }
-    }
-    // RET;
+    bool minimized = gBattle.turn == TURN_PLAYER ? wram->wEnemyMinimized : wram->wPlayerMinimized;
+    if(minimized)
+        DoubleDamage();
 }
 
 void BattleCommand_SkipSunCharge(void){

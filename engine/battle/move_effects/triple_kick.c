@@ -1,53 +1,17 @@
 #include "../../../constants.h"
+#include "../../../home/battle.h"
 #include "triple_kick.h"
 #include "../../battle_anims/core.h"
 
 void BattleCommand_TripleKick(void){
-//  triplekick
-
-    // LD_A_addr(wBattleAnimParam);
-    // LD_B_A;
-    uint8_t b = BattleAnimationParameterGet() + 1;
-    // INC_B;
-    // LD_HL(wCurDamage + 1);
-    // LD_A_hld;
-    // LD_E_A;
-    // LD_A_hli;
-    // LD_D_A;
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
-
-    uint32_t temp = dmg;
-    do {
-    // next_kick:
-        // DEC_B;
-        // RET_Z ;
-        if(--b == 0)
-            return;
-        // LD_A_hl;
-        // ADD_A_E;
-        // LD_hld_A;
-        // LD_A_hl;
-        // ADC_A_D;
-        // LD_hli_A;
-        temp += dmg;
-
-    //  No overflow.
-        wram->wCurDamage = NativeToBigEndian16((uint16_t)temp);
-        // IF_NC goto next_kick;
-    } while(!(temp & 0xff00));
-    // LD_A(0xff);
-    // LD_hld_A;
-    // LD_hl_A;
-    wram->wCurDamage = NativeToBigEndian16(0xffff);
-    // RET;
-
+    uint32_t multiplier = (uint32_t)BattleParticipantForSide(gBattle.turn)->kickCount + 1;
+    gBattle.damage = BattleScaleDamage(gBattle.damage, multiplier, 1);
 }
 
 void BattleCommand_KickCounter(void){
-//  kickcounter
-
-    // LD_HL(wBattleAnimParam);
-    // INC_hl;
-    BattleAnimationParameterSet(BattleAnimationParameterGet() + 1);
-    // RET;
+    struct BattleParticipant* user = BattleParticipantForSide(gBattle.turn);
+    // Triple Kick has at most three successful hits.
+    if(user->kickCount < 3)
+        ++user->kickCount;
+    BattleAnimationParameterSet(user->kickCount);
 }

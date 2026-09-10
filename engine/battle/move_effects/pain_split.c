@@ -6,125 +6,26 @@
 #include "../../../home/battle.h"
 #include "../../../data/text/battle.h"
 
-static void BattleCommand_PainSplit_EnemyShareHP(struct BattlePokemon* player);
-
-static void BattleCommand_PainSplit_PlayerShareHP(struct BattlePokemon* player, struct BattlePokemon* enemy) {
-    // LD_A_hld;
-    // LD_addr_A(wHPBuffer1);
-    // LD_A_hld;
-    // LD_addr_A(wHPBuffer1 + 1);
-    wram->wHPBuffer1 = player->maxHP;
-    // LD_A_hld;
-    // LD_B_A;
-    // LD_addr_A(wHPBuffer2);
-    // LD_A_hl;
-    // LD_addr_A(wHPBuffer2 + 1);
-    wram->wHPBuffer2 = player->hp;
-    // DEC_DE;
-    // DEC_DE;
-    // LD_A_de;
-    // DEC_DE;
-    // ADD_A_B;
-    // LD_addr_A(wCurDamage + 1);
-    // LD_B_hl;
-    // LD_A_de;
-    // ADC_A_B;
-    // SRL_A;
-    // LD_addr_A(wCurDamage);
-    // LD_A_addr(wCurDamage + 1);
-    // RR_A;
-    // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = NativeToBigEndian16((enemy->hp + wram->wHPBuffer2) >> 1);
-    // INC_HL;
-    // INC_HL;
-    // INC_HL;
-    // INC_DE;
-    // INC_DE;
-    // INC_DE;
-    return BattleCommand_PainSplit_EnemyShareHP(player);
-}
-
-static void BattleCommand_PainSplit_EnemyShareHP(struct BattlePokemon* player) {
-// EnemyShareHP:
-    // LD_C_hl;
-    // DEC_HL;
-    // LD_A_addr(wCurDamage + 1);
-    // SUB_A_C;
-    // LD_B_hl;
-    // DEC_HL;
-    uint16_t bc = player->maxHP;
-    // LD_A_addr(wCurDamage);
-    // SBC_A_B;
-    // IF_NC goto skip;
-
-    if(BigEndianToNative16(wram->wCurDamage) < bc) {
-        // LD_A_addr(wCurDamage);
-        // LD_B_A;
-        // LD_A_addr(wCurDamage + 1);
-        // LD_C_A;
-        bc = BigEndianToNative16(wram->wCurDamage);
-    }
-// skip:
-    // LD_A_C;
-    // LD_hld_A;
-    // LD_addr_A(wHPBuffer3);
-    // LD_A_B;
-    // LD_hli_A;
-    // LD_addr_A(wHPBuffer3 + 1);
-    wram->wHPBuffer3 = bc;
-    player->hp = bc;
-    // RET;
-}
-
 void BattleCommand_PainSplit(void){
-//  painsplit
-
-    // LD_A_addr(wAttackMissed);
-    // AND_A_A;
-    // JP_NZ (mBattleCommand_PainSplit_ButItFailed);
-    // CALL(aCheckSubstituteOpp);
-    // JP_NZ (mBattleCommand_PainSplit_ButItFailed);
-    if(wram->wAttackMissed || CheckSubstituteOpp()) {
-    // ButItFailed:
-        // JP(mPrintDidntAffect2);
+    if(wram->wAttackMissed || CheckSubstituteOpp())
         return PrintDidntAffect2();
-    }
-    // CALL(aAnimateCurrentMove);
     AnimateCurrentMove();
-    // LD_HL(wBattleMonMaxHP + 1);
-    // LD_DE(wEnemyMonMaxHP + 1);
-    // CALL(aBattleCommand_PainSplit_PlayerShareHP);
-    BattleCommand_PainSplit_PlayerShareHP(&gBattle.player.mon, &gBattle.enemy.mon);
-    // LD_A(0x1);
-    // LD_addr_A(wWhichHPBar);
-    // hlcoord(10, 9, wTilemap);
-    // PREDEF(pAnimateHPBar);
-    AnimateHPBar(coord(10, 9, wram->wTilemap), 0x1);
-    // LD_HL(wEnemyMonHP);
-    // LD_A_hli;
-    // LD_addr_A(wHPBuffer2 + 1);
-    // LD_A_hli;
-    // LD_addr_A(wHPBuffer2);
-    wram->wHPBuffer2 = (gBattle.enemy.mon.hp);
-    // LD_A_hli;
-    // LD_addr_A(wHPBuffer1 + 1);
-    // LD_A_hl;
-    // LD_addr_A(wHPBuffer1);
-    wram->wHPBuffer1 = (gBattle.enemy.mon.maxHP);
-    // CALL(aBattleCommand_PainSplit_EnemyShareHP);
-    BattleCommand_PainSplit_EnemyShareHP(&gBattle.enemy.mon);
-    // XOR_A_A;
-    // LD_addr_A(wWhichHPBar);
-    // CALL(aResetDamage);
+    struct BattlePokemon* player = &gBattle.player.mon;
+    struct BattlePokemon* enemy = &gBattle.enemy.mon;
+    uint16_t oldPlayerHP = player->hp;
+    uint16_t oldEnemyHP = enemy->hp;
+    uint16_t sharedHP = ((uint32_t)oldPlayerHP + oldEnemyHP) / 2;
+    player->hp = sharedHP < player->maxHP ? sharedHP : player->maxHP;
+    enemy->hp = sharedHP < enemy->maxHP ? sharedHP : enemy->maxHP;
     ResetDamage();
-    // hlcoord(2, 2, wTilemap);
-    // PREDEF(pAnimateHPBar);
-    AnimateHPBar(coord(2, 2, wram->wTilemap), 0x0);
-    // FARCALL(av_UpdateBattleHUDs);
+    wram->wHPBuffer1 = player->maxHP;
+    wram->wHPBuffer2 = oldPlayerHP;
+    wram->wHPBuffer3 = player->hp;
+    AnimateHPBar(coord(10, 9, wram->wTilemap), TURN_ENEMY);
+    wram->wHPBuffer1 = enemy->maxHP;
+    wram->wHPBuffer2 = oldEnemyHP;
+    wram->wHPBuffer3 = enemy->hp;
+    AnimateHPBar(coord(2, 2, wram->wTilemap), TURN_PLAYER);
     v_UpdateBattleHUDs();
-
-    // LD_HL(mSharedPainText);
-    // JP(mStdBattleTextbox);
-    return StdBattleTextbox(SharedPainText);
-
+    StdBattleTextbox(SharedPainText);
 }

@@ -557,17 +557,22 @@ struct BattleParticipant {
     uint16_t baseStats[5];
     uint8_t statStages[NUM_LEVEL_STATS];
     uint8_t conditions[5];
+    uint32_t damageTaken;
+    uint16_t substituteHP;
+    uint8_t hitCount, kickCount;
+    struct { uint32_t damage; uint8_t turnsRemaining; } futureSight;
 };
 struct BattleState {
     struct BattleParticipant player, enemy;
     enum BattleSide turn;
+    uint32_t damage;
+    uint16_t enemyHPAtPlayerSwitch;
     uint8_t participantsNotFainted, participantsIncludingFainted;
 };
 
 #if defined(__cplusplus) || defined(_MSC_VER)
 #pragma pack(pop)
 #endif
-
 #if defined(__cplusplus) || defined(_MSC_VER)
 struct 
 #else
@@ -1959,7 +1964,7 @@ struct CurMapData {
     uint8_t digWarpNumber;
     uint8_t digMapGroup;
     uint8_t digMapNumber;
-    // used on maps like second floor pokécenter, which are reused, so we know which
+    // used on maps like second floor pokÃ©center, which are reused, so we know which
     // map to return to
     uint8_t backupWarpNumber;
     uint8_t backupMapGroup;

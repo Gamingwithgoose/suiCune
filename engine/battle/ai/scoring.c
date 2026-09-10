@@ -2562,7 +2562,7 @@ static void AI_Smart_PriorityHit(uint8_t* hl){
     // LD_C_A;
     // LD_A_addr(wCurDamage);
     // LD_B_A;
-    uint16_t bc = BigEndianToNative16(wram->wCurDamage);
+    uint32_t bc = gBattle.damage;
     // LD_A_addr(wBattleMonHP + 1);
     // CP_A_C;
     // LD_A_addr(wBattleMonHP);
@@ -4360,7 +4360,7 @@ void AI_Aggressive(void){
     uint8_t b = 0;
     uint8_t c = 0;
     // LD_DE(0);
-    uint16_t de = 0;
+    uint32_t de = 0;
 
     while(++b != NUM_MOVES + 1) {
     // checkmove:
@@ -4404,12 +4404,12 @@ void AI_Aggressive(void){
         // LD_A_addr(wCurDamage);
         // SBC_A_D;
         // IF_C goto checkmove;
-        if(BigEndianToNative16(wram->wCurDamage) > de) {
+        if(gBattle.damage > de) {
             // LD_A_addr(wCurDamage + 1);
             // LD_E_A;
             // LD_A_addr(wCurDamage);
             // LD_D_A;
-            de = BigEndianToNative16(wram->wCurDamage);
+            de = gBattle.damage;
             // LD_C_B;
             c = b;
             // goto checkmove;
@@ -4725,7 +4725,7 @@ void AI_Risky(void){
         // LD_E_A;
         // LD_A_addr(wCurDamage);
         // LD_D_A;
-        uint16_t de = BigEndianToNative16(wram->wCurDamage);
+        uint32_t de = gBattle.damage;
         // LD_A_addr(wBattleMonHP + 1);
         // CP_A_E;
         // LD_A_addr(wBattleMonHP);

@@ -18,7 +18,7 @@ bool CheckFalseSwipe(void) {
 
 // got_hp:
     // LD_DE(wCurDamage);
-    uint16_t dmg = BigEndianToNative16(wram->wCurDamage);
+    uint32_t dmg = gBattle.damage;
     // LD_C(2);
     // PUSH_HL;
     // PUSH_DE;
@@ -33,7 +33,7 @@ bool CheckFalseSwipe(void) {
         // LD_A_hl;
         // DEC_A;
         // LD_de_A;
-        wram->wCurDamage = NativeToBigEndian16(hp - 1);
+        gBattle.damage = hp != 0 ? hp - 1 : 0;
 
         // INC_A;
         // IF_NZ goto okay;

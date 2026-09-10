@@ -459,7 +459,7 @@ void BattleTurn(void){
         wram->wEnemyJustGotFrozen = FALSE;
         // LD_addr_A(wCurDamage);
         // LD_addr_A(wCurDamage + 1);
-        wram->wCurDamage = 0;
+        gBattle.damage = 0;
 
         // CALL(aHandleBerserkGene);
         HandleBerserkGene();
@@ -2495,7 +2495,7 @@ static void HandleFutureSight_do_it(void){
     // AND_A_A;
     // IF_Z goto okay;
     // LD_HL(wEnemyFutureSightCount);
-    uint8_t* hl = (gBattle.turn == TURN_PLAYER)? &wram->wPlayerFutureSightCount: &wram->wEnemyFutureSightCount;
+    uint8_t* hl = (gBattle.turn == TURN_PLAYER)? &gBattle.player.futureSight.turnsRemaining: &gBattle.enemy.futureSight.turnsRemaining;
 
 // okay:
     // LD_A_hl;
@@ -2537,7 +2537,7 @@ static void HandleFutureSight_do_it(void){
     // XOR_A_A;
     // LD_addr_A(wCurDamage);
     // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = 0;
+    gBattle.damage = 0;
 
     // LD_A(BATTLE_VARS_MOVE);
     // CALL(aGetBattleVarAddr);
@@ -3339,7 +3339,7 @@ void UpdateBattleStateAndExperienceAfterEnemyFaint(void){
     // LD_HL(wEnemyDamageTaken);
     // LD_hli_A;
     // LD_hl_A;
-    wram->wEnemyDamageTaken = 0;
+    gBattle.enemy.damageTaken = 0;
     // CALL(aNewEnemyMonStatus);
     NewEnemyMonStatus();
     // CALL(aBreakAttraction);
@@ -4163,7 +4163,7 @@ static void UpdateFaintedPlayerMon(void){
     // LD_HL(wPlayerDamageTaken);
     // LD_hli_A;
     // LD_hl_A;
-    wram->wPlayerDamageTaken = 0;
+    gBattle.player.damageTaken = 0;
     // LD_addr_A(wBattleMonStatus);
     gBattle.player.mon.status = 0;
     // CALL(aUpdateBattleMonInParty);
@@ -5331,7 +5331,7 @@ void LoadEnemyMonToSwitchTo(uint8_t b){
     // LD_addr_A(wEnemyHPAtTimeOfPlayerSwitch);
     // LD_A_hl;
     // LD_addr_A(wEnemyHPAtTimeOfPlayerSwitch + 1);
-    wram->wEnemyHPAtTimeOfPlayerSwitch = NativeToBigEndian16(gBattle.enemy.mon.hp);
+    gBattle.enemyHPAtPlayerSwitch = gBattle.enemy.mon.hp;
     // RET;
 }
 
@@ -11632,7 +11632,7 @@ void SendOutMonText(void){
     // LDH_addr_A(hMultiplicand + 1);
     // LD_A_hl;
     // LD_addr_A(wEnemyHPAtTimeOfPlayerSwitch + 1);
-    wram->wEnemyHPAtTimeOfPlayerSwitch = NativeToBigEndian16(gBattle.enemy.mon.hp);
+    gBattle.enemyHPAtPlayerSwitch = gBattle.enemy.mon.hp;
     uint16_t hp = gBattle.enemy.mon.hp;
     uint16_t max_hp = gBattle.enemy.mon.maxHP;
     // LDH_addr_A(hMultiplicand + 2);
@@ -11747,7 +11747,8 @@ static void WithdrawMonText_WithdrawMonText_Function(struct TextCmdState* state)
     // LD_A_de;
     // SBC_A_B;
     // LDH_addr_A(hMultiplicand + 1);
-    uint16_t hpLost = BigEndianToNative16(wram->wEnemyHPAtTimeOfPlayerSwitch) - (gBattle.enemy.mon.hp);
+    uint16_t hpLost = gBattle.enemyHPAtPlayerSwitch > gBattle.enemy.mon.hp
+        ? gBattle.enemyHPAtPlayerSwitch - gBattle.enemy.mon.hp : 0;
     // LD_A(25);
     // LDH_addr_A(hMultiplier);
     // CALL(aMultiply);
@@ -11762,7 +11763,8 @@ static void WithdrawMonText_WithdrawMonText_Function(struct TextCmdState* state)
     // LD_B(4);
     // LDH_addr_A(hDivisor);
     // CALL(aDivide);
-    uint16_t n = (hpLost * 25) / ((gBattle.enemy.mon.maxHP) >> 2);
+    uint16_t quarterHP = gBattle.enemy.mon.maxHP >> 2;
+    uint32_t n = quarterHP != 0 ? ((uint32_t)hpLost * 25) / quarterHP : 0;
     // POP_BC;
     // POP_DE;
     // LDH_A_addr(hQuotient + 3);
