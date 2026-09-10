@@ -54,23 +54,23 @@ void BattleCommand_Transform(void){
     // CALL(aResetActorDisable);
     ResetActorDisable();
     
-    struct BattleMon* hl;
-    struct BattleMon* de;
+    struct BattlePokemon* hl;
+    struct BattlePokemon* de;
 
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_HL(wBattleMonSpecies);
-        hl = &wram->wBattleMon;
+        hl = &gBattle.player.mon;
         // LD_DE(wEnemyMonSpecies);
-        de = &wram->wEnemyMon;
+        de = &gBattle.enemy.mon;
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_NZ goto got_mon_species;
     }
     else {
         // LD_HL(wEnemyMonSpecies);
-        hl = &wram->wEnemyMon;
+        hl = &gBattle.enemy.mon;
         // LD_DE(wBattleMonSpecies);
-        de = &wram->wBattleMon;
+        de = &gBattle.player.mon;
         // XOR_A_A;
         // LD_addr_A(wCurMoveNum);
         wram->wCurMoveNum = 0;
@@ -90,7 +90,7 @@ void BattleCommand_Transform(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto mimic_enemy_backup;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_A_de;
         // LD_addr_A(wEnemyBackupDVs);
         // INC_DE;
@@ -164,12 +164,12 @@ void BattleCommand_Transform(void){
     // LD_DE(wPlayerStats);
     // LD_BC(2 * 5);
     // CALL(aBattleSideCopy);
-    BattleSideCopy(wram->wEnemyStats, wram->wPlayerStats, 2 * 5);
+    BattleSideCopy(gBattle.enemy.baseStats, gBattle.player.baseStats, sizeof(gBattle.player.baseStats));
     // LD_HL(wEnemyStatLevels);
     // LD_DE(wPlayerStatLevels);
     // LD_BC(8);
     // CALL(aBattleSideCopy);
-    BattleSideCopy(wram->wEnemyStatLevels, wram->wPlayerStatLevels, 2 * 5);
+    BattleSideCopy(gBattle.enemy.statStages, gBattle.player.statStages, sizeof(gBattle.player.statStages));
     // CALL(av_CheckBattleScene);
     // IF_C goto mimic_anims;
     if(!v_CheckBattleScene()) {
@@ -180,7 +180,7 @@ void BattleCommand_Transform(void){
         // LD_A_addr(wEnemyMinimized);
 
     // got_byte:
-        uint8_t minimized = (hram.hBattleTurn == 0)? wram->wPlayerMinimized: wram->wEnemyMinimized;
+        uint8_t minimized = (gBattle.turn == 0)? wram->wPlayerMinimized: wram->wEnemyMinimized;
         // AND_A_A;
         // IF_NZ goto mimic_anims;
         if(minimized)
@@ -221,7 +221,7 @@ void BattleSideCopy(void* hl, void* de, uint16_t bc){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto copy;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
     //  Swap hl and de
         // PUSH_HL;
         // LD_H_D;

@@ -532,6 +532,38 @@ struct NativePartyMon
         };
     };
 };
+// Native active battler. Transformations and modified stats are battle-local.
+struct BattlePokemon {
+    // Transitional identifiers: move scripts and persistent party still use
+    // checked byte IDs. Widen with that complete producer/consumer closure.
+    LegacySpeciesId species;
+    LegacyItemId item;
+    LegacyMoveId moves[NUM_MOVES];
+    uint16_t dvs;
+    uint8_t pp[NUM_MOVES], happiness, level, status;
+    uint16_t hp, maxHP;
+    union {
+        uint16_t stats[5];
+        struct { uint16_t attack, defense, speed, spclAtk, spclDef; };
+    };
+    union {
+        uint8_t types[2];
+        struct { uint8_t type1, type2; };
+    };
+};
+struct BattleParticipant {
+    struct BattlePokemon mon;
+    size_t partyIndex;
+    uint16_t baseStats[5];
+    uint8_t statStages[NUM_LEVEL_STATS];
+    uint8_t conditions[5];
+};
+struct BattleState {
+    struct BattleParticipant player, enemy;
+    enum BattleSide turn;
+    uint8_t participantsNotFainted, participantsIncludingFainted;
+};
+
 #if defined(__cplusplus) || defined(_MSC_VER)
 #pragma pack(pop)
 #endif

@@ -125,19 +125,19 @@ uint8_t LearnMove(move_t toLearn){
         // BIT_A(SUBSTATUS_TRANSFORMED);
         // JP_NZ (mLearnMove_learned);
 
-        if(wram->wBattleMode != 0 && wram->wCurPartyMon == wram->wCurBattleMon && !bit_test(wram->wPlayerSubStatus5, SUBSTATUS_TRANSFORMED)) {
+        if(wram->wBattleMode != 0 && wram->wCurPartyMon == gBattle.player.partyIndex && !bit_test(gBattle.player.conditions[4], SUBSTATUS_TRANSFORMED)) {
             // LD_H_D;
             // LD_L_E;
             // LD_DE(wBattleMonMoves);
             // LD_BC(NUM_MOVES);
             // CALL(aCopyBytes);
-            CopyBytes(wram->wBattleMon.moves, moves, sizeof(wram->wBattleMon.moves));
+            CopyBytes(gBattle.player.mon.moves, moves, sizeof(gBattle.player.mon.moves));
             // LD_BC(wPartyMon1PP - (wPartyMon1Moves + NUM_MOVES));
             // ADD_HL_BC;
             // LD_DE(wBattleMonPP);
             // LD_BC(NUM_MOVES);
             // CALL(aCopyBytes);
-            CopyBytes(wram->wBattleMon.pp, pp, sizeof(wram->wBattleMon.moves));
+            CopyBytes(gBattle.player.mon.pp, pp, sizeof(gBattle.player.mon.moves));
         }
         // JP(mLearnMove_learned);
     // learned:

@@ -22,7 +22,7 @@ void CalcMonStats(uint16_t* stats, const uint16_t* statExp, uint16_t dvs, uint8_
                   const struct BaseData* base, uint8_t level);
 void CalcMonStats_PartyMon(struct PartyMon* mon, uint8_t b);
 void CalcNativeMonStats(struct NativePartyMon* mon, uint8_t useStatExp);
-void CalcMonStats_BattleMon(struct BattleMon* mon);
+void CalcMonStats_BattleMon(struct BattlePokemon* mon);
 uint16_t CalcMonStatC(const uint16_t* statExp, uint16_t dvs, uint8_t b, uint8_t c);
 uint8_t GivePoke(uint8_t b, const char* nickname, const char* otName);
 extern const txt_cmd_s WasSentToBillsPCText[];

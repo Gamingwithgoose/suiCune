@@ -316,7 +316,7 @@ void ClearActorHud(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto player;
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
     // player:
         // hlcoord(9, 7, wTilemap);
         // LD_BC((5 << 8) | 11);
@@ -1302,13 +1302,13 @@ void BattleAnimCmd_Transform(void){
     // AND_A_A;
     // IF_Z goto player;
 
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_A_addr(wTempBattleMonSpecies);
         // LD_addr_A(wCurPartySpecies);
         wram->wCurPartySpecies = wram->wTempBattleMonSpecies;
         // LD_HL(wBattleMonDVs);
         // PREDEF(pGetUnownLetter);
-        GetUnownLetter(wram->wBattleMon.dvs);
+        GetUnownLetter(gBattle.player.mon.dvs);
         uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
         if(LoadNativeFrontpicPixels(pixels, 0))
             UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7);
@@ -1321,7 +1321,7 @@ void BattleAnimCmd_Transform(void){
         wram->wCurPartySpecies = wram->wTempEnemyMonSpecies;
         // LD_HL(wEnemyMonDVs);
         // PREDEF(pGetUnownLetter);
-        GetUnownLetter(wram->wEnemyMon.dvs);
+        GetUnownLetter(gBattle.enemy.mon.dvs);
         uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
         if(LoadNativeFrontpicPixels(pixels, 0))
             UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 7 * 7);
@@ -1381,7 +1381,7 @@ static void GetSubstitutePic(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto player;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_HL(mMonsterSpriteGFX + 0 * LEN_2BPP_TILE);
         // LD_DE(sScratch + (2 * 7 + 5) * LEN_2BPP_TILE);
         // CALL(aGetSubstitutePic_CopyTile);
@@ -1434,7 +1434,7 @@ void BattleAnimCmd_MinimizeOpp(void){
 
     uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
     size_t tileCount = BuildMinimizePic(pixels);
-    UpdateBattleSceneBattlerImage((hram.hBattleTurn == TURN_PLAYER)
+    UpdateBattleSceneBattlerImage((gBattle.turn == TURN_PLAYER)
             ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT,
         pixels, tileCount);
 
@@ -1449,7 +1449,7 @@ static size_t BuildMinimizePic(uint8_t pixels[7 * 7 * LEN_2BPP_TILE]){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto player;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_DE(sScratch + (3 * 7 + 5) * LEN_2BPP_TILE);
         // CALL(aCopyMinimizePic);
         CopyMinimizePic(pixels + (3 * 7 + 5) * LEN_2BPP_TILE);
@@ -1492,7 +1492,7 @@ void BattleAnimCmd_Minimize(void){
 
     uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
     size_t tileCount = BuildMinimizePic(pixels);
-    UpdateBattleSceneBattlerImage((hram.hBattleTurn == TURN_PLAYER)
+    UpdateBattleSceneBattlerImage((gBattle.turn == TURN_PLAYER)
             ? BATTLE_SCENE_BATTLER_PLAYER : BATTLE_SCENE_BATTLER_OPPONENT,
         pixels, tileCount);
 
@@ -1514,7 +1514,7 @@ void BattleAnimCmd_DropSub(void){
     // AND_A_A;
     // IF_Z goto player;
 
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // CALLFAR(aDropEnemySub);
         DropEnemySub();
         // goto done;
@@ -1552,10 +1552,10 @@ void BattleAnimCmd_BeatUp(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto player;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // LD_HL(wBattleMonDVs);
         // PREDEF(pGetUnownLetter);
-        GetUnownLetter(wram->wBattleMon.dvs);
+        GetUnownLetter(gBattle.player.mon.dvs);
         uint8_t pixels[7 * 7 * LEN_2BPP_TILE];
         if(LoadNativeFrontpicPixels(pixels, 0))
             UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_OPPONENT, pixels, 7 * 7);
@@ -1565,7 +1565,7 @@ void BattleAnimCmd_BeatUp(void){
     // player:
         // LD_HL(wEnemyMonDVs);
         // PREDEF(pGetUnownLetter);
-        GetUnownLetter(wram->wEnemyMon.dvs);
+        GetUnownLetter(gBattle.enemy.mon.dvs);
         uint8_t pixels[6 * 6 * LEN_2BPP_TILE];
         if(LoadNativeBackpicPixels(pixels, wram->wCurPartySpecies))
             UpdateBattleSceneBattlerImage(BATTLE_SCENE_BATTLER_PLAYER, pixels, 6 * 6);
@@ -1629,7 +1629,7 @@ void BattleAnimCmd_Sound(uint8_t duration, uint8_t tracks, uint16_t sfx){
     // CALL(aBattleAnimCmd_Sound_GetCryTrack);
     // maskbits(NUM_NOISE_CHANS, 0);
     // LD_addr_A(wCryTracks);
-    wram->wCryTracks = (tracks ^ ((hram.hBattleTurn == TURN_PLAYER)? 0: 1)) & 3;
+    wram->wCryTracks = (tracks ^ ((gBattle.turn == TURN_PLAYER)? 0: 1)) & 3;
 
     // LD_E_A;
     // LD_D(0);
@@ -1691,12 +1691,12 @@ void BattleAnimCmd_Cry(uint8_t cry){
     // IF_NZ goto enemy;
 
     species_t species;
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
         // LD_A(0xf0);
         // LD_addr_A(wCryTracks);
         wram->wCryTracks = 0xf0;
         // LD_A_addr(wBattleMonSpecies);
-        species = wram->wBattleMon.species;
+        species = gBattle.player.mon.species;
         // goto done_cry_tracks;
     }
     else {
@@ -1705,7 +1705,7 @@ void BattleAnimCmd_Cry(uint8_t cry){
         // LD_addr_A(wCryTracks);
         wram->wCryTracks = 0x0f;
         // LD_A_addr(wEnemyMonSpecies);
-        species = wram->wEnemyMon.species;
+        species = gBattle.enemy.mon.species;
     }
 
 // done_cry_tracks:

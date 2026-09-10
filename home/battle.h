@@ -1,3 +1,8 @@
+// Native battle operations; packed PartyMon access remains a migration boundary.
+struct BattleParticipant* BattleParticipantForSide(enum BattleSide side);
+uint16_t BattleApplyDamage(struct BattlePokemon* mon, uint16_t damage);
+uint16_t BattleRestoreHP(struct BattlePokemon* mon, uint16_t amount);
+void BattleLoadPartyPokemon(struct BattlePokemon* dest, const struct PartyMon* src);
 void GetDexNumber(void);
 struct PartyMon* UserPartyMon(void);
 struct PartyMon* OpponentPartyMon(void);

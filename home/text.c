@@ -440,13 +440,13 @@ void PlaceMoveTargetsName(struct TextPrintState* state) {
     // LDH_A_addr(hBattleTurn);
     // XOR_A(1);
     // JR(mPlaceBattlersName);
-    return PlaceBattlersName(state, (hram.hBattleTurn ^ 1) != 0);
+    return PlaceBattlersName(state, (gBattle.turn ^ 1) != 0);
 }
 
 void PlaceMoveUsersName(struct TextPrintState* state) {
     // LDH_A_addr(hBattleTurn);
     // fallthrough
-    return PlaceBattlersName(state, hram.hBattleTurn != TURN_PLAYER);
+    return PlaceBattlersName(state, gBattle.turn != TURN_PLAYER);
 }
 
 void PlaceBattlersName(struct TextPrintState* state, bool is_enemy) {

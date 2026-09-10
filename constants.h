@@ -87,6 +87,7 @@ extern struct wram_s *wram;
 extern struct OptionsData gOptions;
 extern struct CurMapData gCurMapData;
 extern struct PokemonData gPokemon;
+extern struct BattleState gBattle;
 extern struct PlayerData gPlayer;
 extern struct CrystalData gCrystal;
 extern struct NativeUIState gNativeUI;

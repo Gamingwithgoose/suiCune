@@ -223,7 +223,7 @@ u8_flag_s GetGender(uint8_t monType){
         break;
     default:
     case WILDMON:
-        DVs = wram->wEnemyMon.dvs;
+        DVs = gBattle.enemy.mon.dvs;
         break;
     }
 

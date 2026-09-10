@@ -40,14 +40,14 @@ static bool BattleCommand_SleepTalk_check_two_turn_move(move_t b) {
 }
 
 // Returns true (nc) if the move is usable.
-static bool BattleCommand_SleepTalk_check_has_usable_move(struct BattleMon* mon) {
+static bool BattleCommand_SleepTalk_check_has_usable_move(struct BattlePokemon* mon) {
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // LD_A_addr(wDisabledMove);
     // IF_Z goto got_move_2;
 
     // LD_A_addr(wEnemyDisabledMove);
-    move_t disabledMove = (hram.hBattleTurn == TURN_PLAYER)? wram->wDisabledMove: wram->wEnemyDisabledMove;
+    move_t disabledMove = (gBattle.turn == TURN_PLAYER)? wram->wDisabledMove: wram->wEnemyDisabledMove;
 
 // got_move_2:
     // LD_B_A;
@@ -115,8 +115,8 @@ void BattleCommand_SleepTalk(void){
     // LD_HL(wEnemyMonMoves + 1);
     // LD_A_addr(wEnemyDisabledMove);
     // LD_D_A;
-    struct BattleMon* mon = (hram.hBattleTurn == TURN_PLAYER)? &wram->wBattleMon: &wram->wEnemyMon;
-    move_t d = (hram.hBattleTurn == TURN_PLAYER)? wram->wDisabledMove: wram->wEnemyDisabledMove;
+    struct BattlePokemon* mon = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon: &gBattle.enemy.mon;
+    move_t d = (gBattle.turn == TURN_PLAYER)? wram->wDisabledMove: wram->wEnemyDisabledMove;
 
 // got_moves:
     // LD_A(BATTLE_VARS_STATUS);

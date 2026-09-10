@@ -63,7 +63,7 @@ void FindFirstAliveMonAndStartBattle(void){
     // ADD_HL_DE;
     // LD_A_hl;
     // LD_addr_A(wBattleMonLevel);
-    wram->wBattleMon.level = lvl;
+    gBattle.player.mon.level = lvl;
     // PREDEF(pDoBattleTransition);
     DoBattleTransition();
     // FARCALL(av_LoadBattleFontsHPBar);
@@ -267,11 +267,11 @@ void ClearBattleRAM(void){
     // LD_addr_A(wCriticalHit);
     wram->wCriticalHit = 0;
     // LD_addr_A(wBattleMonSpecies);
-    wram->wBattleMon.species = 0;
+    gBattle.player.mon.species = 0;
     // LD_addr_A(wBattleParticipantsNotFainted);
-    wram->wBattleParticipantsNotFainted = 0;
+    gBattle.participantsNotFainted = 0;
     // LD_addr_A(wCurBattleMon);
-    wram->wCurBattleMon = 0;
+    gBattle.player.partyIndex = 0;
     // LD_addr_A(wForcedSwitch);
     wram->wForcedSwitch = 0;
     // LD_addr_A(wTimeOfDayPal);
@@ -292,12 +292,12 @@ void ClearBattleRAM(void){
     // LD_HL(wBattleMonDVs);
     // LD_hli_A;
     // LD_hl_A;
-    wram->wBattleMon.dvs = 0;
+    gBattle.player.mon.dvs = 0;
 
     // LD_HL(wEnemyMonDVs);
     // LD_hli_A;
     // LD_hl_A;
-    wram->wEnemyMon.dvs = 0;
+    gBattle.enemy.mon.dvs = 0;
 
 //  Clear the entire BattleMons area
     // LD_HL(wBattle);

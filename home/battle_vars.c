@@ -2,12 +2,12 @@
 #include "battle_vars.h"
 
 static uint8_t* BattleVarLocations[] = {
-    [PLAYER_SUBSTATUS_1]    = wram_ptr(wPlayerSubStatus1),           [ENEMY_SUBSTATUS_1]    = wram_ptr(wEnemySubStatus1),
-    [PLAYER_SUBSTATUS_2]    = wram_ptr(wPlayerSubStatus2),           [ENEMY_SUBSTATUS_2]    = wram_ptr(wEnemySubStatus2),
-    [PLAYER_SUBSTATUS_3]    = wram_ptr(wPlayerSubStatus3),           [ENEMY_SUBSTATUS_3]    = wram_ptr(wEnemySubStatus3),
-    [PLAYER_SUBSTATUS_4]    = wram_ptr(wPlayerSubStatus4),           [ENEMY_SUBSTATUS_4]    = wram_ptr(wEnemySubStatus4),
-    [PLAYER_SUBSTATUS_5]    = wram_ptr(wPlayerSubStatus5),           [ENEMY_SUBSTATUS_5]    = wram_ptr(wEnemySubStatus5),
-    [PLAYER_STATUS]         = wram_ptr(wBattleMonStatus),            [ENEMY_STATUS]         = wram_ptr(wEnemyMonStatus),
+    [PLAYER_SUBSTATUS_1]    = &gBattle.player.conditions[0],           [ENEMY_SUBSTATUS_1]    = &gBattle.enemy.conditions[0],
+    [PLAYER_SUBSTATUS_2]    = &gBattle.player.conditions[1],           [ENEMY_SUBSTATUS_2]    = &gBattle.enemy.conditions[1],
+    [PLAYER_SUBSTATUS_3]    = &gBattle.player.conditions[2],           [ENEMY_SUBSTATUS_3]    = &gBattle.enemy.conditions[2],
+    [PLAYER_SUBSTATUS_4]    = &gBattle.player.conditions[3],           [ENEMY_SUBSTATUS_4]    = &gBattle.enemy.conditions[3],
+    [PLAYER_SUBSTATUS_5]    = &gBattle.player.conditions[4],           [ENEMY_SUBSTATUS_5]    = &gBattle.enemy.conditions[4],
+    [PLAYER_STATUS]         = &gBattle.player.mon.status,            [ENEMY_STATUS]         = &gBattle.enemy.mon.status,
     [PLAYER_MOVE_ANIMATION] = wram_ptr(wPlayerMoveStructAnimation),  [ENEMY_MOVE_ANIMATION] = wram_ptr(wEnemyMoveStructAnimation),
     [PLAYER_MOVE_EFFECT]    = wram_ptr(wPlayerMoveStructEffect),     [ENEMY_MOVE_EFFECT]    = wram_ptr(wEnemyMoveStructEffect),
     [PLAYER_MOVE_POWER]     = wram_ptr(wPlayerMoveStructPower),      [ENEMY_MOVE_POWER]     = wram_ptr(wEnemyMoveStructPower),
@@ -77,7 +77,7 @@ uint8_t* GetBattleVarAddr(uint8_t a){
     // LD_A_hl;
     // LD_C_A;
     // LD_B(0);
-    uint8_t id = BattleVarPairs[a][(hram.hBattleTurn == TURN_PLAYER)? 0: 1];
+    uint8_t id = BattleVarPairs[a][(gBattle.turn == TURN_PLAYER)? 0: 1];
 
     // LD_HL(mBattleVarLocations);
     // ADD_HL_BC;

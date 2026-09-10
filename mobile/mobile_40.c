@@ -2763,7 +2763,7 @@ static void Mobile_MoveSelectionScreen_ListMoves(void){
     // LD_DE(wListMoves_MoveIndicesBuffer);
     // LD_BC(NUM_MOVES);
     // CALL(aCopyBytes);
-    CopyBytes(wram->wListMoves_MoveIndicesBuffer, wram->wBattleMon.moves, sizeof(wram->wBattleMon.moves));
+    CopyBytes(wram->wListMoves_MoveIndicesBuffer, gBattle.player.mon.moves, sizeof(gBattle.player.mon.moves));
     // LD_A(SCREEN_WIDTH * 2);
     // LD_addr_A(wListMovesLineSpacing);
     wram->wListMovesLineSpacing = SCREEN_WIDTH * 2;
@@ -2773,7 +2773,7 @@ static void Mobile_MoveSelectionScreen_ListMoves(void){
     // RET;
 #else
     Textbox(coord(4, 17 - NUM_MOVES - 1, wram->wTilemap), 4, 14);
-    CopyBytes(wram->wListMoves_MoveIndicesBuffer, wram->wBattleMon.moves, sizeof(wram->wBattleMon.moves));
+    CopyBytes(wram->wListMoves_MoveIndicesBuffer, gBattle.player.mon.moves, sizeof(gBattle.player.mon.moves));
     wram->wListMovesLineSpacing = SCREEN_WIDTH;
     ListMoves(coord(6, 17 - NUM_MOVES, wram->wTilemap));
 #endif
@@ -2886,7 +2886,7 @@ Top:
         // LD_A_hl;
         // AND_A(0x3f);
         // IF_Z goto no_pp_left;
-        if((wram->wBattleMon.pp[wram->wMenuCursorY - 1] & 0x3f) == 0) {
+        if((gBattle.player.mon.pp[wram->wMenuCursorY - 1] & 0x3f) == 0) {
         // no_pp_left:
             // LD_HL(mBattleText_TheresNoPPLeftForThisMove);
     
@@ -2925,7 +2925,7 @@ Top:
         // ADD_HL_BC;
         // LD_A_hl;
         // LD_addr_A(wCurPlayerMove);
-        wram->wCurPlayerMove = wram->wBattleMon.moves[wram->wMenuCursorY - 1];
+        wram->wCurPlayerMove = gBattle.player.mon.moves[wram->wMenuCursorY - 1];
         // XOR_A_A;
         // RET;
         return 0x0;

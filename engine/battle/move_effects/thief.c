@@ -14,7 +14,7 @@ static void BattleCommand_Thief_playeritem(item_t** de, item_t** hl) {
         *de = &gPokemon.partyMon[wram->wCurPartyMon].mon.item;
     // LD_HL(wBattleMonItem);
     if(hl)
-        *hl = &wram->wEnemyMon.item;
+        *hl = &gBattle.enemy.mon.item;
     // RET;
 }
 
@@ -25,10 +25,10 @@ static void BattleCommand_Thief_enemyitem(item_t** de, item_t** hl) {
     // LD_D_H;
     // LD_E_L;
     if(de)
-        *de = &wram->wOTPartyMon[wram->wCurOTMon].mon.item;
+        *de = &wram->wOTPartyMon[gBattle.enemy.partyIndex].mon.item;
     // LD_HL(wEnemyMonItem);
     if(hl)
-        *hl = &wram->wEnemyMon.item;
+        *hl = &gBattle.enemy.mon.item;
     // RET;
 }
 
@@ -42,7 +42,7 @@ void BattleCommand_Thief(void){
     item_t* hl;
     item_t* de;
     item_t itm;
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
     //  The player needs to be able to steal an item.
 
         // CALL(aBattleCommand_Thief_playeritem);

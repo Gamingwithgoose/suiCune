@@ -29,7 +29,7 @@ void v_DisappearUser(void){
     // AND_A_A;
     // IF_Z goto player;
     struct PicCoords ccoords;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // CALL(aGetEnemyFrontpicCoords);
         // goto okay;
         ccoords = GetEnemyFrontpicCoords();
@@ -70,7 +70,7 @@ void AppearUser(void){
     // IF_Z goto player;
     struct PicCoords ccoords;
     uint8_t a;
-    if(hram.hBattleTurn != TURN_PLAYER) {
+    if(gBattle.turn != TURN_PLAYER) {
         // CALL(aGetEnemyFrontpicCoords);
         ccoords = GetEnemyFrontpicCoords();
         // XOR_A_A;
@@ -310,7 +310,7 @@ void DoBadgeTypeBoosts(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // RET_NZ ;
-    if(hram.hBattleTurn != TURN_PLAYER)
+    if(gBattle.turn != TURN_PLAYER)
         return;
 
     // PUSH_DE;

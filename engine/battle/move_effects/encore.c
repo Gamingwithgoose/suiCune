@@ -17,8 +17,8 @@ void BattleCommand_Encore(void){
     // IF_Z goto ok;
     // LD_HL(wBattleMonMoves);
     // LD_DE(wPlayerEncoreCount);
-    struct BattleMon* mon = (hram.hBattleTurn == TURN_PLAYER)? &wram->wEnemyMon: &wram->wBattleMon;
-    uint8_t* de = (hram.hBattleTurn == TURN_PLAYER)? &wram->wEnemyEncoreCount: &wram->wPlayerEncoreCount;
+    struct BattlePokemon* mon = (gBattle.turn == TURN_PLAYER)? &gBattle.enemy.mon: &gBattle.player.mon;
+    uint8_t* de = (gBattle.turn == TURN_PLAYER)? &wram->wEnemyEncoreCount: &wram->wPlayerEncoreCount;
 
 // ok:
     // LD_A(BATTLE_VARS_LAST_MOVE_OPP);
@@ -81,7 +81,7 @@ void BattleCommand_Encore(void){
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_Z goto force_last_enemy_move;
-        if(hram.hBattleTurn != TURN_PLAYER) {
+        if(gBattle.turn != TURN_PLAYER) {
             // PUSH_HL;
             // LD_A_addr(wLastPlayerMove);
             // LD_B_A;
@@ -89,7 +89,7 @@ void BattleCommand_Encore(void){
             uint8_t idx = 0;
             // LD_C(0);
             // LD_HL(wBattleMonMoves);
-            move_t* pmoves = wram->wBattleMon.moves;
+            move_t* pmoves = gBattle.player.mon.moves;
 
             while(1) {
             // find_player_move:
@@ -137,7 +137,7 @@ void BattleCommand_Encore(void){
             // LD_C(0);
             uint8_t idx = 0;
             // LD_HL(wEnemyMonMoves);
-            move_t* emoves = wram->wEnemyMon.moves;
+            move_t* emoves = gBattle.enemy.mon.moves;
 
             while(1) {
             // find_enemy_move:

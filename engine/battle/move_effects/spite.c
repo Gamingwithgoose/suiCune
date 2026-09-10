@@ -21,7 +21,7 @@ void BattleCommand_Spite(void){
     // AND_A_A;
     // IF_Z goto got_moves;
     // LD_HL(wBattleMonMoves);
-    struct BattleMon* mon = (hram.hBattleTurn == TURN_PLAYER)? &wram->wEnemyMon: &wram->wBattleMon;
+    struct BattlePokemon* mon = (gBattle.turn == TURN_PLAYER)? &gBattle.enemy.mon: &gBattle.player.mon;
 
 // got_moves:
     // LD_A(BATTLE_VARS_LAST_COUNTER_MOVE_OPP);
@@ -84,7 +84,7 @@ void BattleCommand_Spite(void){
     // PUSH_AF;
     // LD_A(MON_PP);
     // CALL(aOpponentPartyAttr);
-    uint8_t* pp = OpponentPartyMon()->mon.PP;
+
     // LD_D_B;
     // POP_AF;
     // POP_BC;
@@ -96,16 +96,19 @@ void BattleCommand_Spite(void){
     // BIT_A(SUBSTATUS_TRANSFORMED);
     // IF_NZ goto transformed;
     if(!bit_test(GetBattleVar(BATTLE_VARS_SUBSTATUS5_OPP), SUBSTATUS_TRANSFORMED)) {
+        uint8_t* pp;
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_NZ goto not_wildmon;
         // LD_A_addr(wBattleMode);
         // DEC_A;
         // IF_NZ goto not_wildmon;
-        if(hram.hBattleTurn == TURN_PLAYER && wram->wBattleMode == WILD_BATTLE) {
+        if(gBattle.turn == TURN_PLAYER && wram->wBattleMode == WILD_BATTLE) {
             // LD_HL(wWildMonPP);
             // ADD_HL_BC;
             pp = wram->wWildMonPP;
+        } else {
+            pp = OpponentPartyMon()->mon.PP;
         }
 
     // not_wildmon:

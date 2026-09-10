@@ -918,7 +918,7 @@ static void DebugMenu_BattleAnim_PlaceText(uint16_t move) {
     char buffer[64];
     sprintf(buffer, "MOVE - 0x%02X@", move);
     PlaceStringSimple(U82C(buffer), coord(TEXTBOX_INNERX, TEXTBOX_Y + 1, wram->wTilemap));
-    sprintf(buffer, "TURN - %s@", (hram.hBattleTurn == TURN_PLAYER)? "PLAYER": "ENEMY");
+    sprintf(buffer, "TURN - %s@", (gBattle.turn == TURN_PLAYER)? "PLAYER": "ENEMY");
     PlaceStringSimple(U82C(buffer), coord(TEXTBOX_INNERX, TEXTBOX_Y + 2, wram->wTilemap));
     sprintf(buffer, "B - BACK@");
     PlaceStringSimple(U82C(buffer), coord(TEXTBOX_INNERX, TEXTBOX_Y + 3, wram->wTilemap));
@@ -959,7 +959,7 @@ void DebugMenu_BattleAnim(void) {
     U82CA(wram->wEnemyMonNickname, "CHARIZARD@");
 
     wram->wCurPartyMon = 0;
-    wram->wCurOTMon = 0;
+    gBattle.enemy.partyIndex = 0;
 
     LoadEnemyMonToSwitchTo(0);
     UpdateEnemyHUD();
@@ -1012,7 +1012,7 @@ void DebugMenu_BattleAnim(void) {
         }
 
         if(NativeInputLogicalPressed() & SELECT) {
-            hram.hBattleTurn ^= 1;
+            gBattle.turn ^= 1;
             SpeechTextbox();
             DebugMenu_BattleAnim_PlaceText(anim);
         }
@@ -1024,7 +1024,7 @@ void DebugMenu_BattleAnim(void) {
             }
             else if(anim == GROWL || anim == ROAR) {
                 BattleAnimationIdSet(anim);
-                BattleAnimationParameterSet((hram.hBattleTurn == TURN_PLAYER)? wram->wBattleMon.species: wram->wEnemyMon.species);
+                BattleAnimationParameterSet((gBattle.turn == TURN_PLAYER)? gBattle.player.mon.species: gBattle.enemy.mon.species);
             }
             else {
                 BattleAnimationIdSet(anim);

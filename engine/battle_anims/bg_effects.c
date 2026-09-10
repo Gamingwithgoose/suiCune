@@ -3814,7 +3814,7 @@ static uint8_t BGEffect_CheckBattleTurn(struct BattleBGEffect* bc) {
     // AND_A(0x1);
     // XOR_A_hl;
     // RET;
-    return (hram.hBattleTurn & 0x1) ^ bc->battleTurn;
+    return (gBattle.turn & 0x1) ^ bc->battleTurn;
 }
 
 static bool BGEffect_CheckFlyDigStatus(struct BattleBGEffect* bc) {
@@ -3825,17 +3825,17 @@ static bool BGEffect_CheckFlyDigStatus(struct BattleBGEffect* bc) {
     // AND_A(0x1);
     // XOR_A_hl;
     // IF_NZ goto player;
-    if((hram.hBattleTurn & 0x1) ^ bc->battleTurn){
+    if((gBattle.turn & 0x1) ^ bc->battleTurn){
     // player:
         // LD_A_addr(wPlayerSubStatus3);  // PlayerSubStatus3
         // AND_A(1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND);
         // RET;
-        return (wram->wPlayerSubStatus3 & (1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND)) != 0;
+        return (gBattle.player.conditions[2] & (1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND)) != 0;
     }
     // LD_A_addr(wEnemySubStatus3);  // EnemySubStatus3
     // AND_A(1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND);
     // RET;
-    return (wram->wEnemySubStatus3 & (1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND)) != 0;
+    return (gBattle.enemy.conditions[2] & (1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND)) != 0;
 }
 
 static bool BattleBGEffects_CheckSGB(void) {

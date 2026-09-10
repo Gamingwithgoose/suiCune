@@ -35,7 +35,7 @@ void BattleCommand_Teleport(void){
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_NZ goto enemy_turn;
-        if(hram.hBattleTurn == TURN_PLAYER) {
+        if(gBattle.turn == TURN_PLAYER) {
         // Can't teleport from a trainer battle
             // LD_A_addr(wBattleMode);
             // DEC_A;
@@ -50,12 +50,12 @@ void BattleCommand_Teleport(void){
             // LD_A_addr(wBattleMonLevel);
             // CP_A_B;
             // IF_NC goto run_away;
-            if(wram->wBattleMon.level < b) {
+            if(gBattle.player.mon.level < b) {
             // c = player level + enemy level + 1
                 // ADD_A_B;
                 // LD_C_A;
                 // INC_C;
-                uint8_t c = wram->wBattleMon.level + b + 1;
+                uint8_t c = gBattle.player.mon.level + b + 1;
             // Generate a number less than c
                 uint8_t a;
                 do {
@@ -87,7 +87,7 @@ void BattleCommand_Teleport(void){
         // b = enemy level
             // LD_A_addr(wBattleMonLevel);
             // LD_B_A;
-            uint8_t b = wram->wBattleMon.level;
+            uint8_t b = gBattle.player.mon.level;
         // If enemy level >= player level, Teleport will succeed
             // LD_A_addr(wCurPartyLevel);
             // CP_A_B;

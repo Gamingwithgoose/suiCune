@@ -178,7 +178,7 @@ void Gen2ToGen1LinkComms(void){
     // LD_DE(wEnemyMon);
     // LD_BC(SERIAL_RN_PREAMBLE_LENGTH + SERIAL_RNS_LENGTH);
     // CALL(aSerial_ExchangeBytes);
-    Network_SafeExchangeBytes(&wram->wEnemyMon, wram->wLinkBattleRNs, SERIAL_RNS_LENGTH);
+    Network_SafeExchangeBytes(&gBattle.enemy.mon, wram->wLinkBattleRNs, SERIAL_RNS_LENGTH);
     // LD_A(SERIAL_NO_DATA_BYTE);
     // LD_de_A;
 
@@ -404,7 +404,7 @@ void Gen2ToGen2LinkComms(void){
     // LD_DE(wEnemyMon);
     // LD_BC(SERIAL_RN_PREAMBLE_LENGTH + SERIAL_RNS_LENGTH);
     // CALL(aSerial_ExchangeBytes);
-    Network_SafeExchangeBytes(&wram->wEnemyMon, wram->wLinkBattleRNs, SERIAL_RNS_LENGTH);
+    Network_SafeExchangeBytes(&gBattle.enemy.mon, wram->wLinkBattleRNs, SERIAL_RNS_LENGTH);
     // LD_A(SERIAL_NO_DATA_BYTE);
     // LD_de_A;
 
@@ -1785,7 +1785,7 @@ static void Link_CopyRandomNumbers(void){
         return;
     // LD_HL(wEnemyMonSpecies);
     // CALL(aLink_FindFirstNonControlCharacter_AllowZero);
-    const uint8_t* hl = (const uint8_t*)Link_FindFirstNonControlCharacter_AllowZero(&wram->wEnemyMon);
+    const uint8_t* hl = (const uint8_t*)Link_FindFirstNonControlCharacter_AllowZero(&gBattle.enemy.mon);
     // LD_DE(wLinkBattleRNs);
     uint8_t* de = wram->wLinkBattleRNs;
     // LD_C(10);

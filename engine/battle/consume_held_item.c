@@ -10,24 +10,24 @@ void ConsumeHeldItem(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     struct PartyMon* pmon;
-    struct BattleMon* bmon;
+    struct BattlePokemon* bmon;
     uint8_t curMon;
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
         // LD_HL(wOTPartyMon1Item);
         pmon = wram->wOTPartyMon;
         // LD_DE(wEnemyMonItem);
-        bmon = &wram->wEnemyMon;
+        bmon = &gBattle.enemy.mon;
         // LD_A_addr(wCurOTMon);
-        curMon = wram->wCurOTMon;
+        curMon = gBattle.enemy.partyIndex;
         // IF_Z goto theirturn;
     }
     else {
         // LD_HL(wPartyMon1Item);
         pmon = gPokemon.partyMon;
         // LD_DE(wBattleMonItem);
-        bmon = &wram->wBattleMon;
+        bmon = &gBattle.player.mon;
         // LD_A_addr(wCurBattleMon);
-        curMon = wram->wCurBattleMon;
+        curMon = gBattle.player.partyIndex;
     }
 
 // theirturn:
@@ -62,7 +62,7 @@ void ConsumeHeldItem(void){
             // LD_A_addr(wBattleMode);
             // DEC_A;
             // IF_Z goto done;
-            if(hram.hBattleTurn != TURN_PLAYER || wram->wBattleMode != WILD_BATTLE) {
+            if(gBattle.turn != TURN_PLAYER || wram->wBattleMode != WILD_BATTLE) {
             // ourturn:
                 // LD_hl(NO_ITEM);
                 pmon[curMon].mon.item = NO_ITEM;

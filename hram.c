@@ -93,7 +93,7 @@ check_field(hLastTalked)
 check_field(hRandomAdd)
 check_field(hRandomSub)
 check_field(hUnusedBackup)
-check_field(hBattleTurn)
+
 check_field(hCGBPalUpdate)
 check_field(hCGB)
 check_field(hSGB)

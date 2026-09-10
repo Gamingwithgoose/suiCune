@@ -25,7 +25,7 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wBattleMonStatus);
         // AND_A(SLP);
         // IF_Z return true;
-        if(wram->wBattleMon.status[0] & SLP)
+        if(gBattle.player.mon.status & SLP)
             return true;
         // goto NotRedundant;
         return false;
@@ -51,21 +51,21 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wEnemySubStatus4);
         // BIT_A(SUBSTATUS_MIST);
         // RET;
-        return bit_test(wram->wEnemySubStatus4, SUBSTATUS_MIST);
+        return bit_test(gBattle.enemy.conditions[3], SUBSTATUS_MIST);
     //dbw ['EFFECT_FOCUS_ENERGY', '.FocusEnergy']
     case EFFECT_FOCUS_ENERGY:
     // FocusEnergy:
         // LD_A_addr(wEnemySubStatus4);
         // BIT_A(SUBSTATUS_FOCUS_ENERGY);
         // RET;
-        return bit_test(wram->wEnemySubStatus1, SUBSTATUS_FOCUS_ENERGY);
+        return bit_test(gBattle.enemy.conditions[0], SUBSTATUS_FOCUS_ENERGY);
     //dbw ['EFFECT_CONFUSE', '.Confuse']
     case EFFECT_CONFUSE:
     // Confuse:
         // LD_A_addr(wPlayerSubStatus3);
         // BIT_A(SUBSTATUS_CONFUSED);
         // RET_NZ ;
-        if(bit_test(wram->wPlayerSubStatus3, SUBSTATUS_CONFUSED))
+        if(bit_test(gBattle.player.conditions[2], SUBSTATUS_CONFUSED))
             return true;
         // LD_A_addr(wPlayerScreens);
         // BIT_A(SCREENS_SAFEGUARD);
@@ -77,7 +77,7 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wEnemySubStatus5);
         // BIT_A(SUBSTATUS_TRANSFORMED);
         // RET;
-        return bit_test(wram->wEnemySubStatus5, SUBSTATUS_TRANSFORMED);
+        return bit_test(gBattle.enemy.conditions[4], SUBSTATUS_TRANSFORMED);
     //dbw ['EFFECT_REFLECT', '.Reflect']
     case EFFECT_REFLECT:
     // Reflect:
@@ -91,14 +91,14 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wEnemySubStatus4);
         // BIT_A(SUBSTATUS_SUBSTITUTE);
         // RET;
-        return bit_test(wram->wEnemySubStatus4, SUBSTATUS_SUBSTITUTE);
+        return bit_test(gBattle.enemy.conditions[3], SUBSTATUS_SUBSTITUTE);
     //dbw ['EFFECT_LEECH_SEED', '.LeechSeed']
     case EFFECT_LEECH_SEED:
     // LeechSeed:
         // LD_A_addr(wPlayerSubStatus4);
         // BIT_A(SUBSTATUS_LEECH_SEED);
         // RET;
-        return bit_test(wram->wPlayerSubStatus4, SUBSTATUS_LEECH_SEED);
+        return bit_test(gBattle.player.conditions[3], SUBSTATUS_LEECH_SEED);
     //dbw ['EFFECT_DISABLE', '.Disable']
     case EFFECT_DISABLE:
     // Disable:
@@ -112,7 +112,7 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wPlayerSubStatus5);
         // BIT_A(SUBSTATUS_ENCORED);
         // RET;
-        return bit_test(wram->wPlayerSubStatus5, SUBSTATUS_ENCORED);
+        return bit_test(gBattle.player.conditions[4], SUBSTATUS_ENCORED);
     //dbw ['EFFECT_SNORE', '.Snore']
     case EFFECT_SNORE:
     // Snore:
@@ -122,7 +122,7 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wEnemyMonStatus);
         // AND_A(SLP);
         // IF_Z goto Redundant;
-        if((wram->wEnemyMon.status[0] & SLP) == 0)
+        if((gBattle.enemy.mon.status & SLP) == 0)
             return true;
         // goto NotRedundant;
         return false;
@@ -132,19 +132,19 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wEnemySubStatus5);
         // BIT_A(SUBSTATUS_CANT_RUN);
         // RET;
-        return bit_test(wram->wEnemySubStatus5, SUBSTATUS_CANT_RUN);
+        return bit_test(gBattle.enemy.conditions[4], SUBSTATUS_CANT_RUN);
     //dbw ['EFFECT_NIGHTMARE', '.Nightmare']
     case EFFECT_NIGHTMARE:
     // Nightmare:
         // LD_A_addr(wBattleMonStatus);
         // AND_A_A;
         // IF_Z goto Redundant;
-        if(wram->wBattleMon.status[0] == 0)
+        if(gBattle.player.mon.status == 0)
             return true;
         // LD_A_addr(wPlayerSubStatus1);
         // BIT_A(SUBSTATUS_NIGHTMARE);
         // RET;
-        return bit_test(wram->wPlayerSubStatus1, SUBSTATUS_NIGHTMARE);
+        return bit_test(gBattle.player.conditions[0], SUBSTATUS_NIGHTMARE);
     //dbw ['EFFECT_SPIKES', '.Spikes']
     case EFFECT_SPIKES:
     // Spikes:
@@ -158,14 +158,14 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wPlayerSubStatus1);
         // BIT_A(SUBSTATUS_IDENTIFIED);
         // RET;
-        return bit_test(wram->wPlayerSubStatus1, SUBSTATUS_IDENTIFIED);
+        return bit_test(gBattle.player.conditions[0], SUBSTATUS_IDENTIFIED);
     //dbw ['EFFECT_PERISH_SONG', '.PerishSong']
     case EFFECT_PERISH_SONG:
     // PerishSong:
         // LD_A_addr(wPlayerSubStatus1);
         // BIT_A(SUBSTATUS_PERISH);
         // RET;
-        return bit_test(wram->wPlayerSubStatus1, SUBSTATUS_PERISH);
+        return bit_test(gBattle.player.conditions[0], SUBSTATUS_PERISH);
     //dbw ['EFFECT_SANDSTORM', '.Sandstorm']
     case EFFECT_SANDSTORM:
     // Sandstorm:
@@ -181,12 +181,12 @@ bool AI_Redundant(uint8_t c){
     // Attract:
         // FARCALL(aCheckOppositeGender);
         // IF_C return true;
-        if(!CheckOppositeGender(wram->wCurBattleMon))
+        if(!CheckOppositeGender(gBattle.player.partyIndex))
             return true;
         // LD_A_addr(wPlayerSubStatus1);
         // BIT_A(SUBSTATUS_IN_LOVE);
         // RET;
-        return bit_test(wram->wPlayerSubStatus1, SUBSTATUS_IN_LOVE);
+        return bit_test(gBattle.player.conditions[0], SUBSTATUS_IN_LOVE);
     //dbw ['EFFECT_SAFEGUARD', '.Safeguard']
     case EFFECT_SAFEGUARD:
     // Safeguard:
@@ -228,7 +228,7 @@ bool AI_Redundant(uint8_t c){
         // LD_A_addr(wPlayerSubStatus3);
         // BIT_A(SUBSTATUS_CONFUSED);
         // RET;
-        return bit_test(wram->wPlayerSubStatus3, SUBSTATUS_CONFUSED);
+        return bit_test(gBattle.player.conditions[2], SUBSTATUS_CONFUSED);
     //dbw ['EFFECT_FUTURE_SIGHT', '.FutureSight']
     case EFFECT_FUTURE_SIGHT:
     // FutureSight:

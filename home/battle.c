@@ -1,5 +1,7 @@
 #include "../constants.h"
 #include "battle.h"
+#include "pokemon.h"
+#include <assert.h>
 #include "copy.h"
 #include "text.h"
 #include "tilemap.h"
@@ -7,6 +9,49 @@
 #include "delay.h"
 #include "../engine/battle/core.h"
 #include "../engine/battle_anims/core.h"
+
+struct BattleParticipant* BattleParticipantForSide(enum BattleSide side){
+    assert(side == TURN_PLAYER || side == TURN_ENEMY);
+    return side == TURN_PLAYER ? &gBattle.player : &gBattle.enemy;
+}
+
+uint16_t BattleApplyDamage(struct BattlePokemon* mon, uint16_t damage){
+    assert(mon != NULL && mon->hp <= mon->maxHP);
+    uint16_t applied = damage < mon->hp ? damage : mon->hp;
+    mon->hp -= applied;
+    return applied;
+}
+
+uint16_t BattleRestoreHP(struct BattlePokemon* mon, uint16_t amount){
+    assert(mon != NULL && mon->hp <= mon->maxHP);
+    uint16_t available = mon->maxHP - mon->hp;
+    uint16_t restored = amount < available ? amount : available;
+    mon->hp += restored;
+    return restored;
+}
+
+// Import from the still-authoritative packed persistent party on entrance.
+// Damage/stat calculations never read this record back during a turn.
+void BattleLoadPartyPokemon(struct BattlePokemon* dest, const struct PartyMon* src){
+    assert(dest != NULL && src != NULL);
+    assert(GetSpeciesBaseData(src->mon.species) != NULL);
+    *dest = (struct BattlePokemon){0};
+    dest->species = src->mon.species;
+    dest->item = src->mon.item;
+    for(size_t i = 0; i < NUM_MOVES; ++i) {
+        dest->moves[i] = src->mon.moves[i];
+        dest->pp[i] = src->mon.PP[i];
+    }
+    dest->dvs = src->mon.DVs;
+    dest->happiness = src->mon.happiness;
+    dest->level = src->mon.level;
+    dest->status = src->status;
+    dest->hp = BigEndianToNative16(src->HP);
+    dest->maxHP = BigEndianToNative16(src->maxHP);
+    for(size_t i = 0; i < lengthof(dest->stats); ++i)
+        dest->stats[i] = BigEndianToNative16(src->stats[i]);
+    assert(dest->hp <= dest->maxHP);
+}
 
 //  //  unreferenced
 //  Probably used in gen 1 to convert index number to dex number
@@ -32,28 +77,32 @@ struct PartyMon* UserPartyMon(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto ot;
-    if(hram.hBattleTurn != TURN_PLAYER)
+    if(gBattle.turn != TURN_PLAYER)
     {
         // JR(mOTPartyAttr);
-        return wram->wOTPartyMon + wram->wCurOTMon;
+        assert(gBattle.enemy.partyIndex < PARTY_LENGTH);
+        return wram->wOTPartyMon + gBattle.enemy.partyIndex;
     }
 
     // JR(mBattlePartyAttr);
-    return gPokemon.partyMon + wram->wCurPartyMon;
+    assert(gBattle.player.partyIndex < gPokemon.partyCount);
+    return gPokemon.partyMon + gBattle.player.partyIndex;
 }
 
 struct PartyMon* OpponentPartyMon(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto ot;
-    if(hram.hBattleTurn == TURN_PLAYER)
+    if(gBattle.turn == TURN_PLAYER)
     {
         // JR(mOTPartyAttr);
-        return wram->wOTPartyMon + wram->wCurOTMon;
+        assert(gBattle.enemy.partyIndex < PARTY_LENGTH);
+        return wram->wOTPartyMon + gBattle.enemy.partyIndex;
     }
 
     // JR(mBattlePartyAttr);
-    return gPokemon.partyMon + wram->wCurPartyMon;
+    assert(gBattle.player.partyIndex < gPokemon.partyCount);
+    return gPokemon.partyMon + gBattle.player.partyIndex;
 }
 
 void ResetDamage(void){
@@ -66,20 +115,20 @@ void ResetDamage(void){
 void SetPlayerTurn(void){
     // XOR_A_A;
     // LDH_addr_A(hBattleTurn);
-    hram.hBattleTurn = TURN_PLAYER; // Player's turn
+    gBattle.turn = TURN_PLAYER; // Player's turn
 }
 
 void SetEnemyTurn(void){
     // LD_A(1);
     // LDH_addr_A(hBattleTurn);
-    hram.hBattleTurn = TURN_ENEMY; // Enemy's turn
+    gBattle.turn = TURN_ENEMY; // Enemy's turn
 }
 
 void UpdateOpponentInParty(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // JR_Z (mUpdateEnemyMonInParty);
-    if(hram.hBattleTurn == TURN_PLAYER)
+    if(gBattle.turn == TURN_PLAYER)
         return UpdateEnemyMonInParty();
 
     // JR(mUpdateBattleMonInParty);
@@ -90,7 +139,7 @@ void UpdateUserInParty(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // JR_Z (mUpdateBattleMonInParty);
-    if(hram.hBattleTurn == TURN_PLAYER)
+    if(gBattle.turn == TURN_PLAYER)
         return UpdateBattleMonInParty();
     
     // JR(mUpdateEnemyMonInParty);
@@ -100,10 +149,13 @@ void UpdateUserInParty(void){
 //  Update level, status, current HP
 void UpdateBattleMonInParty(void){
     // LD_A_addr(wCurBattleMon);
-    return UpdateBattleMon(wram->wCurBattleMon);
+    return UpdateBattleMon(gBattle.player.partyIndex);
 }
 
 void UpdateBattleMon(uint8_t a){
+    // Pursuit can finish updating the outgoing owner after selection changes.
+    assert(a < gPokemon.partyCount);
+    assert(gBattle.player.mon.hp <= gBattle.player.mon.maxHP);
     // LD_HL(wPartyMon1Level);
     // CALL(aGetPartyLocation);
     // LD_D_H;
@@ -114,10 +166,10 @@ void UpdateBattleMon(uint8_t a){
     // LD_HL(wBattleMonLevel);
     // LD_BC(wBattleMonMaxHP - wBattleMonLevel);
     // JP(mCopyBytes);
-    de->mon.level = wram->wBattleMon.level;
-    de->status = wram->wBattleMon.status[0];
-    de->unused = wram->wBattleMon.status[1];
-    de->HP = wram->wBattleMon.hp;
+    de->mon.level = gBattle.player.mon.level;
+    de->status = gBattle.player.mon.status;
+
+    de->HP = NativeToBigEndian16(gBattle.player.mon.hp);
 }
 
 //  Update level, status, current HP
@@ -134,15 +186,15 @@ void UpdateEnemyMonInParty(void){
     // CALL(aGetPartyLocation);
     // LD_D_H;
     // LD_E_L;
-    struct PartyMon* de = wram->wOTPartyMon + wram->wCurOTMon;
+    struct PartyMon* de = wram->wOTPartyMon + gBattle.enemy.partyIndex;
 
     // LD_HL(wEnemyMonLevel);
     // LD_BC(wEnemyMonMaxHP - wEnemyMonLevel);
     // JP(mCopyBytes);
-    de->mon.level = wram->wEnemyMon.level;
-    de->status = wram->wEnemyMon.status[0];
-    de->unused = wram->wEnemyMon.status[1];
-    de->HP = wram->wEnemyMon.hp;
+    de->mon.level = gBattle.enemy.mon.level;
+    de->status = gBattle.enemy.mon.status;
+
+    de->HP = NativeToBigEndian16(gBattle.enemy.mon.hp);
 }
 
 void RefreshBattleHuds(void){

@@ -12,7 +12,7 @@ static uint8_t FindEnemyMonsWithAtLeastQuarterMaxHP(uint8_t c);
 
 static void CheckPlayerMoveTypeMatchups_CheckEnemyMoveMatchups(uint8_t matchup) {
     // LD_DE(wEnemyMonMoves);
-    move_t* de = wram->wEnemyMon.moves;
+    move_t* de = gBattle.enemy.mon.moves;
     // LD_B(NUM_MOVES + 1);
     uint8_t b = NUM_MOVES + 1;
     // LD_C(0);
@@ -48,7 +48,7 @@ static void CheckPlayerMoveTypeMatchups_CheckEnemyMoveMatchups(uint8_t matchup) 
         // CALL(aGetMoveByte);
         // LD_HL(wBattleMonType1);
         // CALL(aCheckTypeMatchup);
-        uint8_t matchup2 = CheckTypeMatchup(Moves[a].type, wram->wBattleMon.types);
+        uint8_t matchup2 = CheckTypeMatchup(Moves[a].type, gBattle.player.mon.types);
 
         // LD_A_addr(wTypeMatchup);
     // immune
@@ -145,10 +145,10 @@ uint8_t CheckPlayerMoveTypeMatchups(void){
     // unknown_moves:
         // LD_A_addr(wBattleMonType1);
         // LD_B_A;
-        uint8_t type = wram->wBattleMon.type1;
+        uint8_t type = gBattle.player.mon.type1;
         // LD_HL(wEnemyMonType1);
         // CALL(aCheckTypeMatchup);
-        matchup = CheckTypeMatchup(type, wram->wEnemyMon.types);
+        matchup = CheckTypeMatchup(type, gBattle.enemy.mon.types);
         // LD_A_addr(wTypeMatchup);
         // CP_A(EFFECTIVE + 1);  // 1.0 + 0.1
         // IF_C goto ok;
@@ -164,8 +164,8 @@ uint8_t CheckPlayerMoveTypeMatchups(void){
         // LD_A_addr(wTypeMatchup);
         // CP_A(EFFECTIVE + 1);  // 1.0 + 0.1
         // IF_C goto ok2;
-        if(wram->wBattleMon.type2 != type
-        && (matchup = CheckTypeMatchup(wram->wBattleMon.type2, wram->wEnemyMon.types), matchup >= EFFECTIVE + 1)) {
+        if(gBattle.player.mon.type2 != type
+        && (matchup = CheckTypeMatchup(gBattle.player.mon.type2, gBattle.enemy.mon.types), matchup >= EFFECTIVE + 1)) {
             // CALL(aCheckPlayerMoveTypeMatchups_DecreaseScore);
             --wram->wEnemyAISwitchScore;
         }
@@ -218,7 +218,7 @@ uint8_t CheckPlayerMoveTypeMatchups(void){
             uint8_t type = Moves[a].type;
             // LD_HL(wEnemyMonType);
             // CALL(aCheckTypeMatchup);
-            matchup = CheckTypeMatchup(type, wram->wEnemyMon.types);
+            matchup = CheckTypeMatchup(type, gBattle.enemy.mon.types);
             // LD_A_addr(wTypeMatchup);
             // CP_A(EFFECTIVE + 1);  // 1.0 + 0.1
             // IF_NC goto super_effective;
@@ -289,7 +289,7 @@ bool CheckAbleToSwitch(void){
     // LD_A_addr(wEnemyPerishCount);
     // CP_A(1);
     // IF_NZ goto no_perish;
-    if(bit_test(wram->wEnemySubStatus1, SUBSTATUS_PERISH) && wram->wEnemyPerishCount == 1) {
+    if(bit_test(gBattle.enemy.conditions[0], SUBSTATUS_PERISH) && wram->wEnemyPerishCount == 1) {
     // Perish count is 1
         // CALL(aFindAliveEnemyMons);
         uint8_t c = FindAliveEnemyMons().a;
@@ -463,7 +463,7 @@ u8_flag_s FindAliveEnemyMons(void){
         // LD_A_addr(wCurOTMon);
         // CP_A_E;
         // IF_Z goto next;
-        if(wram->wCurOTMon == e)
+        if(gBattle.enemy.partyIndex == e)
             continue;
 
         // PUSH_BC;
@@ -529,7 +529,7 @@ static uint8_t FindEnemyMonsImmuneToLastCounterMove(void){
         // CP_A_D;
         // PUSH_HL;
         // IF_Z goto next;
-        if(wram->wCurOTMon != d) {
+        if(gBattle.enemy.partyIndex != d) {
             // PUSH_HL;
             // PUSH_BC;
 
@@ -694,7 +694,7 @@ static uint8_t FindEnemyMonsWithASuperEffectiveMove(uint8_t c){
                 // CALL(aGetMoveByte);
                 // LD_HL(wBattleMonType1);
                 // CALL(aCheckTypeMatchup);
-                uint8_t matchup = CheckTypeMatchup(move->type, wram->wBattleMon.types);
+                uint8_t matchup = CheckTypeMatchup(move->type, gBattle.player.mon.types);
 
             // if immune or not very effective: continue
                 // LD_A_addr(wTypeMatchup);
@@ -835,14 +835,14 @@ static uint8_t FindEnemyMonsThatResistPlayer(uint8_t c){
             // LD_A_addr(wBattleMonType1);
             // LD_HL(wBaseType);
             // CALL(aCheckTypeMatchup);
-            uint8_t matchup = CheckTypeMatchup(wram->wBattleMon.type1, wram->wBaseType);
+            uint8_t matchup = CheckTypeMatchup(gBattle.player.mon.type1, wram->wBaseType);
             // LD_A_addr(wTypeMatchup);
             // CP_A(10 + 1);
             // IF_NC goto dont_choose_mon;
             if(matchup >= 10 + 1)
                 goto dont_choose_mon;
             // LD_A_addr(wBattleMonType2);
-            type = wram->wBattleMon.type2;
+            type = gBattle.player.mon.type2;
         }
 
     // check_type:

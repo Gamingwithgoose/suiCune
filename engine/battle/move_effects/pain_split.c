@@ -6,20 +6,20 @@
 #include "../../../home/battle.h"
 #include "../../../data/text/battle.h"
 
-static void BattleCommand_PainSplit_EnemyShareHP(struct BattleMon* player);
+static void BattleCommand_PainSplit_EnemyShareHP(struct BattlePokemon* player);
 
-static void BattleCommand_PainSplit_PlayerShareHP(struct BattleMon* player, struct BattleMon* enemy) {
+static void BattleCommand_PainSplit_PlayerShareHP(struct BattlePokemon* player, struct BattlePokemon* enemy) {
     // LD_A_hld;
     // LD_addr_A(wHPBuffer1);
     // LD_A_hld;
     // LD_addr_A(wHPBuffer1 + 1);
-    wram->wHPBuffer1 = BigEndianToNative16(player->maxHP);
+    wram->wHPBuffer1 = player->maxHP;
     // LD_A_hld;
     // LD_B_A;
     // LD_addr_A(wHPBuffer2);
     // LD_A_hl;
     // LD_addr_A(wHPBuffer2 + 1);
-    wram->wHPBuffer2 = BigEndianToNative16(player->hp);
+    wram->wHPBuffer2 = player->hp;
     // DEC_DE;
     // DEC_DE;
     // LD_A_de;
@@ -34,7 +34,7 @@ static void BattleCommand_PainSplit_PlayerShareHP(struct BattleMon* player, stru
     // LD_A_addr(wCurDamage + 1);
     // RR_A;
     // LD_addr_A(wCurDamage + 1);
-    wram->wCurDamage = NativeToBigEndian16((BigEndianToNative16(enemy->hp) + wram->wHPBuffer2) >> 1);
+    wram->wCurDamage = NativeToBigEndian16((enemy->hp + wram->wHPBuffer2) >> 1);
     // INC_HL;
     // INC_HL;
     // INC_HL;
@@ -44,7 +44,7 @@ static void BattleCommand_PainSplit_PlayerShareHP(struct BattleMon* player, stru
     return BattleCommand_PainSplit_EnemyShareHP(player);
 }
 
-static void BattleCommand_PainSplit_EnemyShareHP(struct BattleMon* player) {
+static void BattleCommand_PainSplit_EnemyShareHP(struct BattlePokemon* player) {
 // EnemyShareHP:
     // LD_C_hl;
     // DEC_HL;
@@ -52,7 +52,7 @@ static void BattleCommand_PainSplit_EnemyShareHP(struct BattleMon* player) {
     // SUB_A_C;
     // LD_B_hl;
     // DEC_HL;
-    uint16_t bc = BigEndianToNative16(player->maxHP);
+    uint16_t bc = player->maxHP;
     // LD_A_addr(wCurDamage);
     // SBC_A_B;
     // IF_NC goto skip;
@@ -72,7 +72,7 @@ static void BattleCommand_PainSplit_EnemyShareHP(struct BattleMon* player) {
     // LD_hli_A;
     // LD_addr_A(wHPBuffer3 + 1);
     wram->wHPBuffer3 = bc;
-    player->hp = NativeToBigEndian16(bc);
+    player->hp = bc;
     // RET;
 }
 
@@ -94,7 +94,7 @@ void BattleCommand_PainSplit(void){
     // LD_HL(wBattleMonMaxHP + 1);
     // LD_DE(wEnemyMonMaxHP + 1);
     // CALL(aBattleCommand_PainSplit_PlayerShareHP);
-    BattleCommand_PainSplit_PlayerShareHP(&wram->wBattleMon, &wram->wEnemyMon);
+    BattleCommand_PainSplit_PlayerShareHP(&gBattle.player.mon, &gBattle.enemy.mon);
     // LD_A(0x1);
     // LD_addr_A(wWhichHPBar);
     // hlcoord(10, 9, wTilemap);
@@ -105,14 +105,14 @@ void BattleCommand_PainSplit(void){
     // LD_addr_A(wHPBuffer2 + 1);
     // LD_A_hli;
     // LD_addr_A(wHPBuffer2);
-    wram->wHPBuffer2 = BigEndianToNative16(wram->wEnemyMon.hp);
+    wram->wHPBuffer2 = (gBattle.enemy.mon.hp);
     // LD_A_hli;
     // LD_addr_A(wHPBuffer1 + 1);
     // LD_A_hl;
     // LD_addr_A(wHPBuffer1);
-    wram->wHPBuffer1 = BigEndianToNative16(wram->wEnemyMon.maxHP);
+    wram->wHPBuffer1 = (gBattle.enemy.mon.maxHP);
     // CALL(aBattleCommand_PainSplit_EnemyShareHP);
-    BattleCommand_PainSplit_EnemyShareHP(&wram->wBattleMon);
+    BattleCommand_PainSplit_EnemyShareHP(&gBattle.enemy.mon);
     // XOR_A_A;
     // LD_addr_A(wWhichHPBar);
     // CALL(aResetDamage);

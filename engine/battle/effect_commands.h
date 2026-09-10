@@ -126,7 +126,7 @@ void BattleCommand_RaiseSubNoAnim(void);
 void BattleCommand_LowerSubNoAnim(void);
 void CalcPlayerStats(void);
 void CalcEnemyStats(void);
-void CalcBattleStats(uint8_t* hl, uint16_t* de, uint16_t* bc, uint8_t a);
+void CalcBattleStats(const uint8_t* stages, const uint16_t* baseStats, uint16_t* stats, size_t count);
 void BattleCommand_CheckRampage(void);
 void BattleCommand_Rampage(void);
 void SetBattleDraw(void);

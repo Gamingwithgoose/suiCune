@@ -10,7 +10,7 @@ void BattleCommand_HappinessPower(void){
     // AND_A_A;
     // IF_Z goto ok;
     // LD_HL(wEnemyMonHappiness);
-    uint8_t happiness = (hram.hBattleTurn == TURN_PLAYER)? wram->wBattleMon.happiness: wram->wEnemyMon.happiness;
+    uint8_t happiness = (gBattle.turn == TURN_PLAYER)? gBattle.player.mon.happiness: gBattle.enemy.mon.happiness;
 
 // ok:
     // XOR_A_A;

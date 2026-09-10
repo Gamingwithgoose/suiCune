@@ -1611,7 +1611,7 @@ static void InitBattleAnimBuffer(struct BattleAnim* bc){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // RET_Z ;
-    if(hram.hBattleTurn == TURN_PLAYER)
+    if(gBattle.turn == TURN_PLAYER)
         return;
 
     // LD_HL(BATTLEANIMSTRUCT_OAMFLAGS);

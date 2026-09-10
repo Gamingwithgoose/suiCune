@@ -14,7 +14,7 @@ bool CheckFalseSwipe(void) {
     // AND_A_A;
     // IF_Z goto got_hp;
     // LD_HL(wBattleMonHP);
-    uint16_t hp = BigEndianToNative16((hram.hBattleTurn == TURN_PLAYER)? wram->wEnemyMon.hp: wram->wBattleMon.hp);
+    uint16_t hp = ((gBattle.turn == TURN_PLAYER)? gBattle.enemy.mon.hp: gBattle.player.mon.hp);
 
 // got_hp:
     // LD_DE(wCurDamage);

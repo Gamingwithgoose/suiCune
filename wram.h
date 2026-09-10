@@ -309,7 +309,8 @@ struct wram_s
                         struct Move wPlayerMoveStruct;
                         uint8_t wEnemyMonNickname[MON_NAME_LENGTH];
                         uint8_t wBattleMonNickname[MON_NAME_LENGTH];
-                        struct BattleMon wBattleMon;
+                        // Retired storage only; no native battle consumer may read these slots.
+                        struct BattleMon retired_wBattleMon;
                         uint8_t skip_11[2];
                         uint8_t wWildMon;
                         uint8_t skip_12[1];
@@ -318,13 +319,13 @@ struct wram_s
                         uint8_t wEnemyTrainerBaseReward;
                         uint8_t wEnemyTrainerAIFlags[3];
                         uint8_t wOTClassName[TRAINER_CLASS_NAME_LENGTH];
-                        uint8_t wCurOTMon;
+                        uint8_t retired_wCurOTMon;
                         // Bit array.  Bits 0 - 5 correspond to party members 1 - 6.
                         // Bit set if the mon appears in battle.
                         // Bit cleared if the mon faints.
                         // Backed up if the enemy switches.
                         // All bits cleared if the enemy faints.
-                        uint8_t wBattleParticipantsNotFainted;
+                        uint8_t retired_wBattleParticipantsNotFainted;
                         // >10: super-effective
                         //  10: normal
                         // <10: not very effective
@@ -336,16 +337,16 @@ struct wram_s
                         uint8_t wCriticalHit;
                         // nonzero for a miss
                         uint8_t wAttackMissed;
-                        uint8_t wPlayerSubStatus1;
-                        uint8_t wPlayerSubStatus2;
-                        uint8_t wPlayerSubStatus3;
-                        uint8_t wPlayerSubStatus4;
-                        uint8_t wPlayerSubStatus5;
-                        uint8_t wEnemySubStatus1;
-                        uint8_t wEnemySubStatus2;
-                        uint8_t wEnemySubStatus3;
-                        uint8_t wEnemySubStatus4;
-                        uint8_t wEnemySubStatus5;
+                        uint8_t retired_wPlayerSubStatus1;
+                        uint8_t retired_wPlayerSubStatus2;
+                        uint8_t retired_wPlayerSubStatus3;
+                        uint8_t retired_wPlayerSubStatus4;
+                        uint8_t retired_wPlayerSubStatus5;
+                        uint8_t retired_wEnemySubStatus1;
+                        uint8_t retired_wEnemySubStatus2;
+                        uint8_t retired_wEnemySubStatus3;
+                        uint8_t retired_wEnemySubStatus4;
+                        uint8_t retired_wEnemySubStatus5;
                         uint8_t wPlayerRolloutCount;
                         uint8_t wPlayerConfuseCount;
                         uint8_t wPlayerToxicCount;
@@ -371,52 +372,52 @@ struct wram_s
                         uint8_t wTurnEnded;
                         uint8_t skip_13[1];
                         union {
-                            uint16_t wPlayerStats[5];
+                            uint16_t retired_wPlayerStats[5];
                             struct {
-                                uint16_t wPlayerAttack;
-                                uint16_t wPlayerDefense;
-                                uint16_t wPlayerSpeed;
-                                uint16_t wPlayerSpAtk;
-                                uint16_t wPlayerSpDef;
+                                uint16_t retired_wPlayerAttack;
+                                uint16_t retired_wPlayerDefense;
+                                uint16_t retired_wPlayerSpeed;
+                                uint16_t retired_wPlayerSpAtk;
+                                uint16_t retired_wPlayerSpDef;
                             };
                         };
                         uint8_t skip_14[1];
                         union {
-                            uint16_t wEnemyStats[5];
+                            uint16_t retired_wEnemyStats[5];
                             struct {
-                                uint16_t wEnemyAttack;
-                                uint16_t wEnemyDefense;
-                                uint16_t wEnemySpeed;
-                                uint16_t wEnemySpAtk;
-                                uint16_t wEnemySpDef;
+                                uint16_t retired_wEnemyAttack;
+                                uint16_t retired_wEnemyDefense;
+                                uint16_t retired_wEnemySpeed;
+                                uint16_t retired_wEnemySpAtk;
+                                uint16_t retired_wEnemySpDef;
                             };
                         };
                         uint8_t skip_15[1];
-                        //union wPlayerStatLevels
+                        //union retired_wPlayerStatLevels
                         union {
-                            uint8_t wPlayerStatLevels[NUM_LEVEL_STATS];
+                            uint8_t retired_wPlayerStatLevels[NUM_LEVEL_STATS];
                             struct {
-                                uint8_t wPlayerAtkLevel;
-                                uint8_t wPlayerDefLevel;
-                                uint8_t wPlayerSpdLevel;
-                                uint8_t wPlayerSAtkLevel;
-                                uint8_t wPlayerSDefLevel;
-                                uint8_t wPlayerAccLevel;
-                                uint8_t wPlayerEvaLevel;
+                                uint8_t retired_wPlayerAtkLevel;
+                                uint8_t retired_wPlayerDefLevel;
+                                uint8_t retired_wPlayerSpdLevel;
+                                uint8_t retired_wPlayerSAtkLevel;
+                                uint8_t retired_wPlayerSDefLevel;
+                                uint8_t retired_wPlayerAccLevel;
+                                uint8_t retired_wPlayerEvaLevel;
                                 uint8_t skip_16[1];
                             };
                         };
                         union {
-                        //union wEnemyStatLevels
-                            uint8_t wEnemyStatLevels[NUM_LEVEL_STATS];
+                        //union retired_wEnemyStatLevels
+                            uint8_t retired_wEnemyStatLevels[NUM_LEVEL_STATS];
                             struct {
-                                uint8_t wEnemyAtkLevel;
-                                uint8_t wEnemyDefLevel;
-                                uint8_t wEnemySpdLevel;
-                                uint8_t wEnemySAtkLevel;
-                                uint8_t wEnemySDefLevel;
-                                uint8_t wEnemyAccLevel;
-                                uint8_t wEnemyEvaLevel;
+                                uint8_t retired_wEnemyAtkLevel;
+                                uint8_t retired_wEnemyDefLevel;
+                                uint8_t retired_wEnemySpdLevel;
+                                uint8_t retired_wEnemySAtkLevel;
+                                uint8_t retired_wEnemySDefLevel;
+                                uint8_t retired_wEnemyAccLevel;
+                                uint8_t retired_wEnemyEvaLevel;
                                 uint8_t skip_17[1];
                             };
                         };
@@ -451,7 +452,7 @@ struct wram_s
                         uint8_t wLastEnemyCounterMove;
                         uint8_t wEnemyMinimized;
                         uint8_t wAlreadyFailed;
-                        uint8_t wBattleParticipantsIncludingFainted;
+                        uint8_t retired_wBattleParticipantsIncludingFainted;
                         uint8_t wBattleLowHealthAlarm;
                         uint8_t wPlayerMinimized;
                         // bit
@@ -2292,7 +2293,7 @@ struct wram_s
                     uint8_t wStringBuffer5[STRING_BUFFER_LENGTH];
                     uint8_t wBattleMenuCursorPosition;
                     uint8_t skip_81[1];
-                    uint8_t wCurBattleMon;
+                    uint8_t retired_wCurBattleMon;
                     uint8_t wCurMoveNum;
                     uint8_t wLastPocket;
                     uint8_t wPCItemsCursor;
@@ -2650,7 +2651,7 @@ struct wram_s
                     };
                     uint8_t wTempEnemyMonSpecies;
                     uint8_t wTempBattleMonSpecies;
-                    struct BattleMon wEnemyMon;
+                    struct BattleMon retired_wEnemyMon;
                     uint8_t wEnemyMonBaseStats[NUM_EXP_STATS];
                     uint8_t wEnemyMonCatchRate;
                     uint8_t wEnemyMonBaseExp;

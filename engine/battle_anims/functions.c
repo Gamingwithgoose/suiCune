@@ -3377,7 +3377,7 @@ void BattleAnimFunction_Sound(struct BattleAnim* bc) {
         // LDH_A_addr(hBattleTurn);
         // AND_A_A;
         // IF_Z goto got_turn;
-        if(hram.hBattleTurn != TURN_PLAYER) {
+        if(gBattle.turn != TURN_PLAYER) {
             // enemy
             // LD_HL(BATTLEANIMSTRUCT_PARAM);
             // ADD_HL_BC;
@@ -4792,7 +4792,7 @@ void BattleAnimFunction_SkyAttack(struct BattleAnim* bc) {
         // LD_HL(BATTLEANIMSTRUCT_VAR1);
         // ADD_HL_BC;
         // LD_hl_A;
-        bc->var1 = (hram.hBattleTurn)? 0xcc: 0xf0;
+        bc->var1 = (gBattle.turn)? 0xcc: 0xf0;
         // RET;
         return;
 

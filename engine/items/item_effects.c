@@ -574,12 +574,12 @@ void PokeBallEffect(void){
             // LD_B_hl;
             // INC_HL;
             // LD_C_hl;
-            uint16_t hp = BigEndianToNative16(wram->wEnemyMon.hp);
+            uint16_t hp = (gBattle.enemy.mon.hp);
             // INC_HL;
             // LD_D_hl;
             // INC_HL;
             // LD_E_hl;
-            uint16_t maxhp = BigEndianToNative16(wram->wEnemyMon.maxHP);
+            uint16_t maxhp = (gBattle.enemy.mon.maxHP);
             // SLA_C;
             // RL_B;
             hp <<= 1;
@@ -657,13 +657,13 @@ void PokeBallEffect(void){
             // AND_A(1 << FRZ | SLP);
             // LD_C(10);
             // IF_NZ goto addstatus;
-            if(wram->wEnemyMon.status[0] & (1 << FRZ | SLP))
+            if(gBattle.enemy.mon.status & (1 << FRZ | SLP))
                 status_add = 10;
 #if BUGFIX_BRN_PSN_PAR_CATCH_RATE
-            else if(wram->wEnemyMon.status[0])
+            else if(gBattle.enemy.mon.status)
 #else
         // ld a, [wEnemyMonStatus]
-            else if(wram->wEnemyMon.status[0] & (1 << FRZ | SLP))
+            else if(gBattle.enemy.mon.status & (1 << FRZ | SLP))
             // AND_A_A;
 #endif
                 status_add = 5;
@@ -693,7 +693,7 @@ void PokeBallEffect(void){
 #if BUGFIX_HELD_ITEM_CATCH_CHANCE
         // ld b, a
             // FARCALL(aGetItemHeldEffect);
-            uint16_t held_effect = GetItemHeldEffect(wram->wBattleMon.item);
+            uint16_t held_effect = GetItemHeldEffect(gBattle.player.mon.item);
 #else
             // FARCALL(aGetItemHeldEffect);
             uint16_t held_effect = GetItemHeldEffect(b);
@@ -730,12 +730,12 @@ void PokeBallEffect(void){
         if(r > b)
             wram->wWildMon = 0;
         else
-            wram->wWildMon = wram->wEnemyMon.species;
+            wram->wWildMon = gBattle.enemy.mon.species;
     }
     else {
     // catch_without_fail:
         // LD_A_addr(wEnemyMonSpecies);
-        wram->wWildMon = wram->wEnemyMon.species;
+        wram->wWildMon = gBattle.enemy.mon.species;
     }
 
 // fail_to_catch:
@@ -763,7 +763,7 @@ void PokeBallEffect(void){
     BattleAnimationIdSet(ANIM_THROW_POKE_BALL);
     // XOR_A_A;
     // LDH_addr_A(hBattleTurn);
-    hram.hBattleTurn = TURN_PLAYER;
+    gBattle.turn = TURN_PLAYER;
     // LD_addr_A(wThrownBallWobbleCount);
     wram->wThrownBallWobbleCount = 0;
     // LD_addr_A(wNumHits);
@@ -814,25 +814,25 @@ void PokeBallEffect(void){
     // LD_HL(wEnemyMonStatus);
     // LD_A_hli;
     // PUSH_AF;
-    uint8_t enemyStatus = wram->wEnemyMon.status[0];
+    uint8_t enemyStatus = gBattle.enemy.mon.status;
     // INC_HL;
     // LD_A_hli;
     // PUSH_AF;
-    uint16_t enemyHP = wram->wEnemyMon.hp;
+    uint16_t enemyHP = gBattle.enemy.mon.hp;
     // LD_A_hl;
     // PUSH_AF;
     // PUSH_HL;
     // LD_HL(wEnemyMonItem);
     // LD_A_hl;
     // PUSH_AF;
-    item_t enemyItem = wram->wEnemyMon.item;
+    item_t enemyItem = gBattle.enemy.mon.item;
     // PUSH_HL;
     // LD_HL(wEnemySubStatus5);
     // LD_A_hl;
     // PUSH_AF;
-    uint8_t enemySS5 = wram->wEnemySubStatus5;
+    uint8_t enemySS5 = gBattle.enemy.conditions[4];
     // SET_hl(SUBSTATUS_TRANSFORMED);
-    bit_set(wram->wEnemySubStatus5, SUBSTATUS_TRANSFORMED);
+    bit_set(gBattle.enemy.conditions[4], SUBSTATUS_TRANSFORMED);
 
 //  This code is buggy. Any wild Pokémon that has Transformed will be
 //  caught as a Ditto, even if it was something else like Mew.
@@ -852,13 +852,13 @@ void PokeBallEffect(void){
     else {
     // not_ditto:
         // SET_hl(SUBSTATUS_TRANSFORMED);
-        bit_set(wram->wEnemySubStatus5, SUBSTATUS_TRANSFORMED); // Why are we setting this variable twice?
+        bit_set(gBattle.enemy.conditions[4], SUBSTATUS_TRANSFORMED); // Why are we setting this variable twice?
         // LD_HL(wEnemyBackupDVs);
         // LD_A_addr(wEnemyMonDVs);
         // LD_hli_A;
         // LD_A_addr(wEnemyMonDVs + 1);
         // LD_hl_A;
-        wram->wEnemyBackupDVs = wram->wEnemyMon.dvs;
+        wram->wEnemyBackupDVs = gBattle.enemy.mon.dvs;
     }
 
 // load_data:
@@ -867,44 +867,44 @@ void PokeBallEffect(void){
     wram->wCurPartySpecies = wram->wTempEnemyMonSpecies;
     // LD_A_addr(wEnemyMonLevel);
     // LD_addr_A(wCurPartyLevel);
-    wram->wCurPartyLevel = wram->wEnemyMon.level;
+    wram->wCurPartyLevel = gBattle.enemy.mon.level;
     // FARCALL(aLoadEnemyMon);
     LoadEnemyMon();
 
     // POP_AF;
     // LD_addr_A(wEnemySubStatus5);
-    wram->wEnemySubStatus5 = enemySS5;
+    gBattle.enemy.conditions[4] = enemySS5;
 
     // POP_HL;
     // POP_AF;
     // LD_hl_A;
-    wram->wEnemyMon.item = enemyItem;
+    gBattle.enemy.mon.item = enemyItem;
     // POP_HL;
     // POP_AF;
     // LD_hld_A;
     // POP_AF;
     // LD_hld_A;
-    wram->wEnemyMon.hp = enemyHP;
+    gBattle.enemy.mon.hp = enemyHP;
     // DEC_HL;
     // POP_AF;
     // LD_hl_A;
-    wram->wEnemyMon.status[0] = enemyStatus;
+    gBattle.enemy.mon.status = enemyStatus;
 
     // LD_HL(wEnemySubStatus5);
     // BIT_hl(SUBSTATUS_TRANSFORMED);
     // IF_NZ goto Transformed;
-    if(!bit_test(wram->wEnemySubStatus5, SUBSTATUS_TRANSFORMED)) {
+    if(!bit_test(gBattle.enemy.conditions[4], SUBSTATUS_TRANSFORMED)) {
         // LD_HL(wWildMonMoves);
         // LD_DE(wEnemyMonMoves);
         // LD_BC(NUM_MOVES);
         // CALL(aCopyBytes);
-        CopyBytes(wram->wEnemyMon.moves, wram->wWildMonMoves, sizeof(wram->wEnemyMon.moves));
+        CopyBytes(gBattle.enemy.mon.moves, wram->wWildMonMoves, sizeof(gBattle.enemy.mon.moves));
 
         // LD_HL(wWildMonPP);
         // LD_DE(wEnemyMonPP);
         // LD_BC(NUM_MOVES);
         // CALL(aCopyBytes);
-        CopyBytes(wram->wEnemyMon.pp, wram->wWildMonPP, sizeof(wram->wEnemyMon.pp));
+        CopyBytes(gBattle.enemy.mon.pp, wram->wWildMonPP, sizeof(gBattle.enemy.mon.pp));
     }
 
 // Transformed:
@@ -939,14 +939,14 @@ void PokeBallEffect(void){
         // LD_A_addr(wTempSpecies);
         // DEC_A;
         // CALL(aCheckCaughtMon);
-        bool caught = CheckCaughtMon(wram->wEnemyMon.species - 1);
+        bool caught = CheckCaughtMon(gBattle.enemy.mon.species - 1);
 
         // LD_A_C;
         // PUSH_AF;
         // LD_A_addr(wTempSpecies);
         // DEC_A;
         // CALL(aSetSeenAndCaughtMon);
-        SetSeenAndCaughtMon(wram->wEnemyMon.species - 1);
+        SetSeenAndCaughtMon(gBattle.enemy.mon.species - 1);
         // POP_AF;
         // AND_A_A;
         // IF_NZ goto skip_pokedex;
@@ -964,7 +964,7 @@ void PokeBallEffect(void){
 
             // LD_A_addr(wEnemyMonSpecies);
             // LD_addr_A(wTempSpecies);
-            wram->wTempSpecies = wram->wEnemyMon.species;
+            wram->wTempSpecies = gBattle.enemy.mon.species;
             // PREDEF(pNewPokedexEntry);
             NewPokedexEntry();
         }
@@ -1301,7 +1301,7 @@ uint8_t HeavyBallMultiplier(uint8_t b){
     // ADD_HL_DE;
     // LD_A(BANK(aPokedexDataPointerTable));
     // CALL(aGetFarWord);
-    const struct DexEntry* entry = PokedexDataPointerTable[wram->wEnemyMon.species - 1];
+    const struct DexEntry* entry = PokedexDataPointerTable[gBattle.enemy.mon.species - 1];
 
 // SkipText:
     // CALL(aGetPokedexEntryBank);
@@ -1514,7 +1514,7 @@ uint8_t LoveBallMultiplier(uint8_t b){
     // LD_addr_A(wMonType);
     // LD_A_addr(wCurBattleMon);
     // LD_addr_A(wCurPartyMon);
-    wram->wCurPartyMon = wram->wCurBattleMon;
+    wram->wCurPartyMon = gBattle.player.partyIndex;
     // FARCALL(aGetGender);
     u8_flag_s bgender = GetGender(PARTYMON);
     // IF_C goto done1;  // no effect on genderless
@@ -1680,8 +1680,8 @@ uint8_t FastBallMultiplier(uint8_t b){
 uint8_t LevelBallMultiplier(uint8_t b){
     // LD_A_addr(wBattleMonLevel);
     // LD_C_A;
-    uint8_t c = wram->wBattleMon.level;
-    uint8_t e = wram->wEnemyMon.level;
+    uint8_t c = gBattle.player.mon.level;
+    uint8_t e = gBattle.enemy.mon.level;
     // LD_A_addr(wEnemyMonLevel);
     // CP_A_C;
     // RET_NC ;  // if player is lower level, we're done here
@@ -2251,7 +2251,7 @@ bool IsItemUsedOnConfusedMon(uint8_t c){
     // LD_A_addr(wPlayerSubStatus3);
     // BIT_A(SUBSTATUS_CONFUSED);
     // IF_Z goto nope;
-    if(!bit_test(wram->wPlayerSubStatus3, SUBSTATUS_CONFUSED))
+    if(!bit_test(gBattle.player.conditions[2], SUBSTATUS_CONFUSED))
         return false;
     // LD_A_C;
     // CP_A(0xff);
@@ -2276,7 +2276,7 @@ void BattlemonRestoreHealth(uint16_t hp){
     // LD_addr_A(wBattleMonHP);
     // LD_A_hld;
     // LD_addr_A(wBattleMonHP + 1);
-    wram->wBattleMon.hp = NativeToBigEndian16(hp);
+    gBattle.player.mon.hp = hp;
     // RET;
 }
 
@@ -2287,13 +2287,13 @@ void HealStatus(uint8_t c){
         return;
     // XOR_A_A;
     // LD_addr_A(wBattleMonStatus);
-    wram->wBattleMon.status[0] = 0;
+    gBattle.player.mon.status = 0;
     // LD_HL(wPlayerSubStatus5);
     // RES_hl(SUBSTATUS_TOXIC);
-    bit_reset(wram->wPlayerSubStatus5, SUBSTATUS_TOXIC);
+    bit_reset(gBattle.player.conditions[4], SUBSTATUS_TOXIC);
     // LD_HL(wPlayerSubStatus1);
     // RES_hl(SUBSTATUS_NIGHTMARE);
-    bit_reset(wram->wPlayerSubStatus1, SUBSTATUS_NIGHTMARE);
+    bit_reset(gBattle.player.conditions[0], SUBSTATUS_NIGHTMARE);
     // CALL(aGetItemHealingAction);
     // LD_A_C;
     // CP_A(0b11111111);
@@ -2301,7 +2301,7 @@ void HealStatus(uint8_t c){
     if(c == 0b11111111) {
         // LD_HL(wPlayerSubStatus3);
         // RES_hl(SUBSTATUS_CONFUSED);
-        bit_reset(wram->wPlayerSubStatus3, SUBSTATUS_CONFUSED);
+        bit_reset(gBattle.player.conditions[2], SUBSTATUS_CONFUSED);
     }
 
 // not_full_heal:
@@ -2418,13 +2418,13 @@ uint8_t RevivePokemon(void){
         // AND_A_A;
         // IF_Z goto skip_to_revive;
 
-        if(SmallFarFlagAction(&wram->wBattleParticipantsIncludingFainted, wram->wCurPartyMon, CHECK_FLAG)) {
+        if(SmallFarFlagAction(&gBattle.participantsIncludingFainted, wram->wCurPartyMon, CHECK_FLAG)) {
             // LD_A_addr(wCurPartyMon);
             // LD_C_A;
             // LD_HL(wBattleParticipantsNotFainted);
             // LD_B(SET_FLAG);
             // PREDEF(pSmallFarFlagAction);
-            SmallFarFlagAction(&wram->wBattleParticipantsNotFainted, wram->wCurPartyMon, SET_FLAG);
+            SmallFarFlagAction(&gBattle.participantsNotFainted, wram->wCurPartyMon, SET_FLAG);
         }
     }
 
@@ -2525,7 +2525,7 @@ void BitterBerryEffect(void){
     // BIT_hl(SUBSTATUS_CONFUSED);
     // LD_A(1);
     // IF_Z goto done;
-    if(!bit_test(wram->wPlayerSubStatus3, SUBSTATUS_CONFUSED))
+    if(!bit_test(gBattle.player.conditions[2], SUBSTATUS_CONFUSED))
         return StatusHealer_Jumptable(1);
 
     // RES_hl(SUBSTATUS_CONFUSED);
@@ -2798,7 +2798,7 @@ bool IsItemUsedOnBattleMon(void){
 // nope:
     // XOR_A_A;
     // RET;
-    return wram->wCurPartyMon == wram->wCurBattleMon;
+    return wram->wCurPartyMon == gBattle.player.partyIndex;
 }
 
 uint16_t ReviveHalfHP(struct PartyMon* bc){
@@ -3209,10 +3209,10 @@ void XAccuracyEffect(void){
     // LD_HL(wPlayerSubStatus4);
     // BIT_hl(SUBSTATUS_X_ACCURACY);
     // JP_NZ (mWontHaveAnyEffect_NotUsedMessage);
-    if(bit_test(wram->wPlayerSubStatus4, SUBSTATUS_X_ACCURACY))
+    if(bit_test(gBattle.player.conditions[3], SUBSTATUS_X_ACCURACY))
         return WontHaveAnyEffect_NotUsedMessage();
     // SET_hl(SUBSTATUS_X_ACCURACY);
-    bit_set(wram->wPlayerSubStatus4, SUBSTATUS_X_ACCURACY);
+    bit_set(gBattle.player.conditions[3], SUBSTATUS_X_ACCURACY);
     // JP(mUseItemText);
     return UseItemText();
 }
@@ -3245,10 +3245,10 @@ void GuardSpecEffect(void){
     // LD_HL(wPlayerSubStatus4);
     // BIT_hl(SUBSTATUS_MIST);
     // JP_NZ (mWontHaveAnyEffect_NotUsedMessage);
-    if(bit_test(wram->wPlayerSubStatus4, SUBSTATUS_MIST))
+    if(bit_test(gBattle.player.conditions[3], SUBSTATUS_MIST))
         return WontHaveAnyEffect_NotUsedMessage();
     // SET_hl(SUBSTATUS_MIST);
-    bit_set(wram->wPlayerSubStatus4, SUBSTATUS_MIST);
+    bit_set(gBattle.player.conditions[3], SUBSTATUS_MIST);
     // JP(mUseItemText);
     return UseItemText();
 }
@@ -3257,10 +3257,10 @@ void DireHitEffect(void){
     // LD_HL(wPlayerSubStatus4);
     // BIT_hl(SUBSTATUS_FOCUS_ENERGY);
     // JP_NZ (mWontHaveAnyEffect_NotUsedMessage);
-    if(bit_test(wram->wPlayerSubStatus4, SUBSTATUS_FOCUS_ENERGY))
+    if(bit_test(gBattle.player.conditions[3], SUBSTATUS_FOCUS_ENERGY))
         return WontHaveAnyEffect_NotUsedMessage();
     // SET_hl(SUBSTATUS_FOCUS_ENERGY);
-    bit_set(wram->wPlayerSubStatus4, SUBSTATUS_FOCUS_ENERGY);
+    bit_set(gBattle.player.conditions[3], SUBSTATUS_FOCUS_ENERGY);
     // JP(mUseItemText);
     return UseItemText();
 }
@@ -3289,7 +3289,7 @@ void XItemEffect(void){
     // LD_B_hl;
     // XOR_A_A;
     // LDH_addr_A(hBattleTurn);
-    hram.hBattleTurn = TURN_PLAYER;
+    gBattle.turn = TURN_PLAYER;
     // LD_addr_A(wAttackMissed);
     wram->wAttackMissed = FALSE;
     // LD_addr_A(wEffectFailed);
@@ -3306,7 +3306,7 @@ void XItemEffect(void){
 
     // LD_A_addr(wCurBattleMon);
     // LD_addr_A(wCurPartyMon);
-    wram->wCurPartyMon = wram->wCurBattleMon;
+    wram->wCurPartyMon = gBattle.player.partyIndex;
     // LD_C(HAPPINESS_USEDXITEM);
     // FARCALL(aChangeHappiness);
     ChangeHappiness(HAPPINESS_USEDXITEM);
@@ -3408,12 +3408,12 @@ void PokeFluteEffect(void){
     // LD_A_hl;
     // AND_A_B;
     // LD_hl_A;
-    wram->wBattleMon.status[0] &= ~SLP;
+    gBattle.player.mon.status &= ~SLP;
     // LD_HL(wEnemyMonStatus);
     // LD_A_hl;
     // AND_A_B;
     // LD_hl_A;
-    wram->wEnemyMon.status[0] &= ~SLP;
+    gBattle.enemy.mon.status &= ~SLP;
 
     // LD_A_addr(wPokeFluteCuredSleep);
     // AND_A_A;
@@ -3624,11 +3624,11 @@ static void BattleRestorePP_UpdateBattleMonPP(void) {
         // LD_A_de;
         // AND_A_A;
         // IF_Z goto done;
-        if(wram->wBattleMon.moves[b] == NO_MOVE) 
+        if(gBattle.player.mon.moves[b] == NO_MOVE)
             break;
         // CP_A_hl;
         // IF_NZ goto next;
-        if(wram->wBattleMon.moves[b] != mon->mon.moves[b])
+        if(gBattle.player.mon.moves[b] != mon->mon.moves[b])
             continue;
         // PUSH_HL;
         // PUSH_DE;
@@ -3640,7 +3640,7 @@ static void BattleRestorePP_UpdateBattleMonPP(void) {
         // ADD_HL_BC;
         // LD_A_hl;
         // LD_de_A;
-        wram->wBattleMon.pp[b] = mon->mon.PP[b];
+        gBattle.player.mon.pp[b] = mon->mon.PP[b];
         // POP_BC;
         // POP_DE;
         // POP_HL;
@@ -3669,8 +3669,8 @@ void BattleRestorePP(void){
     // BIT_A(SUBSTATUS_TRANSFORMED);
     // IF_NZ goto not_in_battle;
     if(wram->wBattleMode != 0 
-    && wram->wCurPartyMon == wram->wCurBattleMon
-    && !bit_test(wram->wPlayerSubStatus5, SUBSTATUS_TRANSFORMED)) {
+    && wram->wCurPartyMon == gBattle.player.partyIndex
+    && !bit_test(gBattle.player.conditions[4], SUBSTATUS_TRANSFORMED)) {
         // CALL(aBattleRestorePP_UpdateBattleMonPP);
         BattleRestorePP_UpdateBattleMonPP();
     }
@@ -3944,7 +3944,7 @@ void UseBallInTrainerBattle(void){
     // LD_addr_A(wBattleAnimParam);
     BattleAnimationParameterSet(0);
     // LDH_addr_A(hBattleTurn);
-    hram.hBattleTurn = TURN_PLAYER;
+    gBattle.turn = TURN_PLAYER;
     // LD_addr_A(wNumHits);
     wram->wNumHits = 0;
     // PREDEF(pPlayBattleAnim);
@@ -4316,8 +4316,8 @@ uint8_t GetMaxPPOfMove(void* mon, uint8_t montype, uint8_t n){
     default:
     case WILDMON:
         // LD_HL(wBattleMonMoves);  // WILDMON
-        move = wram->wBattleMon.moves + n;
-        mpp = wram->wBattleMon.pp + n;
+        move = gBattle.player.mon.moves + n;
+        mpp = gBattle.player.mon.pp + n;
         break;
     }
 

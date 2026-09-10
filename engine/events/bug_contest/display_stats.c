@@ -90,7 +90,7 @@ void DisplayCaughtContestMonStats(void){
     // LD_A_addr(wEnemyMonLevel);
     // LD_addr_A(wTempMonLevel);
     // CALL(aPrintLevel);
-    PrintLevel(st.bc, wram->wEnemyMon.level);
+    PrintLevel(st.bc, gBattle.enemy.mon.level);
 
     // hlcoord(11, 4, wTilemap);
     // LD_DE(wContestMonMaxHP);
@@ -102,7 +102,8 @@ void DisplayCaughtContestMonStats(void){
     // hlcoord(11, 10, wTilemap);
     // LD_DE(wEnemyMonMaxHP);
     // CALL(aPrintNum);
-    PrintNum(coord(11, 10, wram->wTilemap), &wram->wEnemyMon.maxHP, 2, 3);
+    uint16_t enemyMaxHP = NativeToBigEndian16(gBattle.enemy.mon.maxHP);
+    PrintNum(coord(11, 10, wram->wTilemap), &enemyMaxHP, 2, 3);
 
     // LD_HL(mContestAskSwitchText);
     // CALL(aPrintText);

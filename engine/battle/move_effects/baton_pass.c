@@ -23,7 +23,7 @@ void BattleCommand_BatonPass(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // JP_NZ (mBattleCommand_BatonPass_Enemy);
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
 
     //  Need something to switch to
         // CALL(aCheckAnyOtherAlivePartyMons);
@@ -190,7 +190,7 @@ static void BatonPass_LinkEnemySwitch(void){
         // LD_A_addr(wCurOTMon);
         // ADD_A(BATTLEACTION_SWITCH1);
         // LD_addr_A(wBattleAction);
-        wram->wBattleAction = wram->wCurOTMon + BATTLEACTION_SWITCH1;
+        wram->wBattleAction = gBattle.enemy.partyIndex + BATTLEACTION_SWITCH1;
     }
 
 // switch_:
@@ -229,10 +229,10 @@ static void ResetBatonPassStatus(void){
 // Attraction isn't passed.
     // LD_HL(wPlayerSubStatus1);
     // RES_hl(SUBSTATUS_IN_LOVE);
-    bit_reset(wram->wPlayerSubStatus1, SUBSTATUS_IN_LOVE);
+    bit_reset(gBattle.player.conditions[0], SUBSTATUS_IN_LOVE);
     // LD_HL(wEnemySubStatus1);
     // RES_hl(SUBSTATUS_IN_LOVE);
-    bit_reset(wram->wEnemySubStatus1, SUBSTATUS_IN_LOVE);
+    bit_reset(gBattle.enemy.conditions[0], SUBSTATUS_IN_LOVE);
     // LD_HL(wPlayerSubStatus5);
 
     // LD_A(BATTLE_VARS_SUBSTATUS5);
@@ -265,7 +265,7 @@ static bool CheckAnyOtherAlivePartyMons(void){
     // LD_A_addr(wCurBattleMon);
     // LD_E_A;
     // JR(mCheckAnyOtherAliveMons);
-    return CheckAnyOtherAliveMons(gPokemon.partyMon, gPokemon.partyCount, wram->wCurBattleMon);
+    return CheckAnyOtherAliveMons(gPokemon.partyMon, gPokemon.partyCount, gBattle.player.partyIndex);
 }
 
 static bool CheckAnyOtherAliveEnemyMons(void){
@@ -277,7 +277,7 @@ static bool CheckAnyOtherAliveEnemyMons(void){
 
 // fallthrough
 
-    return CheckAnyOtherAliveMons(wram->wOTPartyMon, wram->wOTPartyCount, wram->wCurOTMon);
+    return CheckAnyOtherAliveMons(wram->wOTPartyMon, wram->wOTPartyCount, gBattle.enemy.partyIndex);
 }
 
 static bool CheckAnyOtherAliveMons(struct PartyMon* party, uint8_t count, uint8_t curMon){

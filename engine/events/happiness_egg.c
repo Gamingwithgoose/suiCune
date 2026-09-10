@@ -150,7 +150,7 @@ void ChangeHappiness(uint8_t c){
         if(wram->wCurPartyMon == wram->wPartyMenuCursor) {
             // LD_A_de;
             // LD_addr_A(wBattleMonHappiness);
-            wram->wBattleMon.happiness = a;
+            gBattle.player.mon.happiness = a;
             // RET;
         }
     }

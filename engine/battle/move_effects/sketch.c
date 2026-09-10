@@ -52,14 +52,14 @@ void BattleCommand_Sketch(void){
     // CALL(aUserPartyAttr);
     // LD_D_H;
     // LD_E_L;
-    struct PartyMon* de = UserPartyMon();
+
 //  Get the battle move structs.
     // LD_HL(wBattleMonMoves);
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // IF_Z goto get_last_move;
     // LD_HL(wEnemyMonMoves);
-    struct BattleMon* hl = (hram.hBattleTurn == TURN_PLAYER)? &wram->wBattleMon: &wram->wEnemyMon;
+    struct BattlePokemon* hl = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon: &gBattle.enemy.mon;
 
 // get_last_move:
     // LD_A(BATTLE_VARS_LAST_COUNTER_MOVE_OPP);
@@ -133,7 +133,7 @@ void BattleCommand_Sketch(void){
     // LD_A_addr(wBattleMode);
     // DEC_A;
     // IF_NZ goto user_trainer;
-    if(hram.hBattleTurn != 0 && wram->wBattleMode == WILD_BATTLE) {
+    if(gBattle.turn != 0 && wram->wBattleMode == WILD_BATTLE) {
     //  wildmon
         // LD_A_hl;
         // PUSH_BC;
@@ -151,6 +151,7 @@ void BattleCommand_Sketch(void){
     }
     else {
     // user_trainer:
+        struct PartyMon* de = UserPartyMon();
         // LD_A_hl;
         // PUSH_AF;
         // LD_L_C;

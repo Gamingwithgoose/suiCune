@@ -75,7 +75,7 @@ void AIChooseMove(void){
         // CheckDisabledMove:
             // CP_A_hl;
             // IF_Z goto ScoreDisabledMove;
-            if(wram->wEnemyDisabledMove == wram->wEnemyMon.moves[i]) {
+            if(wram->wEnemyDisabledMove == gBattle.enemy.mon.moves[i]) {
             // ScoreDisabledMove:
                 // LD_HL(wEnemyAIMoveScores);
                 // LD_B(0);
@@ -107,7 +107,7 @@ void AIChooseMove(void){
         // INC_DE;
         // AND_A(PP_MASK);
         // IF_NZ goto CheckMovePP;
-        if((wram->wEnemyMon.pp[i] & PP_MASK) == 0)
+        if((gBattle.enemy.mon.pp[i] & PP_MASK) == 0)
             wram->wEnemyAIMoveScores[i] = AI_SCORE_UNUSABLE;
         // LD_hl(80);
         // goto CheckMovePP;
@@ -197,7 +197,7 @@ void AIChooseMove(void){
         // INC_DE;
         // AND_A_A;
         // IF_Z goto DecrementScores;
-        if(wram->wEnemyMon.moves[c] == NO_MOVE) {
+        if(gBattle.enemy.mon.moves[c] == NO_MOVE) {
             c = 0;
             continue;
         }
@@ -249,7 +249,7 @@ void AIChooseMove(void){
         // AND_A_A;
         // IF_NZ goto skip_load;
         // LD_hl_A;
-        if(wram->wEnemyMon.moves[c] == NO_MOVE)
+        if(gBattle.enemy.mon.moves[c] == NO_MOVE)
             wram->wEnemyAIMoveScores[c] = 0;
 
     //  Disregard the move if its score is not 1
@@ -268,7 +268,7 @@ void AIChooseMove(void){
         // keep:
             // LD_A_de;
             // LD_hli_A;
-            wram->wEnemyAIMoveScores[c] = wram->wEnemyMon.moves[c];
+            wram->wEnemyAIMoveScores[c] = gBattle.enemy.mon.moves[c];
         }
 
     // after_toss:

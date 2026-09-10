@@ -245,7 +245,7 @@ struct hram_s
     // 89
     uint8_t hUnusedBackup;
     // 90
-    uint8_t hBattleTurn;
+    uint8_t retiredBattleTurn;
     // 91
     uint8_t hCGBPalUpdate;
     // 92

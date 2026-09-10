@@ -17,7 +17,7 @@ void BattleCommand_Conversion(void){
     // IF_Z goto got_moves;
     // LD_HL(wEnemyMonMoves);
     // LD_DE(wEnemyMonType1);
-    struct BattleMon* mon = (hram.hBattleTurn == TURN_PLAYER)? &wram->wBattleMon: &wram->wEnemyMon;
+    struct BattlePokemon* mon = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon: &gBattle.enemy.mon;
 
 // got_moves:
     // PUSH_DE;

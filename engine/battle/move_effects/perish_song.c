@@ -9,8 +9,8 @@ void BattleCommand_PerishSong(void){
 //  perishsong
 
     // LD_HL(wPlayerSubStatus1);
-    uint8_t* hl = &wram->wPlayerSubStatus1;
-    uint8_t* de = &wram->wEnemySubStatus1;
+    uint8_t* hl = &gBattle.player.conditions[0];
+    uint8_t* de = &gBattle.enemy.conditions[0];
     // LD_DE(wEnemySubStatus1);
     // BIT_hl(SUBSTATUS_PERISH);
     // IF_Z goto ok;

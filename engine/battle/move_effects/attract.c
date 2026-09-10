@@ -16,7 +16,7 @@ void BattleCommand_Attract(void){
     // CALL(aCheckHiddenOpponent);
     // IF_NZ goto failed;
     if(!wram->wAttackMissed
-    && CheckOppositeGender(wram->wCurBattleMon)
+    && CheckOppositeGender(gBattle.player.partyIndex)
     && !CheckHiddenOpponent()) {
         // LD_A(BATTLE_VARS_SUBSTATUS1_OPP);
         // CALL(aGetBattleVarAddr);
@@ -84,7 +84,7 @@ bool CheckOppositeGender(uint8_t battleMon){
     // BIT_A(SUBSTATUS_TRANSFORMED);
     // IF_Z goto not_transformed;
     // LD_HL(wEnemyBackupDVs);
-    uint16_t dvs = (bit_test(wram->wEnemySubStatus5, SUBSTATUS_TRANSFORMED))? wram->wEnemyBackupDVs: wram->wEnemyMon.dvs;
+    uint16_t dvs = (bit_test(gBattle.enemy.conditions[4], SUBSTATUS_TRANSFORMED))? wram->wEnemyBackupDVs: gBattle.enemy.mon.dvs;
 
 // not_transformed:
     // LD_A_hli;

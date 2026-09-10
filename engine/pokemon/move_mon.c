@@ -188,7 +188,7 @@ bool GenerateNativePartyMonStats(struct NativePartyMon* hl, SpeciesId species, u
 // skipitem:
     // LD_de_A;
     if(battleMode != 0x0)
-        hl->mon.item = wram->wEnemyMon.item;
+        hl->mon.item = gBattle.enemy.mon.item;
     else
         hl->mon.item = NO_ITEM;
     // INC_DE;
@@ -227,7 +227,7 @@ bool GenerateNativePartyMonStats(struct NativePartyMon* hl, SpeciesId species, u
         // LD_hl_A;
         // goto next;
         for(size_t i = 0; i < NUM_MOVES; ++i)
-            hl->mon.moves[i] = wram->wEnemyMon.moves[i];
+            hl->mon.moves[i] = gBattle.enemy.mon.moves[i];
     }
 
 // next:
@@ -402,7 +402,7 @@ copywildmonDVs:
     // LD_A_addr(wEnemyMonDVs + 1);
     // LD_de_A;
     // INC_DE;
-    hl->mon.DVs = wram->wEnemyMon.dvs;
+    hl->mon.DVs = gBattle.enemy.mon.dvs;
 
     // PUSH_HL;
     // LD_HL(wEnemyMonPP);
@@ -414,7 +414,7 @@ copywildmonDVs:
     // INC_DE;
     // DEC_B;
     // IF_NZ goto wildmonpploop;
-    CopyBytes(hl->mon.PP, wram->wEnemyMon.pp, sizeof(wram->wEnemyMon.pp));
+    CopyBytes(hl->mon.PP, gBattle.enemy.mon.pp, sizeof(gBattle.enemy.mon.pp));
     // POP_HL;
 
 // Initialize happiness.
@@ -448,12 +448,12 @@ copywildmonDVs:
     // LD_A_hli;
     // LD_de_A;
     // INC_DE;
-    hl->status = wram->wEnemyMon.status[0];
+    hl->status = gBattle.enemy.mon.status;
 // Copy EnemyMonUnused
     // LD_A_hli;
     // LD_de_A;
     // INC_DE;
-    hl->unused = wram->wEnemyMon.status[1];
+
 // Copy wEnemyMonHP
     // LD_A_hli;
     // LD_de_A;
@@ -461,7 +461,7 @@ copywildmonDVs:
     // LD_A_hl;
     // LD_de_A;
     // INC_DE;
-    hl->HP = BigEndianToNative16(wram->wEnemyMon.hp);
+    hl->HP = (gBattle.enemy.mon.hp);
 
 initstats:
     // LD_A_addr(wBattleMode);
@@ -469,13 +469,11 @@ initstats:
     // IF_NZ goto generatestats;
     if(battleMode == 1) {
         // LD_HL(wEnemyMonMaxHP);
-        hl->maxHP = BigEndianToNative16(wram->wEnemyMon.maxHP);
+        hl->maxHP = (gBattle.enemy.mon.maxHP);
         // LD_BC(PARTYMON_STRUCT_LENGTH - MON_MAXHP);
         // CALL(aCopyBytes);
         for(size_t i = 0; i < lengthof(hl->stats); ++i) {
-            uint16_t legacyStat;
-            CopyBytes(&legacyStat, wram->wEnemyMon.stats[i], sizeof(legacyStat));
-            hl->stats[i] = BigEndianToNative16(legacyStat);
+            hl->stats[i] = gBattle.enemy.mon.stats[i];
         }
         // POP_HL;
         // goto registerunowndex;
@@ -1272,10 +1270,10 @@ bool SendMonIntoBox(void){
     struct NativeBoxMon* boxmon = box.mons;
     // LD_BC(1 + 1 + NUM_MOVES);  // species + item + moves
     // CALL(aCopyBytes);
-    boxmon->species = wram->wEnemyMon.species;
-    boxmon->item = wram->wEnemyMon.item;
+    boxmon->species = gBattle.enemy.mon.species;
+    boxmon->item = gBattle.enemy.mon.item;
     for(uint8_t i = 0; i < NUM_MOVES; ++i)
-        boxmon->moves[i] = wram->wEnemyMon.moves[i];
+        boxmon->moves[i] = gBattle.enemy.mon.moves[i];
 
     // LD_HL(wPlayerID);
     // LD_A_hli;
@@ -1324,8 +1322,8 @@ bool SendMonIntoBox(void){
     // INC_DE;
     // DEC_B;
     // IF_NZ goto loop3;
-    boxmon->DVs = wram->wEnemyMon.dvs;
-    CopyBytes(boxmon->PP, wram->wEnemyMon.pp, sizeof(boxmon->PP));
+    boxmon->DVs = gBattle.enemy.mon.dvs;
+    CopyBytes(boxmon->PP, gBattle.enemy.mon.pp, sizeof(boxmon->PP));
 
     // LD_A(BASE_HAPPINESS);
     // LD_de_A;
@@ -2031,16 +2029,15 @@ void CalcNativeMonStats(struct NativePartyMon* mon, uint8_t useStatExp){
         mon->stats[i] = calculated[i + 1];
 }
 
-void CalcMonStats_BattleMon(struct BattleMon* mon){
+void CalcMonStats_BattleMon(struct BattlePokemon* mon){
     const struct BaseData* base = GetSpeciesBaseData(mon->species);
     if(base == NULL)
         return;
-
-    uint16_t calculated[STAT_SDEF - STAT_HP + 1];
-    CalcMonStats(calculated, NULL, mon->dvs, FALSE, base, mon->level);
-    mon->maxHP = calculated[0];
-    for(size_t i = 0; i < lengthof(mon->stats); ++i)
-        CopyBytes(mon->stats[i], &calculated[i + 1], sizeof(calculated[i + 1]));
+    mon->maxHP = CalcMonStat(NULL, mon->dvs, false, STAT_HP,
+                            base->stats[STAT_HP - 1], mon->level, false);
+    for(uint8_t stat = STAT_ATK; stat <= STAT_SDEF; ++stat)
+        mon->stats[stat - STAT_ATK] = CalcMonStat(NULL, mon->dvs, false, stat,
+                                               base->stats[stat - 1], mon->level, false);
 }
 
 //  'c' is 1-6 and points to the BaseStat

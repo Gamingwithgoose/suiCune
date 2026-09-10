@@ -6818,3 +6818,32 @@ Source review and remaining work
   inputs from global emulator state. Next gameplay closure: migrate reward and
   temporary party experience ownership, tracing UI consumers and serialization.
   Overall native PC conversion remains partial; no ASM files deleted.
+
+
+2026-09-09 — Native active battle ownership
+==========================================
+
+- gBattle owns active player/opponent Pokemon, acting side, party selection,
+  participant sets, stat stages, volatile flags and numeric base/current stats.
+- HP/status/stat consumers in mechanics, AI, moves, party boundaries and battle
+  presentation use native values. Damage/healing use typed operations before
+  publishing display buffers; wild stat generation uses numeric calculation.
+- Retired battler/selection/stage/turn WRAM and HRAM members have no C gameplay
+  consumers. Reserved slots preserve unrelated legacy layout without projection.
+- Persistent party/OT party, packed experience rewards, byte move-script IDs,
+  action/damage scratch and save/link interfaces remain migration boundaries.
+  This completes active-battle ownership, not full native persistent-party ownership.
+- Transform stage copying uses the actual array extent. Pain Split targets both
+  intended battlers. Wild Sketch/Spite defer persistent-party pointer resolution.
+- Primary files: constants/types.h, home/battle.c, home/battle_vars.c,
+  engine/battle/core.c and effect_commands.c, battle AI/move consumers,
+  engine/pokemon/move_mon.c; full file inventory in docs/battle_party_ownership.md.
+- Source guards: 4 passed. Executable C counts in the documented battle/Pokemon
+  scope: wram-> 4360 -> 3470; hram 425 -> 177; gb_read 22 -> 22;
+  gb_write 19 -> 19; literal cpu_reg 0 -> 0. Two translated helper bodies retired.
+- Build validation: intermediate attempt failed; final source not built.
+  Runtime validation: not performed. Battle/party acceptance remains outstanding.
+  Known send-out/layering issues remain separate presentation concerns.
+- Next closure: native persistent party with numeric experience/egg state across
+  capture, storage transfer, items, evolution, move learning and save import/export;
+  remaining action/damage/move-script state follows. Native saves remain deferred.

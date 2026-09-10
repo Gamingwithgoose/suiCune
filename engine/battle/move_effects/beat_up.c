@@ -19,13 +19,13 @@ void BattleCommand_BeatUp(void){
     // LDH_A_addr(hBattleTurn);
     // AND_A_A;
     // JP_NZ (mBattleCommand_BeatUp_enemy_beats_up);
-    if(hram.hBattleTurn == TURN_PLAYER) {
+    if(gBattle.turn == TURN_PLAYER) {
 
         // LD_A_addr(wPlayerSubStatus3);
         // BIT_A(SUBSTATUS_IN_LOOP);
         // IF_NZ goto next_mon;
 
-        if(bit_test(wram->wPlayerSubStatus3, SUBSTATUS_IN_LOOP)) {
+        if(bit_test(gBattle.player.conditions[2], SUBSTATUS_IN_LOOP)) {
         // next_mon:
             // LD_A_addr(wPlayerRolloutCount);
             // LD_B_A;
@@ -70,13 +70,13 @@ void BattleCommand_BeatUp(void){
         // CP_A_hl;
         uint8_t status;
     #if BUGFIX_BEATUP_DESYNC
-        if(wram->wCurBattleMon == c)
+        if(gBattle.player.partyIndex == c)
     #else
         (void)c;
-        if(wram->wCurBattleMon == HIGH(mon->HP))
+        if(gBattle.player.partyIndex == HIGH(mon->HP))
     #endif
         {
-            status = wram->wBattleMon.status[0];
+            status = gBattle.player.mon.status;
         }
         else 
         {
@@ -103,8 +103,8 @@ void BattleCommand_BeatUp(void){
 
         // LD_A_addr(wEnemyMonSpecies);
         // LD_addr_A(wCurSpecies);
-        wram->wCurSpecies = wram->wEnemyMon.species;
-        const struct BaseData* defenderBase = GetSpeciesBaseData(wram->wEnemyMon.species);
+        wram->wCurSpecies = gBattle.enemy.mon.species;
+        const struct BaseData* defenderBase = GetSpeciesBaseData(gBattle.enemy.mon.species);
         if(defenderBase == NULL)
             goto beatup_fail;
         // LD_A_addr(wBaseDefense);
@@ -145,7 +145,7 @@ void BattleCommand_BeatUp(void){
         // BIT_A(SUBSTATUS_IN_LOOP);
         // IF_NZ goto enemy_next_mon;
 
-        if(bit_test(wram->wEnemySubStatus3, SUBSTATUS_IN_LOOP)) {
+        if(bit_test(gBattle.enemy.conditions[2], SUBSTATUS_IN_LOOP)) {
         // enemy_next_mon:
             // LD_A_addr(wEnemyRolloutCount);
             // LD_B_A;
@@ -174,7 +174,7 @@ void BattleCommand_BeatUp(void){
             // LD_A_addr(wEnemyMonSpecies);
             // LD_addr_A(wNamedObjectIndex);
             // CALL(aGetPokemonName);
-            GetPokemonName(wram->wEnemyMon.species);
+            GetPokemonName(gBattle.enemy.mon.species);
             // LD_HL(mBeatUpAttackText);
             // CALL(aStdBattleTextbox);
             StdBattleTextbox(BeatUpAttackText);
@@ -229,8 +229,8 @@ void BattleCommand_BeatUp(void){
         // LD_HL(wEnemyMonStatus);
         // IF_Z goto active_enemy;
         uint8_t status;
-        if(wram->wCurBeatUpPartyMon == wram->wCurOTMon) {
-            status = wram->wEnemyMon.status[0];
+        if(wram->wCurBeatUpPartyMon == gBattle.enemy.partyIndex) {
+            status = gBattle.enemy.mon.status;
         }
         else {
             status = mon->status;
@@ -257,8 +257,8 @@ void BattleCommand_BeatUp(void){
 
         // LD_A_addr(wBattleMonSpecies);
         // LD_addr_A(wCurSpecies);
-        wram->wCurSpecies = wram->wBattleMon.species;
-        const struct BaseData* defenderBase = GetSpeciesBaseData(wram->wBattleMon.species);
+        wram->wCurSpecies = gBattle.player.mon.species;
+        const struct BaseData* defenderBase = GetSpeciesBaseData(gBattle.player.mon.species);
         if(defenderBase == NULL)
             goto beatup_fail;
         // LD_A_addr(wBaseDefense);
@@ -329,7 +329,7 @@ static struct PartyMon* GetBeatupMonLocation(void) {
     // LD_HL(wPartyMon1Species);
     // IF_Z goto got_species;
     // LD_HL(wOTPartyMon1Species);
-    struct PartyMon* mon = (hram.hBattleTurn == TURN_PLAYER)? gPokemon.partyMon: wram->wOTPartyMon;
+    struct PartyMon* mon = (gBattle.turn == TURN_PLAYER)? gPokemon.partyMon: wram->wOTPartyMon;
 
 // got_species:
     // LD_A_addr(wCurBeatUpPartyMon);

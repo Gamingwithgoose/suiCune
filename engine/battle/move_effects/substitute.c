@@ -19,8 +19,8 @@ void BattleCommand_Substitute(void){
     // IF_Z goto got_hp;
     // LD_HL(wEnemyMonMaxHP);
     // LD_DE(wEnemySubstituteHP);
-    struct BattleMon* mon = (hram.hBattleTurn == TURN_PLAYER)? &wram->wBattleMon: &wram->wEnemyMon;
-    uint8_t* subHP = (hram.hBattleTurn == TURN_PLAYER)? &wram->wPlayerSubstituteHP: &wram->wEnemySubstituteHP;
+    struct BattlePokemon* mon = (gBattle.turn == TURN_PLAYER)? &gBattle.player.mon: &gBattle.enemy.mon;
+    uint8_t* subHP = (gBattle.turn == TURN_PLAYER)? &wram->wPlayerSubstituteHP: &wram->wEnemySubstituteHP;
 
 // got_hp:
 
@@ -45,7 +45,7 @@ void BattleCommand_Substitute(void){
     // RR_B;
     // SRL_A;
     // RR_B;
-    uint8_t b = BigEndianToNative16(mon->maxHP) >> 2;
+    uint8_t b = mon->maxHP >> 2;
     // DEC_HL;
     // DEC_HL;
     // LD_A_B;
@@ -61,7 +61,7 @@ void BattleCommand_Substitute(void){
     // LD_A_D;
     // OR_A_E;
     // IF_Z goto too_weak_to_sub;
-    if(BigEndianToNative16(mon->hp) <= b) {
+    if(mon->hp <= b) {
     // too_weak_to_sub:
         // CALL(aCheckUserIsCharging);
         // CALL_NZ (aBattleCommand_RaiseSub);
@@ -77,7 +77,7 @@ void BattleCommand_Substitute(void){
     // LD_hl_D;
     // INC_HL;
     // LD_hl_E;
-    mon->hp = NativeToBigEndian16(BigEndianToNative16(mon->hp) - b);
+    mon->hp = mon->hp - b;
 
     // LD_A(BATTLE_VARS_SUBSTATUS4);
     // CALL(aGetBattleVarAddr);
@@ -91,8 +91,8 @@ void BattleCommand_Substitute(void){
     // IF_Z goto player;
     // LD_HL(wEnemyWrapCount);
     // LD_DE(wEnemyTrappingMove);
-    uint8_t* wrapCount = (hram.hBattleTurn == TURN_PLAYER)? &wram->wPlayerWrapCount: &wram->wEnemyWrapCount;
-    move_t* trappingMove = (hram.hBattleTurn == TURN_PLAYER)? &wram->wPlayerTrappingMove: &wram->wEnemyTrappingMove;
+    uint8_t* wrapCount = (gBattle.turn == TURN_PLAYER)? &wram->wPlayerWrapCount: &wram->wEnemyWrapCount;
+    move_t* trappingMove = (gBattle.turn == TURN_PLAYER)? &wram->wPlayerTrappingMove: &wram->wEnemyTrappingMove;
 
 // player:
 

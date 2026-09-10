@@ -279,8 +279,8 @@ enum {
 #define LINK_BATTLE_RECORD_LENGTH (2 + (NAME_LENGTH - 1) + 2 * 3)
 #define NUM_LINK_BATTLE_RECORDS 5
 
-// hBattleTurn
-enum {
+// Native selection of the acting side.
+enum BattleSide {
     TURN_PLAYER,
     TURN_ENEMY,
 };

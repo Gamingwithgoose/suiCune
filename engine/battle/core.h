@@ -45,7 +45,7 @@ uint16_t GetEighthMaxHP(void);
 uint16_t GetQuarterMaxHP(void);
 uint16_t GetHalfMaxHP(void);
 uint16_t GetMaxHP(void);
-void GetHalfHP(void);
+uint16_t GetHalfHP(const struct BattlePokemon* mon);
 bool CheckUserHasEnoughHP(uint16_t bc);
 void RestoreHP(uint16_t bc);
 void UpdateHPBarBattleHuds(void);

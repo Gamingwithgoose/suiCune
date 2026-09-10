@@ -1520,12 +1520,12 @@ joy_loop:
             // CALL(aAddNTimes);
             // PUSH_HL;
             // CALL(aMoveScreenLoop_copy_move);
-            MoveScreenLoop_copy_move(wram->wBattleMon.moves);
+            MoveScreenLoop_copy_move(gBattle.player.mon.moves);
             // POP_HL;
             // LD_BC(wBattleMonPP - wBattleMonMoves);
             // ADD_HL_BC;
             // CALL(aMoveScreenLoop_copy_move);
-            MoveScreenLoop_copy_pp(wram->wBattleMon.pp);
+            MoveScreenLoop_copy_pp(gBattle.player.mon.pp);
         }
 
     // swap_moves:
